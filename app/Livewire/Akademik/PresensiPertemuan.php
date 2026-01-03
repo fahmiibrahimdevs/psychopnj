@@ -1,0 +1,275 @@
+<?php
+
+namespace App\Livewire\Akademik;
+
+use Livewire\Component;
+use Livewire\Attributes\Title;
+use App\Models\Pertemuan;
+use App\Models\Anggota;
+use App\Models\PresensiPertemuan as ModelsPresensiPertemuan;
+use Illuminate\Support\Facades\DB;
+
+class PresensiPertemuan extends Component
+{
+    #[Title('Presensi Pertemuan')]
+
+    public $selectedPertemuan = null;
+    public $searchTerm = '';
+    public $pertemuans = [];
+    public $anggotaData = [];
+    public $presensiData = []; // Data from database
+    public $tempPresensiData = []; // Temporary changes (not saved yet)
+    public $statistik = [
+        'total' => 0,
+        'hadir' => 0,
+        'izin' => 0,
+        'sakit' => 0,
+        'alfa' => 0,
+        'tanpa_keterangan' => 0
+    ];
+
+    public function mount()
+    {
+        $pertemuansData = Pertemuan::select('pertemuan.id', 'pertemuan.judul_pertemuan', 'pertemuan.pertemuan_ke', 'program_pembelajaran.nama_program')
+                            ->leftJoin('program_pembelajaran', 'pertemuan.id_program', '=', 'program_pembelajaran.id')
+                            ->leftJoin('tahun_kepengurusan', 'program_pembelajaran.id_tahun', '=', 'tahun_kepengurusan.id')
+                            ->where('tahun_kepengurusan.status', 'aktif')
+                            ->orderBy('program_pembelajaran.nama_program', 'ASC')
+                            ->orderBy('pertemuan.pertemuan_ke', 'ASC')
+                            ->get();
+        
+        $this->pertemuans = $pertemuansData->groupBy('nama_program')->toArray();
+    }
+
+    public function updatedSelectedPertemuan($value)
+    {
+        // Force reset presensi data first
+        $this->presensiData = [];
+        $this->tempPresensiData = [];
+        
+        if (!$value) {
+            $this->anggotaData = [];
+            return;
+        }
+
+        $this->loadAnggota();
+    }
+
+    public function updatedSearchTerm()
+    {
+        if ($this->selectedPertemuan) {
+            $this->loadAnggota();
+        }
+    }
+
+    private function loadAnggota()
+    {
+        $search = '%' . $this->searchTerm . '%';
+
+        // Force clear all presensi data before loading new data
+        $this->presensiData = [];
+        $this->anggotaData = [];
+
+        // Get all anggota and group by status_anggota
+        $anggota = Anggota::select('anggota.id', 'anggota.nama_lengkap', 'anggota.kelas', 'anggota.status_anggota', 'anggota.foto')
+                            ->leftJoin('tahun_kepengurusan', 'anggota.id_tahun', '=', 'tahun_kepengurusan.id')
+                            ->where('tahun_kepengurusan.status', 'aktif')
+                            ->where('anggota.status_aktif', 'aktif')
+                            ->where('anggota.nama_lengkap', 'LIKE', $search)
+                            ->orderBy('anggota.status_anggota', 'DESC') // pengurus first
+                            ->orderBy('anggota.nama_lengkap', 'ASC')
+                            ->get()
+                            ->groupBy('status_anggota');
+
+        $this->anggotaData = $anggota->toArray();
+
+        // Only load presensi for the selected pertemuan
+        if ($this->selectedPertemuan) {
+            $existingPresensi = ModelsPresensiPertemuan::where('id_pertemuan', $this->selectedPertemuan)->get();
+            
+            foreach ($existingPresensi as $presensi) {
+                $this->presensiData[$presensi->id_anggota] = [
+                    'status' => $presensi->status,
+                    'waktu' => $presensi->waktu,
+                    'metode' => $presensi->metode
+                ];
+            }
+        }
+        
+        // Calculate statistics
+        $this->calculateStatistik();
+    }
+    
+    private function calculateStatistik()
+    {
+        // Reset statistik
+        $this->statistik = [
+            'total' => 0,
+            'hadir' => 0,
+            'izin' => 0,
+            'sakit' => 0,
+            'alfa' => 0,
+            'tanpa_keterangan' => 0
+        ];
+        
+        // Count total anggota from anggotaData
+        foreach ($this->anggotaData as $group) {
+            $this->statistik['total'] += count($group);
+        }
+        
+        // Count each status from presensiData
+        foreach ($this->presensiData as $presensi) {
+            $status = is_array($presensi) ? ($presensi['status'] ?? '') : $presensi;
+            
+            if ($status == 'hadir') {
+                $this->statistik['hadir']++;
+            } elseif ($status == 'izin') {
+                $this->statistik['izin']++;
+            } elseif ($status == 'sakit') {
+                $this->statistik['sakit']++;
+            } elseif ($status == 'alfa') {
+                $this->statistik['alfa']++;
+            }
+        }
+        
+        // Calculate tanpa keterangan (total - all status)
+        $this->statistik['tanpa_keterangan'] = $this->statistik['total'] 
+            - $this->statistik['hadir'] 
+            - $this->statistik['izin'] 
+            - $this->statistik['sakit'] 
+            - $this->statistik['alfa'];
+    }
+
+    public function render()
+    {
+        return view('livewire.akademik.presensi-pertemuan');
+    }
+
+    public function togglePresensi($idAnggota, $status)
+    {
+        // Store in temporary data (not saved yet)
+        $this->tempPresensiData[$idAnggota] = ['status' => $status];
+        
+        // Skip rendering to prevent chart refresh
+        $this->skipRender();
+    }
+
+    public function clearPresensi($idAnggota)
+    {
+        // Mark as cleared in temporary data
+        $this->tempPresensiData[$idAnggota] = ['status' => ''];
+        
+        // Skip rendering to prevent chart refresh
+        $this->skipRender();
+    }
+
+    public function updatePresensi()
+    {
+        if (!$this->selectedPertemuan) {
+            $this->dispatch('swal:modal', [
+                'type'      => 'error',  
+                'message'   => 'Error!', 
+                'text'      => 'Please select a pertemuan first!'
+            ]);
+            return;
+        }
+
+        DB::beginTransaction();
+        
+        try {
+            $deleteIds = [];
+            $updateData = [];
+            $createData = [];
+            
+            // Get all existing records in one query
+            $existingRecords = ModelsPresensiPertemuan::where('id_pertemuan', $this->selectedPertemuan)
+                ->whereIn('id_anggota', array_keys($this->tempPresensiData))
+                ->get()
+                ->keyBy('id_anggota');
+            
+            // Process temporary changes
+            foreach ($this->tempPresensiData as $idAnggota => $data) {
+                $status = is_array($data) ? ($data['status'] ?? null) : $data;
+                
+                // If status is empty, mark for deletion
+                if (empty($status)) {
+                    if (isset($existingRecords[$idAnggota])) {
+                        $deleteIds[] = $idAnggota;
+                    }
+                    continue;
+                }
+                
+                $existing = $existingRecords[$idAnggota] ?? null;
+
+                if ($existing) {
+                    // Only update if status changed
+                    if ($existing->status !== $status) {
+                        $updateData[] = [
+                            'id' => $existing->id,
+                            'status' => $status,
+                            'waktu' => now(),
+                            'metode' => 'manual'
+                        ];
+                    }
+                } else {
+                    // Prepare for bulk create
+                    $createData[] = [
+                        'id_pertemuan' => $this->selectedPertemuan,
+                        'id_anggota' => $idAnggota,
+                        'status' => $status,
+                        'waktu' => now(),
+                        'metode' => 'manual',
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ];
+                }
+            }
+            
+            // Bulk delete
+            if (!empty($deleteIds)) {
+                ModelsPresensiPertemuan::where('id_pertemuan', $this->selectedPertemuan)
+                    ->whereIn('id_anggota', $deleteIds)
+                    ->delete();
+            }
+            
+            // Bulk update
+            foreach ($updateData as $update) {
+                ModelsPresensiPertemuan::where('id', $update['id'])->update([
+                    'status' => $update['status'],
+                    'waktu' => $update['waktu'],
+                    'metode' => $update['metode']
+                ]);
+            }
+            
+            // Bulk insert
+            if (!empty($createData)) {
+                ModelsPresensiPertemuan::insert($createData);
+            }
+
+            DB::commit();
+            
+            // Clear temporary data
+            $this->tempPresensiData = [];
+            
+            // Show success message first (before heavy reload)
+            $this->dispatch('swal:modal', [
+                'type'      => 'success',  
+                'message'   => 'Success!', 
+                'text'      => 'Presensi updated successfully!'
+            ]);
+            
+            // Reload data to get updated waktu and statistics
+            $this->loadAnggota();
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            $this->dispatch('swal:modal', [
+                'type'      => 'error',  
+                'message'   => 'Error!', 
+                'text'      => 'Failed to update presensi: ' . $e->getMessage()
+            ]);
+        }
+    }
+}
+

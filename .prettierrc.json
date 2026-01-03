@@ -1,0 +1,15 @@
+{
+  "plugins": ["prettier-plugin-blade"],
+  "overrides": [
+    {
+      "files": ["*.blade.php"],
+      "options": {
+        "parser": "blade",
+        "tabWidth": 4,
+        "printWidth": 9000,
+        "wrapAttributes": "auto",
+        "sortTailwindcssClasses": true
+      }
+    }
+  ]
+}
