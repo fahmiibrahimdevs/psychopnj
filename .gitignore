@@ -21,7 +21,7 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
-
+credentials-sheets.json
 **/caddy
 frankenphp
 frankenphp-worker.php
