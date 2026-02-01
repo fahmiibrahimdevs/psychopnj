@@ -11,10 +11,11 @@ use App\Models\ProgramPembelajaran as ModelsProgramPembelajaran;
 use App\Models\Pertemuan;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use App\Traits\ImageCompressor;
 
 class ProgramPembelajaran extends Component
 {
-    use WithPagination, WithFileUploads;
+    use WithPagination, WithFileUploads, ImageCompressor;
     #[Title('Program Pembelajaran')]
 
     protected $listeners = [
@@ -32,7 +33,7 @@ class ProgramPembelajaran extends Component
         'deskripsi'           => 'required',
         'jumlah_pertemuan'    => 'required',
         'penyelenggara'       => 'required',
-        'thumbnail'           => 'nullable|image|max:2048',
+        'thumbnail'           => 'nullable|image|max:102400',
     ];
 
     public $lengthData = 25;
@@ -45,6 +46,9 @@ class ProgramPembelajaran extends Component
     public $id_tahun, $nama_program, $jenis_program, $deskripsi, $jumlah_pertemuan, $penyelenggara, $thumbnail;
     public $tahuns;
     public $oldThumbnail;
+    
+    // Image compression settings
+    protected $thumbnailTargetSizeKB = 200;  // Target size for thumbnails in KB
 
     public function mount()
     {
@@ -93,6 +97,15 @@ class ProgramPembelajaran extends Component
             $fileName = strtoupper(str_replace(' ', '_', $this->nama_program)) . '_' . rand(10, 99);
             $extension = $this->thumbnail->getClientOriginalExtension();
             $thumbnailPath = $this->thumbnail->storeAs("{$tahunFolder}/{$programFolder}", $fileName . '.' . $extension, 'public');
+            
+            // Compress thumbnail
+            $fullPath = storage_path('app/public/' . $thumbnailPath);
+            $this->compressImageToSize($fullPath, $this->thumbnailTargetSizeKB, 800);
+            
+            // Update path if PNG was converted to JPG
+            if ($extension === 'png' && !file_exists($fullPath)) {
+                $thumbnailPath = preg_replace('/\.png$/i', '.jpg', $thumbnailPath);
+            }
         }
 
         ModelsProgramPembelajaran::create([
@@ -145,6 +158,15 @@ class ProgramPembelajaran extends Component
                 $fileName = strtoupper(str_replace(' ', '_', $this->nama_program)) . '_' . rand(10, 99);
                 $extension = $this->thumbnail->getClientOriginalExtension();
                 $thumbnailPath = $this->thumbnail->storeAs("{$tahunFolder}/{$programFolder}", $fileName . '.' . $extension, 'public');
+                
+                // Compress thumbnail
+                $fullPath = storage_path('app/public/' . $thumbnailPath);
+                $this->compressImageToSize($fullPath, $this->thumbnailTargetSizeKB, 800);
+                
+                // Update path if PNG was converted to JPG
+                if ($extension === 'png' && !file_exists($fullPath)) {
+                    $thumbnailPath = preg_replace('/\.png$/i', '.jpg', $thumbnailPath);
+                }
             }
 
             ModelsProgramPembelajaran::findOrFail($this->dataId)->update([

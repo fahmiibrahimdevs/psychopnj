@@ -60,7 +60,7 @@
             </div>
         </div>
         <div class="tw-mt-16 tw-px-4 md:tw-px-4 lg:tw-px-0">
-            <h4 class="tw-mt-3 tw-text-lg lg:tw-text-xl tw-font-medium tw-leading-6 tw-text-cyan-300">Struktur Divisi</h4>
+            <h4 class="tw-mt-3 tw-text-lg lg:tw-text-xl tw-font-medium tw-leading-6 tw-text-cyan-300">Struktur Department</h4>
 
             {{-- Card Ketua & Wakil --}}
             <div class="tw-mt-8">
@@ -74,7 +74,7 @@
                             <p class="tw-text-sm tw-text-gray-400 tw-mt-1">Pimpinan Tertinggi Organisasi</p>
                         </div>
                     </div>
-                    <p class="tw-text-gray-300 tw-text-sm tw-leading-relaxed">Memimpin arah organisasi, mengawasi semua divisi, dan menangani sistem digital seperti: absensi digital, sertifikat digital, database anggota, transparansi kehadiran & keuangan, pengelolaan website internal.</p>
+                    <p class="tw-text-gray-300 tw-text-sm tw-leading-relaxed">Memimpin arah organisasi, mengawasi semua department, dan menangani sistem digital seperti: absensi digital, sertifikat digital, database anggota, transparansi kehadiran & keuangan, pengelolaan website internal.</p>
                 </div>
             </div>
 
@@ -101,7 +101,7 @@
                         <h5 class="tw-text-lg tw-font-semibold tw-text-green-300">Bendahara</h5>
                     </div>
                     <p class="tw-text-gray-400 tw-text-xs tw-mb-2 tw-font-medium">Pengelolaan Keuangan</p>
-                    <p class="tw-text-gray-300 tw-text-sm tw-leading-relaxed">Mengelola pemasukan dan pengeluaran organisasi secara transparan. Membuat laporan keuangan rutin dan memastikan setiap pengeluaran sesuai anggaran. Menyusun buku nota untuk setiap kegiatan serta berkoordinasi dengan divisi terkait kebutuhan dana.</p>
+                    <p class="tw-text-gray-300 tw-text-sm tw-leading-relaxed">Mengelola pemasukan dan pengeluaran organisasi secara transparan. Membuat laporan keuangan rutin dan memastikan setiap pengeluaran sesuai anggaran. Menyusun buku nota untuk setiap kegiatan serta berkoordinasi dengan department terkait kebutuhan dana.</p>
                 </div>
 
                 {{-- Dokumentasi & Media --}}

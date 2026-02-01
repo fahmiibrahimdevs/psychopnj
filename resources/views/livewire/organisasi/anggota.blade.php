@@ -39,7 +39,7 @@
                                         <tr class="tw-text-gray-700">
                                             <th width="6%" class="text-center tw-whitespace-nowrap">No</th>
                                             <th class="tw-whitespace-nowrap">Nama Lengkap</th>
-                                            <th class="tw-whitespace-nowrap">Divisi</th>
+                                            <th class="tw-whitespace-nowrap">Department</th>
                                             <th class="tw-whitespace-nowrap">Jabatan</th>
                                             <th class="tw-whitespace-nowrap">Status</th>
                                             <th class="text-center tw-whitespace-nowrap"><i class="fas fa-cog"></i></th>
@@ -74,7 +74,7 @@
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td class="text-left tw-whitespace-nowrap">{{ $row->nama_divisi ?: "-" }}</td>
+                                                    <td class="text-left tw-whitespace-nowrap">{{ $row->nama_department ?: "-" }}</td>
                                                     <td class="text-left tw-whitespace-nowrap tw-capitalize">{{ $row->nama_jabatan }}</td>
                                                     <td class="text-left tw-capitalize">{{ $row->status_aktif }}</td>
                                                     <td class="tw-whitespace-nowrap">
@@ -129,7 +129,7 @@
                                         <tr class="tw-text-gray-700">
                                             <th width="6%" class="text-center tw-whitespace-nowrap">No</th>
                                             <th class="tw-whitespace-nowrap">Nama Lengkap</th>
-                                            <th class="tw-whitespace-nowrap">Divisi</th>
+                                            <th class="tw-whitespace-nowrap">Department</th>
                                             <th class="tw-whitespace-nowrap">Jabatan</th>
                                             <th class="tw-whitespace-nowrap">Status</th>
                                             <th class="text-center tw-whitespace-nowrap"><i class="fas fa-cog"></i></th>
@@ -164,7 +164,7 @@
                                                             </div>
                                                         </div>
                                                     </td>
-                                                    <td class="text-left tw-whitespace-nowrap">{{ $row->nama_divisi ?: "-" }}</td>
+                                                    <td class="text-left tw-whitespace-nowrap">{{ $row->nama_department ?: "-" }}</td>
                                                     <td class="text-left tw-whitespace-nowrap tw-capitalize">{{ $row->nama_jabatan }}</td>
                                                     <td class="text-left tw-capitalize">{{ $row->status_aktif }}</td>
                                                     <td class="tw-whitespace-nowrap">
@@ -249,14 +249,14 @@
                                     <div class="row">
                                         <div class="col-6">
                                             <div class="form-group">
-                                                <label for="id_divisi">Divisi</label>
-                                                <select wire:model="id_divisi" id="id_divisi" class="form-control">
+                                                <label for="id_department">Department</label>
+                                                <select wire:model="id_department" id="id_department" class="form-control">
                                                     <option value="" disabled>-- Opsi Pilihan --</option>
-                                                    @foreach ($divisis as $divisi)
-                                                        <option value="{{ $divisi->id }}">{{ $divisi->nama_divisi }}</option>
+                                                    @foreach ($departments as $department)
+                                                        <option value="{{ $department->id }}">{{ $department->nama_department }}</option>
                                                     @endforeach
                                                 </select>
-                                                @error("id_divisi")
+                                                @error("id_department")
                                                     <span class="text-danger">{{ $message }}</span>
                                                 @enderror
                                             </div>
@@ -433,7 +433,7 @@
                         <div class="tw-flex tw-flex-col tw-items-center tw-mb-6">
                             <img src="{{ asset($viewData->foto == "" ? "assets/stisla/img/avatar/avatar-1.png" : $viewData->foto) }}" alt="{{ $viewData->nama_lengkap }}" class="tw-w-32 tw-h-32 tw-rounded-full tw-object-cover tw-border-4 tw-border-gray-200 tw-shadow-lg" />
                             <h3 class="tw-mt-4 tw-text-2xl tw-font-bold tw-text-gray-800">{{ $viewData->nama_lengkap }}</h3>
-                            <p class="tw-text-gray-500 tw-text-sm">{{ $viewData->nama_jabatan }} - {{ $viewData->nama_divisi ?: "-" }}</p>
+                            <p class="tw-text-gray-500 tw-text-sm">{{ $viewData->nama_jabatan }} - {{ $viewData->nama_department ?: "-" }}</p>
                             <div class="tw-mt-2">
                                 @if ($viewData->status_aktif == "aktif")
                                     <span class="badge badge-success tw-px-3 tw-py-1">
@@ -511,8 +511,8 @@
                                 </h6>
                                 <div class="tw-space-y-2">
                                     <div class="tw-flex">
-                                        <span class="tw-font-semibold tw-text-gray-600 tw-w-24">Divisi:</span>
-                                        <span class="tw-text-gray-800">{{ $viewData->nama_divisi ?: "-" }}</span>
+                                        <span class="tw-font-semibold tw-text-gray-600 tw-w-24">Department:</span>
+                                        <span class="tw-text-gray-800">{{ $viewData->nama_department ?: "-" }}</span>
                                     </div>
                                     <div class="tw-flex">
                                         <span class="tw-font-semibold tw-text-gray-600 tw-w-24">Jabatan:</span>

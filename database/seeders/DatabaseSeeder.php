@@ -18,7 +18,7 @@ class DatabaseSeeder extends Seeder
             LaratrustSeeder::class,
             AdminSeeder::class,
             TahunKepengurusanSeeder::class,
-            DivisiSeeder::class,
+            DepartmentSeeder::class,
             OpenRecruitmentSeeder::class,
             AnggotaSeeder::class,
             ProfilOrganisasiSeeder::class,

@@ -84,7 +84,7 @@
                         </a>
                     </li>
                     <li class="mid-nav-link">
-                        <a href="{{ url("divisi") }}" class="mid-nav-link-child {{ request()->is("divisi") ? "tw-text-cyan-400" : "tw-text-white" }}">
+                        <a href="{{ url("department") }}" class="mid-nav-link-child {{ request()->is("department") ? "tw-text-cyan-400" : "tw-text-white" }}">
                             <i class="fas fa-project-diagram"></i>
                             <span class="tw-ml-3">Divisi</span>
                         </a>
@@ -92,7 +92,7 @@
                     <li class="mid-nav-link">
                         <a href="{{ url("project") }}" class="mid-nav-link-child {{ request()->is("project") ? "tw-text-cyan-400" : "tw-text-white" }}">
                             <i class="fas fa-graduation-cap"></i>
-                            <span class="tw-ml-3">Project</span>
+                            <span class="tw-ml-3">Project/Kegiatan</span>
                         </a>
                     </li>
                     <li class="mid-nav-link">
@@ -143,10 +143,10 @@
                         <a href="{{ url("tentang") }}" class="{{ request()->is("tentang") ? "tw-text-cyan-400" : "tw-text-white" }}">Tentang</a>
                     </li>
                     <li>
-                        <a href="{{ url("divisi") }}" class="{{ request()->is("divisi") ? "tw-text-cyan-400" : "tw-text-white" }}">Divisi</a>
+                        <a href="{{ url("department") }}" class="{{ request()->is("department") ? "tw-text-cyan-400" : "tw-text-white" }}">Department</a>
                     </li>
                     <li>
-                        <a href="{{ url("project") }}" class="{{ request()->is("project") ? "tw-text-cyan-400" : "tw-text-white" }}">Project</a>
+                        <a href="{{ url("project") }}" class="{{ request()->is("project") ? "tw-text-cyan-400" : "tw-text-white" }}">Project/Kegiatan</a>
                     </li>
                     <li>
                         <a href="{{ url("galeri") }}" class="{{ request()->is("galeri") ? "tw-text-cyan-400" : "tw-text-white" }}">Galeri</a>
@@ -172,8 +172,8 @@
                         <ul class="tw-flex tw-space-x-10 tw-text-sm tw-text-gray-400 tw-font-semibold tw-list-none">
                             <li class="tw-ml-[-40px]"><a href="{{ url("/") }}" class="">Beranda</a></li>
                             <li><a href="{{ url("tentang") }}">Tentang</a></li>
-                            <li><a href="{{ url("divisi") }}">Divisi</a></li>
-                            <li><a href="{{ url("project") }}">Project</a></li>
+                            <li><a href="{{ url("department") }}">Department</a></li>
+                            <li><a href="{{ url("project") }}">Project/Kegiatan</a></li>
                             <li><a href="{{ url("galeri") }}">Galeri</a></li>
                             <li><a href="{{ url("cek-sertifikat") }}">Cek Sertifikat</a></li>
                             <li><a href="{{ url("kontak") }}">Kontak Kami</a></li>

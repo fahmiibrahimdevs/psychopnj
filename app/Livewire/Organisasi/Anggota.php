@@ -8,6 +8,7 @@ use Livewire\Attributes\Title;
 use App\Models\TahunKepengurusan;
 use Illuminate\Support\Facades\DB;
 use App\Models\Anggota as ModelsAnggota;
+use App\Models\Department as ModelsDepartment;
 use App\Models\OpenRecruitment as ModelsOpenRecruitment;
 
 class Anggota extends Component
@@ -22,7 +23,7 @@ class Anggota extends Component
     protected $rules = [
         'id_user'             => '',
         'id_tahun'            => 'required',
-        'id_divisi'           => 'required',
+        'id_department'       => 'required',
         'nama_lengkap'        => 'required',
         'nama_jabatan'        => 'required',
         'kelas'               => 'required',
@@ -48,18 +49,18 @@ class Anggota extends Component
     public $viewData;
     public $activeTab = 'pengurus';
 
-    public $id_user, $id_tahun, $id_divisi, $nama_lengkap, $nama_jabatan, $kelas, $jurusan, $nim, $no_hp, $status_anggota, $status_aktif, $foto;
+    public $id_user, $id_tahun, $id_department, $nama_lengkap, $nama_jabatan, $kelas, $jurusan, $nim, $no_hp, $status_anggota, $status_aktif, $foto;
     public $email, $password, $password_confirmation;
     public $motivasi, $pengalaman;
-    public $tahuns, $divisis;
+    public $tahuns, $departments;
 
     public function mount()
     {
         $this->id_user             = '';
         // Set id_tahun default ke tahun kepengurusan yang aktif
-        $tahunAktif = DB::table('tahun_kepengurusan')->where('status', 'aktif')->first();
-        $this->id_tahun            = $tahunAktif ? $tahunAktif->id : '';
-        $this->id_divisi           = '';
+        $yearAktif = DB::table('tahun_kepengurusan')->where('status', 'aktif')->first();
+        $this->id_tahun            = $yearAktif ? $yearAktif->id : '';
+        $this->id_department       = '';
         $this->nama_lengkap        = '';
         $this->nama_jabatan        = '';
         $this->kelas               = '';
@@ -75,7 +76,7 @@ class Anggota extends Component
         $this->motivasi            = '';
         $this->pengalaman          = '';
         $this->getTahunKepengurusan();
-        $this->getDivisi($this->id_tahun);
+        $this->getDepartment($this->id_tahun);
     }
 
     private function getTahunKepengurusan()
@@ -84,34 +85,34 @@ class Anggota extends Component
         // dd($this->tahuns);
     }
 
-    private function getDivisi($idTahun = null)
+    private function getDepartment($idTahun = null)
     {
-        $query = DB::table('divisi')->select('id', 'nama_divisi');
+        $query = DB::table('departments')->select('id', 'nama_department');
         
         if ($idTahun) {
             $query->where('id_tahun', $idTahun);
         }
         
-        $this->divisis = $query->get();
+        $this->departments = $query->get();
     }
 
     public function updatedIdTahun($value)
     {
-        // Reload divisi ketika tahun berubah
-        $this->getDivisi($value);
-        // Reset divisi yang dipilih
-        $this->id_divisi = '';
+        // Reload department ketika tahun berubah
+        $this->getDepartment($value);
+        // Reset department yang dipilih
+        $this->id_department = '';
     }
 
     public function updatedStatusAnggota($value)
     {
         // Auto-set untuk anggota
         if ($value === 'anggota') {
-            $this->id_divisi = '';
+            $this->id_department = '';
             $this->nama_jabatan = 'anggota';
         } else {
             // Reset untuk pengurus
-            $this->id_divisi = '';
+            $this->id_department = '';
             $this->nama_jabatan = '';
         }
     }
@@ -132,9 +133,9 @@ class Anggota extends Component
         $this->searchResetPage();
         $search = '%'.$this->searchTerm.'%';
 
-        $dataPengurus = ModelsAnggota::select('anggota.id', 'divisi.nama_divisi', 'anggota.nama_jabatan', 'anggota.nama_lengkap', 'anggota.kelas', 'anggota.jurusan', 'anggota.status_anggota', 'anggota.status_aktif', 'anggota.foto', 'tahun_kepengurusan.nama_tahun')
+        $dataPengurus = ModelsAnggota::select('anggota.id', 'departments.nama_department', 'anggota.nama_jabatan', 'anggota.nama_lengkap', 'anggota.kelas', 'anggota.jurusan', 'anggota.status_anggota', 'anggota.status_aktif', 'anggota.foto', 'tahun_kepengurusan.nama_tahun')
                 ->join('tahun_kepengurusan', 'tahun_kepengurusan.id', '=', 'anggota.id_tahun')
-                ->leftJoin('divisi', 'divisi.id', '=', 'anggota.id_divisi')
+                ->leftJoin('departments', 'departments.id', '=', 'anggota.id_department')
                 ->where(function ($query) use ($search) {
                     $query->where('nama_lengkap', 'LIKE', $search);
                     $query->orWhere('nama_jabatan', 'LIKE', $search);
@@ -146,9 +147,9 @@ class Anggota extends Component
                 ->orderBy('id', 'ASC')
                 ->paginate($this->lengthData);
 
-        $dataAnggota = ModelsAnggota::select('anggota.id', 'divisi.nama_divisi', 'anggota.nama_jabatan', 'anggota.nama_lengkap', 'anggota.kelas', 'anggota.jurusan', 'anggota.status_anggota', 'anggota.status_aktif', 'anggota.foto', 'tahun_kepengurusan.nama_tahun')
+        $dataAnggota = ModelsAnggota::select('anggota.id', 'departments.nama_department', 'anggota.nama_jabatan', 'anggota.nama_lengkap', 'anggota.kelas', 'anggota.jurusan', 'anggota.status_anggota', 'anggota.status_aktif', 'anggota.foto', 'tahun_kepengurusan.nama_tahun')
                 ->join('tahun_kepengurusan', 'tahun_kepengurusan.id', '=', 'anggota.id_tahun')
-                ->leftJoin('divisi', 'divisi.id', '=', 'anggota.id_divisi')
+                ->leftJoin('departments', 'departments.id', '=', 'anggota.id_department')
                 ->where(function ($query) use ($search) {
                     $query->where('nama_lengkap', 'LIKE', $search);
                     $query->orWhere('nama_jabatan', 'LIKE', $search);
@@ -167,18 +168,18 @@ class Anggota extends Component
     {
         // Auto-set untuk anggota sebelum validasi
         if ($this->status_anggota === 'anggota') {
-            $this->id_divisi = '';
+            $this->id_department = '';
             $this->nama_jabatan = 'anggota';
         }
 
         // Conditional validation berdasarkan status_anggota
         $rules = $this->rules;
         if ($this->status_anggota === 'pengurus') {
-            $rules['id_divisi'] = 'required';
+            $rules['id_department'] = 'required';
             $rules['nama_jabatan'] = 'required';
         } else {
-            // Untuk anggota, id_divisi dan nama_jabatan tidak required
-            unset($rules['id_divisi']);
+            // Untuk anggota, id_department dan nama_jabatan tidak required
+            unset($rules['id_department']);
             unset($rules['nama_jabatan']);
         }
 
@@ -225,7 +226,7 @@ class Anggota extends Component
         ModelsAnggota::create([
             'id_user'             => $userId,
             'id_tahun'            => $this->id_tahun,
-            'id_divisi'           => $this->id_divisi,
+            'id_department'       => $this->id_department, // Update column name
             'nama_lengkap'        => $this->nama_lengkap,
             'nama_jabatan'        => $this->nama_jabatan,
             'kelas'               => $this->kelas,
@@ -250,8 +251,8 @@ class Anggota extends Component
         $this->dataId           = $id;
         $this->id_user          = $data->id_user;
         $this->id_tahun         = $data->id_tahun;
-        $this->getDivisi($data->id_tahun);
-        $this->id_divisi        = $data->id_divisi;
+        $this->getDepartment($data->id_tahun);
+        $this->id_department    = $data->id_department; // Column name check
         $this->nama_lengkap     = $data->nama_lengkap;
         $this->nama_jabatan     = $data->nama_jabatan;
         $this->kelas            = $data->kelas;
@@ -279,14 +280,14 @@ class Anggota extends Component
     {
         $this->viewData = ModelsAnggota::select(
                 'anggota.*',
-                'divisi.nama_divisi',
+                'departments.nama_department',
                 'tahun_kepengurusan.nama_tahun',
                 'tahun_kepengurusan.mulai',
                 'tahun_kepengurusan.akhir',
                 'users.email'
             )
             ->join('tahun_kepengurusan', 'tahun_kepengurusan.id', '=', 'anggota.id_tahun')
-            ->leftJoin('divisi', 'divisi.id', '=', 'anggota.id_divisi')
+            ->leftJoin('departments', 'departments.id', '=', 'anggota.id_department')
             ->leftJoin('users', 'users.id', '=', 'anggota.id_user')
             ->where('anggota.id', $id)
             ->first();
@@ -296,18 +297,18 @@ class Anggota extends Component
     {
         // Auto-set untuk anggota sebelum validasi
         if ($this->status_anggota === 'anggota') {
-            $this->id_divisi = '';
+            $this->id_department = '';
             $this->nama_jabatan = 'anggota';
         }
 
         // Conditional validation berdasarkan status_anggota
         $rules = $this->rules;
         if ($this->status_anggota === 'pengurus') {
-            $rules['id_divisi'] = 'required';
+            $rules['id_department'] = 'required';
             $rules['nama_jabatan'] = 'required';
         } else {
-            // Untuk anggota, id_divisi dan nama_jabatan tidak required
-            unset($rules['id_divisi']);
+            // Untuk anggota, id_department dan nama_jabatan tidak required
+            unset($rules['id_department']);
             unset($rules['nama_jabatan']);
         }
 
@@ -359,7 +360,7 @@ class Anggota extends Component
             ModelsAnggota::findOrFail($this->dataId)->update([
                 'id_user'             => $userId,
                 'id_tahun'            => $this->id_tahun,
-                'id_divisi'           => $this->id_divisi,
+                'id_department'       => $this->id_department,
                 'nama_lengkap'        => $this->nama_lengkap,
                 'nama_jabatan'        => $this->nama_jabatan,
                 'kelas'               => $this->kelas,
@@ -450,7 +451,7 @@ class Anggota extends Component
         if (!$mode) {
             $tahunAktif = DB::table('tahun_kepengurusan')->where('status', 'aktif')->first();
             $this->id_tahun = $tahunAktif ? $tahunAktif->id : '';
-            $this->getDivisi($this->id_tahun);
+            $this->getDepartment($this->id_tahun);
         }
     }
     
@@ -460,8 +461,8 @@ class Anggota extends Component
         // Reset id_tahun ke tahun kepengurusan yang aktif
         $tahunAktif = DB::table('tahun_kepengurusan')->where('status', 'aktif')->first();
         $this->id_tahun            = $tahunAktif ? $tahunAktif->id : '';
-        $this->getDivisi($this->id_tahun);
-        $this->id_divisi           = '';
+        $this->getDepartment($this->id_tahun);
+        $this->id_department       = '';
         $this->nama_lengkap        = '';
         $this->nama_jabatan        = '';
         $this->kelas               = '';

@@ -12,11 +12,11 @@ use App\Models\PertemuanFile;
 use App\Models\PertemuanGaleri;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
-use Spatie\ImageOptimizer\OptimizerChainFactory;
+use App\Traits\ImageCompressor;
 
 class Pertemuan extends Component
 {
-    use WithPagination, WithFileUploads;
+    use WithPagination, WithFileUploads, ImageCompressor;
     #[Title('Pertemuan')]
 
     protected $listeners = [
@@ -63,6 +63,11 @@ class Pertemuan extends Component
     public $galleryPerPage = 12;
     public $hasMoreGallery = true;
     public $selectedGalleryId;
+    
+    // Image compression settings
+    protected $imageTargetSizeKB = 500;  // Target size for gallery images in KB
+    protected $thumbnailTargetSizeKB = 200;  // Target size for thumbnails in KB
+    protected $imageMaxWidth = 1920;  // Max width for images in pixels
 
     public function mount()
     {
@@ -127,6 +132,15 @@ class Pertemuan extends Component
             $fileName = 'thumbnail-' . strtolower(str_replace(' ', '-', $this->judul_pertemuan)) . '-' . rand(10, 99);
             $extension = $this->thumbnail->getClientOriginalExtension();
             $thumbnailPath = $this->thumbnail->storeAs("{$tahunFolder}/{$programFolder}/pertemuan-{$this->pertemuan_ke}/thumbnails", $fileName . '.' . $extension, 'public');
+            
+            // Compress thumbnail
+            $fullPath = storage_path('app/public/' . $thumbnailPath);
+            $this->compressImageToSize($fullPath, $this->thumbnailTargetSizeKB, 800);
+            
+            // Update path if PNG was converted to JPG
+            if ($extension === 'png' && !file_exists($fullPath)) {
+                $thumbnailPath = preg_replace('/\.png$/i', '.jpg', $thumbnailPath);
+            }
         }
 
         $pertemuan = ModelsPertemuan::create([
@@ -194,6 +208,15 @@ class Pertemuan extends Component
                 $fileName = 'thumbnail-' . strtolower(str_replace(' ', '-', $this->judul_pertemuan)) . '-' . rand(10, 99);
                 $extension = $this->thumbnail->getClientOriginalExtension();
                 $thumbnailPath = $this->thumbnail->storeAs("{$tahunFolder}/{$programFolder}/pertemuan-{$this->pertemuan_ke}/thumbnails", $fileName . '.' . $extension, 'public');
+                
+                // Compress thumbnail
+                $fullPath = storage_path('app/public/' . $thumbnailPath);
+                $this->compressImageToSize($fullPath, $this->thumbnailTargetSizeKB, 800);
+                
+                // Update path if PNG was converted to JPG
+                if ($extension === 'png' && !file_exists($fullPath)) {
+                    $thumbnailPath = preg_replace('/\.png$/i', '.jpg', $thumbnailPath);
+                }
             }
 
             ModelsPertemuan::findOrFail($this->dataId)->update([
@@ -492,15 +515,15 @@ class Pertemuan extends Component
                 $filename = sprintf('IMG_%03d.%s', $counter, $extension);
                 $path = $file->storeAs($basePath, $filename, 'public');
                 
-                // Optimize image (skip if video)
+                // Compress image (skip if video)
                 if ($tipe === 'image') {
-                    try {
-                        $fullPath = storage_path('app/public/' . $path);
-                        $optimizerChain = OptimizerChainFactory::create();
-                        $optimizerChain->optimize($fullPath);
-                    } catch (\Exception $e) {
-                        // Log error but continue (optimization is optional)
-                        \Log::warning('Image optimization failed: ' . $e->getMessage());
+                    $fullPath = storage_path('app/public/' . $path);
+                    $this->compressImageToSize($fullPath, $this->imageTargetSizeKB, $this->imageMaxWidth);
+                    
+                    // Update path if PNG was converted to JPG
+                    if ($extension === 'png' && !file_exists($fullPath)) {
+                        $path = preg_replace('/\.png$/i', '.jpg', $path);
+                        $filename = preg_replace('/\.png$/i', '.jpg', $filename);
                     }
                 }
 
@@ -526,7 +549,7 @@ class Pertemuan extends Component
             $this->dispatch('swal:modal', [
                 'type' => 'success',
                 'message' => 'Success!',
-                'text' => 'Files uploaded and optimized successfully!'
+                'text' => 'Files uploaded and compressed to ~500KB!'
             ]);
 
         } catch (\Exception $e) {

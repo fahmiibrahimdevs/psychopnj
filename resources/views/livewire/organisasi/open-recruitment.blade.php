@@ -60,7 +60,7 @@
                                                         </div>
                                                     </div>
                                                 </td>
-                                                <td class="text-left tw-capitalize">{{ $row->nama_divisi }}</td>
+                                                <td class="text-left tw-capitalize">{{ $row->nama_department }}</td>
                                                 <td class="text-left tw-capitalize">{{ $row->nama_jabatan }}</td>
                                                 <td class="text-left">
                                                     @if ($row->status_seleksi === "pending")
@@ -287,11 +287,11 @@
                             <div class="row">
                                 <div class="col-lg-6">
                                     <div class="form-group">
-                                        <label for="id_divisi">Divisi Dilamar</label>
-                                        <select wire:model="id_divisi" id="id_divisi" class="form-control select2">
+                                        <label for="id_department">Department Dilamar</label>
+                                        <select wire:model="id_department" id="id_department" class="form-control select2">
                                             <option value="" disabled>-- Opsi Pilihan --</option>
-                                            @foreach ($divisis as $divisi)
-                                                <option value="{{ $divisi->id }}">{{ $divisi->nama_divisi }}</option>
+                                            @foreach ($departments as $department)
+                                                <option value="{{ $department->id }}">{{ $department->nama_department }}</option>
                                             @endforeach
                                         </select>
                                         @error("id_divisi")
@@ -458,7 +458,7 @@
                                     <div class="col-md-6">
                                         <div class="tw-flex tw-justify-between tw-items-center tw-mb-3">
                                             <span class="tw-text-sm tw-text-gray-600">Divisi</span>
-                                            <span class="tw-text-sm tw-font-medium tw-text-gray-900">{{ $viewData->nama_divisi ?? "-" }}</span>
+                                            <span class="tw-text-sm tw-font-medium tw-text-gray-900">{{ $viewData->nama_department ?? "-" }}</span>
                                         </div>
                                     </div>
                                     <div class="col-md-6">

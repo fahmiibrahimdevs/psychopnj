@@ -2,7 +2,7 @@
 
 namespace App\Livewire\Organisasi;
 
-use App\Models\Divisi;
+use App\Models\Department as ModelsDepartment;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\Attributes\Title;
@@ -25,7 +25,7 @@ class OpenRecruitment extends Component
         'nama_lengkap'        => 'required',
         'kelas'               => 'required',
         'jurusan'             => 'required',
-        'id_divisi'           => '',
+        'id_department'       => '',
         'nama_jabatan'        => '',
         'motivasi'            => '',
         'pengalaman'          => '',
@@ -52,18 +52,18 @@ class OpenRecruitment extends Component
     public $activeTab = 'pengurus';
     public $viewData = [];
 
-    public $id_tahun, $jenis_oprec, $nama_lengkap, $kelas, $jurusan, $id_divisi, $nama_jabatan, $motivasi, $pengalaman, $status_seleksi;
-    public $divisis;
+    public $id_tahun, $jenis_oprec, $nama_lengkap, $kelas, $jurusan, $id_department, $nama_jabatan, $motivasi, $pengalaman, $status_seleksi;
+    public $departments;
 
     public function mount()
     {
-        $this->divisis             = DB::table('divisi')->select('id', 'nama_divisi')->get();
+        $this->departments         = DB::table('departments')->select('id', 'nama_department')->get();
         $this->id_tahun            = TahunKepengurusan::where('status', 'aktif')->first()->id ?? '';
         $this->jenis_oprec         = '';
         $this->nama_lengkap        = '';
         $this->kelas               = '';
         $this->jurusan             = '';
-        $this->id_divisi           = '';
+        $this->id_department       = '';
         $this->nama_jabatan        = '';
         $this->motivasi            = '';
         $this->pengalaman          = '';
@@ -74,11 +74,11 @@ class OpenRecruitment extends Component
     {
         // Auto-set untuk anggota
         if ($value === 'anggota') {
-            $this->id_divisi = '';
+            $this->id_department = '';
             $this->nama_jabatan = 'anggota';
         } else {
             // Reset untuk pengurus
-            $this->id_divisi = '';
+            $this->id_department = '';
             $this->nama_jabatan = '';
         }
     }
@@ -97,18 +97,17 @@ class OpenRecruitment extends Component
         $dataPengurus = ModelsOpenRecruitment::select(
                     'open_recruitment.id', 
                     'open_recruitment.nama_lengkap', 
-                    'open_recruitment.kelas',
                     'open_recruitment.jurusan',
-                    'divisi.nama_divisi',
+                    'departments.nama_department',
                     'open_recruitment.nama_jabatan',
                     'open_recruitment.status_seleksi',
                 )
                 ->join('tahun_kepengurusan', 'open_recruitment.id_tahun', '=', 'tahun_kepengurusan.id')
-                ->join('divisi', 'open_recruitment.id_divisi', '=', 'divisi.id')
+                ->join('departments', 'open_recruitment.id_department', '=', 'departments.id')
                 ->where(function ($query) use ($search) {
                     $query->orWhere('nama_lengkap', 'LIKE', $search);
                     $query->orWhere('kelas', 'LIKE', $search);
-                    $query->orWhere('nama_divisi', 'LIKE', $search);
+                    $query->orWhere('nama_department', 'LIKE', $search);
                     $query->orWhere('nama_jabatan', 'LIKE', $search);
                 })
                 ->where('tahun_kepengurusan.status', 'aktif')
@@ -138,12 +137,13 @@ class OpenRecruitment extends Component
 
     public function view($id)
     {
-        $this->viewData = ModelsOpenRecruitment::select(
-                    'open_recruitment.*',
-                    'divisi.nama_divisi',
+        $data = ModelsOpenRecruitment::select(
+                    'open_recruitment.*', 
+                    'users.email', 
+                    'departments.nama_department', 
                     'tahun_kepengurusan.nama_tahun'
                 )
-                ->leftJoin('divisi', 'open_recruitment.id_divisi', '=', 'divisi.id')
+                ->join('departments', 'departments.id', '=', 'open_recruitment.id_department')
                 ->join('tahun_kepengurusan', 'open_recruitment.id_tahun', '=', 'tahun_kepengurusan.id')
                 ->where('open_recruitment.id', $id)
                 ->first();
@@ -161,11 +161,11 @@ class OpenRecruitment extends Component
 
         // Tambah validation untuk pengurus
         if ($this->jenis_oprec === 'pengurus') {
-            $rules['id_divisi'] = 'required';
+            $rules['id_department'] = 'required';
             $rules['nama_jabatan'] = 'required';
         } else {
             // Auto-set untuk anggota
-            $this->id_divisi = '';
+            $this->id_department = '';
             $this->nama_jabatan = 'anggota';
         }
 
@@ -177,7 +177,7 @@ class OpenRecruitment extends Component
             'nama_lengkap'        => $this->nama_lengkap,
             'kelas'               => $this->kelas,
             'jurusan'             => $this->jurusan,
-            'id_divisi'           => $this->id_divisi,
+            'id_department'       => $this->id_department,
             'nama_jabatan'        => $this->nama_jabatan,
             'motivasi'            => $this->motivasi,
             'pengalaman'          => $this->pengalaman,
@@ -197,7 +197,7 @@ class OpenRecruitment extends Component
         $this->nama_lengkap     = $data->nama_lengkap;
         $this->kelas            = $data->kelas;
         $this->jurusan          = $data->jurusan;
-        $this->id_divisi        = $data->id_divisi;
+        $this->id_department    = $data->id_department;
         $this->nama_jabatan     = $data->nama_jabatan;
         $this->motivasi         = $data->motivasi;
         $this->pengalaman       = $data->pengalaman;
@@ -216,11 +216,11 @@ class OpenRecruitment extends Component
 
         // Tambah validation untuk pengurus
         if ($this->jenis_oprec === 'pengurus') {
-            $rules['id_divisi'] = 'required';
+            $rules['id_department'] = 'required';
             $rules['nama_jabatan'] = 'required';
         } else {
             // Auto-set untuk anggota
-            $this->id_divisi = '';
+            $this->id_department = '';
             $this->nama_jabatan = 'anggota';
         }
 
@@ -234,7 +234,7 @@ class OpenRecruitment extends Component
                 'nama_lengkap'        => $this->nama_lengkap,
                 'kelas'               => $this->kelas,
                 'jurusan'             => $this->jurusan,
-                'id_divisi'           => $this->id_divisi,
+                'id_department'       => $this->id_department,
                 'nama_jabatan'        => $this->nama_jabatan,
                 'motivasi'            => $this->motivasi,
                 'pengalaman'          => $this->pengalaman,
@@ -322,7 +322,7 @@ class OpenRecruitment extends Component
             $anggota = \App\Models\Anggota::create([
                 'id_user' => $user->id,
                 'id_tahun' => $openRecruitment->id_tahun,
-                'id_divisi' => $openRecruitment->id_divisi,
+                'id_department' => $openRecruitment->id_department,
                 'nama_lengkap' => $openRecruitment->nama_lengkap,
                 'nama_jabatan' => $openRecruitment->nama_jabatan,
                 'kelas' => $openRecruitment->kelas,

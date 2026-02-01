@@ -5,10 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class Divisi extends Model
+class Department extends Model
 {
     use HasFactory;
-    protected $table = "divisi";
+    protected $table = "departments";
     protected $guarded = [];
     
     public $timestamps = false;

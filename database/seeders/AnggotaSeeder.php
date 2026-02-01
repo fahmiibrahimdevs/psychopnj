@@ -17,7 +17,7 @@ class AnggotaSeeder extends Seeder
             [
                 'id_user'             => '1',
                 'id_tahun'            => '1',
-                'id_divisi'           => '1',
+                'id_department'           => '1',
                 'nama_jabatan'        => 'Ketua',
                 'nama_lengkap'        => 'Muhammad Syafiq Aziz',
                 'kelas'               => 'IKI-3B',
@@ -37,7 +37,7 @@ class AnggotaSeeder extends Seeder
             [
                 'id_user'             => '2',
                 'id_tahun'            => '1',
-                'id_divisi'           => '1',
+                'id_department'           => '1',
                 'nama_jabatan'        => 'Wakil Ketua',
                 'nama_lengkap'        => 'Fahmi Ibrahim',
                 'kelas'               => 'EC-3D',

@@ -6,12 +6,12 @@ use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\Attributes\Title;
 use App\Models\TahunKepengurusan;
-use App\Models\Divisi as ModelsDivisi;
+use App\Models\Department as ModelsDepartment;
 
-class Divisi extends Component
+class Department extends Component
 {
     use WithPagination;
-    #[Title('Divisi')]
+    #[Title('Department')]
 
     protected $listeners = [
         'delete'
@@ -19,12 +19,13 @@ class Divisi extends Component
 
     protected $rules = [
         'id_tahun'            => 'required',
-        'nama_divisi'         => 'required',
+        'nama_department'     => 'required',
         'kategori'            => 'required',
         'deskripsi'           => 'required',
         'ikon'                => 'required',
         'urutan'              => 'required',
         'status'              => 'required',
+        'max_members'         => 'nullable|numeric',
     ];
 
     public $lengthData = 25;
@@ -34,19 +35,20 @@ class Divisi extends Component
 
     public $dataId;
 
-    public $id_tahun, $nama_divisi, $kategori, $deskripsi, $ikon, $urutan, $status;
+    public $id_tahun, $nama_department, $kategori, $deskripsi, $ikon, $urutan, $status, $max_members;
     public $tahuns;
 
     public function mount()
     {
         $this->tahuns = TahunKepengurusan::select('id', 'nama_tahun')->orderBy('id', 'ASC')->get();
         $this->id_tahun            = '';
-        $this->nama_divisi         = '';
+        $this->nama_department     = '';
         $this->kategori            = '';
         $this->deskripsi           = '';
         $this->ikon                = '';
         $this->urutan              = '';
         $this->status              = '';
+        $this->max_members         = '';
     }
 
     public function render()
@@ -54,31 +56,32 @@ class Divisi extends Component
         $this->searchResetPage();
         $search = '%'.$this->searchTerm.'%';
 
-        $data = ModelsDivisi::select('divisi.*', 'tahun_kepengurusan.nama_tahun')
-                ->leftJoin('tahun_kepengurusan', 'divisi.id_tahun', '=', 'tahun_kepengurusan.id')
+        $data = ModelsDepartment::select('departments.*', 'tahun_kepengurusan.nama_tahun')
+                ->leftJoin('tahun_kepengurusan', 'departments.id_tahun', '=', 'tahun_kepengurusan.id')
                 ->where(function ($query) use ($search) {
                     $query->where('nama_tahun', 'LIKE', $search);
-                    $query->orWhere('nama_divisi', 'LIKE', $search);
+                    $query->orWhere('nama_department', 'LIKE', $search);
                 })
                 ->where('tahun_kepengurusan.status', 'aktif')
                 ->orderBy('id', 'ASC')
                 ->paginate($this->lengthData);
 
-        return view('livewire.organisasi.divisi', compact('data'));
+        return view('livewire.organisasi.department', compact('data'));
     }
 
     public function store()
     {
         $this->validate();
 
-        ModelsDivisi::create([
+        ModelsDepartment::create([
             'id_tahun'            => $this->id_tahun,
-            'nama_divisi'         => $this->nama_divisi,
+            'nama_department'     => $this->nama_department,
             'kategori'            => $this->kategori,
             'deskripsi'           => $this->deskripsi,
             'ikon'                => $this->ikon,
             'urutan'              => $this->urutan,
             'status'              => $this->status,
+            'max_members'         => $this->max_members,
         ]);
 
         $this->dispatchAlert('success', 'Success!', 'Data created successfully.');
@@ -87,15 +90,16 @@ class Divisi extends Component
     public function edit($id)
     {
         $this->isEditing        = true;
-        $data = ModelsDivisi::where('id', $id)->first();
+        $data = ModelsDepartment::where('id', $id)->first();
         $this->dataId           = $id;
         $this->id_tahun         = $data->id_tahun;
-        $this->nama_divisi      = $data->nama_divisi;
+        $this->nama_department  = $data->nama_department;
         $this->kategori         = $data->kategori;
         $this->deskripsi        = $data->deskripsi;
         $this->ikon             = $data->ikon;
         $this->urutan           = $data->urutan;
         $this->status           = $data->status;
+        $this->max_members      = $data->max_members;
     }
 
     public function update()
@@ -104,14 +108,15 @@ class Divisi extends Component
 
         if( $this->dataId )
         {
-            ModelsDivisi::findOrFail($this->dataId)->update([
+            ModelsDepartment::findOrFail($this->dataId)->update([
                 'id_tahun'            => $this->id_tahun,
-                'nama_divisi'         => $this->nama_divisi,
+                'nama_department'     => $this->nama_department,
                 'kategori'            => $this->kategori,
                 'deskripsi'           => $this->deskripsi,
                 'ikon'                => $this->ikon,
                 'urutan'              => $this->urutan,
                 'status'              => $this->status,
+                'max_members'         => $this->max_members,
             ]);
 
             $this->dispatchAlert('success', 'Success!', 'Data updated successfully.');
@@ -131,7 +136,7 @@ class Divisi extends Component
 
     public function delete()
     {
-        ModelsDivisi::findOrFail($this->dataId)->delete();
+        ModelsDepartment::findOrFail($this->dataId)->delete();
         $this->dispatchAlert('success', 'Success!', 'Data deleted successfully.');
     }
 
@@ -168,12 +173,13 @@ class Divisi extends Component
     private function resetInputFields()
     {
         $this->id_tahun            = 'opsi1';
-        $this->nama_divisi         = '';
+        $this->nama_department     = '';
         $this->kategori            = '';
         $this->deskripsi           = '';
         $this->ikon                = '';
         $this->urutan              = '';
         $this->status              = 'opsi1';
+        $this->max_members         = '';
     }
 
     public function cancel()

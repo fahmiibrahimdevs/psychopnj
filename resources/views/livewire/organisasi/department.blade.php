@@ -1,12 +1,12 @@
 <div>
     <section class="section custom-section">
         <div class="section-header">
-            <h1>Divisi</h1>
+            <h1>Department</h1>
         </div>
 
         <div class="section-body">
             <div class="card">
-                <h3>Daftar Divisi</h3>
+                <h3>Daftar Department</h3>
                 <div class="card-body">
                     <div class="show-entries">
                         <p class="show-entries-show">Show</p>
@@ -65,7 +65,7 @@
                                         <div class="tw-bg-gradient-to-br {{ $colorSet["from"] }} {{ $colorSet["to"] }} tw-rounded-lg tw-p-2.5 tw-mr-3">
                                             <i class="{{ $row->ikon }} tw-text-white tw-text-lg"></i>
                                         </div>
-                                        <h5 class="tw-text-lg tw-font-semibold font-bagus {{ $colorSet["text"] }}">{{ $row->nama_divisi }}</h5>
+                                        <h5 class="tw-text-lg tw-font-semibold font-bagus {{ $colorSet["text"] }}">{{ $row->nama_department }}</h5>
                                     </div>
                                     @if ($row->status == "aktif")
                                         <i class="fas fa-check-circle tw-text-green-400 tw-text-lg"></i>
@@ -99,7 +99,7 @@
                                     <i class="fas fa-inbox tw-text-6xl"></i>
                                 </div>
                                 <h3 class="tw-text-xl tw-font-semibold tw-text-gray-700 tw-mb-2">Tidak Ada Data</h3>
-                                <p class="tw-text-gray-500 tw-text-center">Belum ada divisi yang tersedia saat ini.</p>
+                                <p class="tw-text-gray-500 tw-text-center">Belum ada department yang tersedia saat ini.</p>
                             </div>
                         </div>
                     </div>
@@ -145,9 +145,9 @@
                         <div class="row">
                             <div class="col-6">
                                 <div class="form-group">
-                                    <label for="nama_divisi">Nama Divisi</label>
-                                    <input type="text" wire:model="nama_divisi" id="nama_divisi" class="form-control" />
-                                    @error("nama_divisi")
+                                    <label for="nama_department">Nama Department</label>
+                                    <input type="text" wire:model="nama_department" id="nama_department" class="form-control" />
+                                    @error("nama_department")
                                         <span class="text-danger">{{ $message }}</span>
                                     @enderror
                                 </div>
@@ -197,6 +197,13 @@
                                 <option value="nonaktif">Nonaktif</option>
                             </select>
                             @error("status")
+                                <span class="text-danger">{{ $message }}</span>
+                            @enderror
+                        </div>
+                        <div class="form-group">
+                            <label for="max_members">Max Members</label>
+                            <input type="number" wire:model="max_members" id="max_members" class="form-control" placeholder="Optional" />
+                            @error("max_members")
                                 <span class="text-danger">{{ $message }}</span>
                             @enderror
                         </div>
