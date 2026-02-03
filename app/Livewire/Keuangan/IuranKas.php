@@ -191,6 +191,7 @@ class IuranKas extends Component
                 'nominal' => $this->nominalDefault,
                 'status' => 'lunas',
                 'tanggal_bayar' => now()->toDateString(),
+                'id_user' => Auth::id(),
             ]);
         }
     }

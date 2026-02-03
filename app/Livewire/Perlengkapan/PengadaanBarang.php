@@ -84,7 +84,7 @@ class PengadaanBarang extends Component
         $data = ModelsPengadaanBarang::select('pengadaan_barang.*')
             ->leftJoin('departments', 'pengadaan_barang.department_id', '=', 'departments.id')
             ->leftJoin('projects', 'pengadaan_barang.project_id', '=', 'projects.id')
-            ->with(['pengusul', 'department', 'project', 'keuangan'])
+            ->with(['pengusul', 'department', 'project', 'keuangan', 'user'])
             ->when($tahunAktif, function ($q) use ($tahunAktif) {
                 $q->where('pengadaan_barang.tahun_kepengurusan_id', $tahunAktif->id);
             })
@@ -147,6 +147,7 @@ class PengadaanBarang extends Component
             'total' => $this->jumlah * $this->harga,
             'link_pembelian' => $this->link_pembelian,
             'status' => 'diusulkan',
+            'id_user' => auth()->id(),
         ]);
 
         $this->dispatchAlert('success', 'Berhasil!', 'Usulan pengadaan barang berhasil dibuat.');

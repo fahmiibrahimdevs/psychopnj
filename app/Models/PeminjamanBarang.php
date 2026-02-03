@@ -18,6 +18,7 @@ class PeminjamanBarang extends Model
         'keperluan',
         'status',
         'catatan',
+        'id_user',
     ];
 
     protected $casts = [
@@ -38,5 +39,10 @@ class PeminjamanBarang extends Model
     public function details()
     {
         return $this->hasMany(PeminjamanBarangDetail::class, 'peminjaman_barang_id');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'id_user');
     }
 }

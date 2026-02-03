@@ -16,6 +16,7 @@ class Anggaran extends Model
         'id_project',
         'nama',
         'nominal',
+        'id_user',
     ];
 
     protected $casts = [
@@ -35,5 +36,10 @@ class Anggaran extends Model
     public function project()
     {
         return $this->belongsTo(Project::class, 'id_project');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'id_user');
     }
 }

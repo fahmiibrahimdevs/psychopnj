@@ -11,9 +11,12 @@ use Livewire\WithPagination;
 use Livewire\WithFileUploads;
 use Livewire\Attributes\Title;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\BarangExport;
+use App\Imports\BarangImport;
 
 class Barang extends Component
 {
@@ -37,6 +40,9 @@ class Barang extends Component
     public $dataId;
     public $kategori_barang_id, $kode, $nama, $jumlah, $satuan, $jenis, $kondisi, $lokasi, $foto, $keterangan;
     public $fotoPreview;
+    
+    // Import
+    public $importFile;
 
     protected function rules()
     {
@@ -63,7 +69,7 @@ class Barang extends Component
         $this->searchResetPage();
         $search = '%' . $this->searchTerm . '%';
 
-        $data = ModelsBarang::with('kategori')
+        $data = ModelsBarang::with(['kategori', 'user'])
             ->where(function ($query) use ($search) {
                 $query->where('nama', 'LIKE', $search)
                     ->orWhere('kode', 'LIKE', $search)
@@ -107,6 +113,7 @@ class Barang extends Component
             'lokasi' => $this->lokasi,
             'foto' => $fotoPath,
             'keterangan' => $this->keterangan,
+            'id_user' => Auth::id(),
         ]);
 
         // Sync to Google Sheets
@@ -115,7 +122,7 @@ class Barang extends Component
             $googleSheets = new GoogleSheetsService();
             $googleSheets->syncBarang($barang);
         } catch (\Exception $e) {
-            \Log::error('Google Sheets Sync Error on Create: ' . $e->getMessage());
+            Log::error('Google Sheets Sync Error on Create: ' . $e->getMessage());
         }
 
         $this->dispatchAlert('success', 'Berhasil!', 'Barang berhasil ditambahkan.');
@@ -173,7 +180,7 @@ class Barang extends Component
                 $googleSheets = new GoogleSheetsService();
                 $googleSheets->syncBarang($barang);
             } catch (\Exception $e) {
-                \Log::error('Google Sheets Sync Error on Update: ' . $e->getMessage());
+                Log::error('Google Sheets Sync Error on Update: ' . $e->getMessage());
             }
 
             $this->dispatchAlert('success', 'Berhasil!', 'Barang berhasil diperbarui.');
@@ -220,7 +227,7 @@ class Barang extends Component
             $googleSheets = new GoogleSheetsService();
             $googleSheets->deleteBarang($kode);
         } catch (\Exception $e) {
-            \Log::error('Google Sheets Delete Error: ' . $e->getMessage());
+            Log::error('Google Sheets Delete Error: ' . $e->getMessage());
         }
 
         $this->dispatchAlert('success', 'Berhasil!', 'Barang berhasil dihapus.');
@@ -364,5 +371,94 @@ class Barang extends Component
                 'keterangan' => $item->keterangan ?: '-',
             ];
         });
+    }
+
+    public function importExcel()
+    {
+        $this->validate([
+            'importFile' => 'required|mimes:xlsx,xls,csv|max:2048'
+        ]);
+
+        try {
+            Excel::import(new BarangImport, $this->importFile->getRealPath());
+            
+            $this->importFile = null;
+            
+            $this->dispatch('swal:modal', [
+                'type' => 'success',
+                'message' => 'Berhasil!',
+                'text' => 'Data barang berhasil diimport.'
+            ]);
+
+            $this->dispatch('closeModal', 'importModal');
+
+            // Sync all imported data to Google Sheets
+            $this->syncAllToGoogleSheets();
+
+        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+            $failures = $e->failures();
+            $errorMessages = [];
+            
+            foreach ($failures as $failure) {
+                $errorMessages[] = "Baris {$failure->row()}: " . implode(', ', $failure->errors());
+            }
+            
+            $this->dispatch('swal:modal', [
+                'type' => 'error',
+                'message' => 'Import Gagal!',
+                'text' => implode("\n", $errorMessages)
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Import Error: ' . $e->getMessage());
+            
+            $this->dispatch('swal:modal', [
+                'type' => 'error',
+                'message' => 'Error!',
+                'text' => 'Terjadi kesalahan saat import: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    private function syncAllToGoogleSheets()
+    {
+        try {
+            $googleSheets = new GoogleSheetsService();
+            $barangs = ModelsBarang::with('kategori')->get();
+            
+            foreach ($barangs as $barang) {
+                $googleSheets->syncBarang($barang);
+            }
+        } catch (\Exception $e) {
+            Log::error('Bulk Google Sheets Sync Error: ' . $e->getMessage());
+        }
+    }
+
+    public function downloadTemplate()
+    {
+        $headers = [
+            ['ID', 'Kode', 'Nama Barang', 'Kategori', 'Jenis', 'Jumlah', 'Satuan', 'Kondisi', 'Lokasi', 'Keterangan']
+        ];
+
+        $examples = [
+            ['', '', 'Socket XT60 Yellow Male', 'KONEKTOR', 'Bahan Habis Pakai', '20', 'pcs', 'Baik', 'Rak A', ''],
+            ['', '', 'Module TCRT5000', 'INPUT', 'Bahan Habis Pakai', '10', 'pcs', 'Baik', 'Rak A', ''],
+            ['', '', 'Servo HiTec HS-5625MG', 'OUTPUT', 'Inventaris', '5', 'pcs', 'Baik', 'Rak A', 'Untuk robot'],
+        ];
+
+        $data = array_merge($headers, $examples);
+
+        return Excel::download(new class($data) implements \Maatwebsite\Excel\Concerns\FromArray {
+            protected $data;
+            
+            public function __construct($data)
+            {
+                $this->data = $data;
+            }
+            
+            public function array(): array
+            {
+                return $this->data;
+            }
+        }, 'Template_Import_Barang.xlsx');
     }
 }

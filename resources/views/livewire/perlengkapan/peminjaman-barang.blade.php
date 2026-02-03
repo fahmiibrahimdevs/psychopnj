@@ -48,6 +48,7 @@
 
                                     <th class="tw-whitespace-nowrap">Keperluan</th>
                                     <th class="tw-whitespace-nowrap">Pencatat</th>
+                                    <th class="tw-whitespace-nowrap">Dibuat Oleh</th>
                                     <th width="15%" class="text-center tw-whitespace-nowrap"><i class="fas fa-cog"></i></th>
                                 </tr>
                             </thead>
@@ -63,7 +64,7 @@
                                         @endphp
 
                                         <tr class="tw-bg-gray-50">
-                                            <th colspan="{{ $activeTab === "riwayat" ? 7 : 6 }}" class="text-left tw-px-4 tw-py-2.5 tw-text-gray-700">
+                                            <th colspan="{{ $activeTab === "riwayat" ? 8 : 7 }}" class="text-left tw-px-4 tw-py-2.5 tw-text-gray-700">
                                                 {{ $row->tanggal_pinjam->format("d F Y") }}
                                             </th>
                                         </tr>
@@ -94,6 +95,9 @@
 
                                         <td class="text-left">{{ $row->keperluan }}</td>
                                         <td class="text-left">{{ $row->pencatat->nama_lengkap ?? "-" }}</td>
+                                        <td class="text-left tw-text-sm tw-whitespace-nowrap">
+                                            <span class="tw-text-gray-600">{{ $row->user->name ?? '-' }}</span>
+                                        </td>
                                         <td class="tw-whitespace-nowrap">
                                             <button wire:click.prevent="showDetailModal({{ $row->id }})" class="btn btn-info" data-toggle="modal" data-target="#detailModal">
                                                 <i class="fas fa-eye"></i>
@@ -111,7 +115,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="{{ $activeTab === "riwayat" ? 7 : 6 }}" class="text-center">
+                                        <td colspan="{{ $activeTab === "riwayat" ? 8 : 7 }}" class="text-center">
                                             @if ($activeTab === "dipinjam")
                                                 Tidak ada barang yang sedang dipinjam
                                             @else

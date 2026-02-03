@@ -21,6 +21,7 @@ class PengadaanBarang extends Model
         'link_pembelian',
         'status',
         'catatan',
+        'id_user',
     ];
 
     public function tahunKepengurusan()
@@ -46,6 +47,11 @@ class PengadaanBarang extends Model
     public function keuangan()
     {
         return $this->belongsTo(Keuangan::class, 'keuangan_id');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'id_user');
     }
 
     // Auto calculate total

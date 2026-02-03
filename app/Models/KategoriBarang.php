@@ -10,10 +10,16 @@ class KategoriBarang extends Model
     
     protected $fillable = [
         'nama',
+        'id_user',
     ];
 
     public function barangs()
     {
         return $this->hasMany(Barang::class, 'kategori_barang_id');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'id_user');
     }
 }

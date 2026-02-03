@@ -3,13 +3,21 @@
 namespace App\Livewire\Perlengkapan;
 
 use App\Models\KategoriBarang as ModelsKategoriBarang;
+use App\Services\GoogleSheetsService;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Livewire\WithFileUploads;
 use Livewire\Attributes\Title;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\KategoriBarangExport;
+use App\Imports\KategoriBarangImport;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class KategoriBarang extends Component
 {
-    use WithPagination;
+    use WithPagination, WithFileUploads;
     #[Title('Kategori Barang')]
 
     protected $listeners = [
@@ -27,6 +35,9 @@ class KategoriBarang extends Component
 
     public $dataId;
     public $nama;
+    
+    // Import
+    public $importFile;
 
     public function mount()
     {
@@ -39,6 +50,7 @@ class KategoriBarang extends Component
         $search = '%' . $this->searchTerm . '%';
 
         $data = ModelsKategoriBarang::select('kategori_barang.*')
+            ->with('user')
             ->selectRaw('(SELECT COUNT(*) FROM barangs WHERE barangs.kategori_barang_id = kategori_barang.id) as jumlah_barang')
             ->where('nama', 'LIKE', $search)
             ->orderBy('nama', 'ASC')
@@ -51,11 +63,37 @@ class KategoriBarang extends Component
     {
         $this->validate();
 
-        ModelsKategoriBarang::create([
-            'nama' => $this->nama,
-        ]);
+        try {
+            DB::beginTransaction();
 
-        $this->dispatchAlert('success', 'Berhasil!', 'Kategori barang berhasil ditambahkan.');
+            $kategori = ModelsKategoriBarang::create([
+                'nama' => $this->nama,
+                'id_user' => Auth::id(),
+            ]);
+
+            // Sync to Google Sheets
+            try {
+                $googleSheets = new GoogleSheetsService();
+                $googleSheets->syncKategoriBarang($kategori);
+            } catch (\Exception $e) {
+                // Google Sheets sync error shouldn't rollback DB transaction
+                $this->dispatch('swal:modal', [
+                    'type' => 'warning',
+                    'message' => 'Berhasil disimpan!',
+                    'text' => 'Data tersimpan tapi gagal sync ke Google Sheets: ' . $e->getMessage()
+                ]);
+            }
+
+            DB::commit();
+            $this->dispatchAlert('success', 'Berhasil!', 'Kategori barang berhasil ditambahkan.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatch('swal:modal', [
+                'type' => 'error',
+                'message' => 'Gagal!',
+                'text' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ]);
+        }
     }
 
     public function edit($id)
@@ -71,12 +109,38 @@ class KategoriBarang extends Component
         $this->validate();
 
         if ($this->dataId) {
-            ModelsKategoriBarang::findOrFail($this->dataId)->update([
-                'nama' => $this->nama,
-            ]);
+            try {
+                DB::beginTransaction();
 
-            $this->dispatchAlert('success', 'Berhasil!', 'Kategori barang berhasil diperbarui.');
-            $this->dataId = null;
+                $kategori = ModelsKategoriBarang::findOrFail($this->dataId);
+                $kategori->update([
+                    'nama' => $this->nama,
+                ]);
+
+                // Sync to Google Sheets
+                try {
+                    $googleSheets = new GoogleSheetsService();
+                    $googleSheets->syncKategoriBarang($kategori);
+                } catch (\Exception $e) {
+                    // Google Sheets sync error shouldn't rollback DB transaction
+                    $this->dispatch('swal:modal', [
+                        'type' => 'warning',
+                        'message' => 'Berhasil diperbarui!',
+                        'text' => 'Data tersimpan tapi gagal sync ke Google Sheets: ' . $e->getMessage()
+                    ]);
+                }
+
+                DB::commit();
+                $this->dispatchAlert('success', 'Berhasil!', 'Kategori barang berhasil diperbarui.');
+                $this->dataId = null;
+            } catch (\Exception $e) {
+                DB::rollBack();
+                $this->dispatch('swal:modal', [
+                    'type' => 'error',
+                    'message' => 'Gagal!',
+                    'text' => 'Terjadi kesalahan: ' . $e->getMessage()
+                ]);
+            }
         }
     }
 
@@ -92,8 +156,37 @@ class KategoriBarang extends Component
 
     public function delete()
     {
-        ModelsKategoriBarang::findOrFail($this->dataId)->delete();
-        $this->dispatchAlert('success', 'Berhasil!', 'Kategori barang berhasil dihapus.');
+        try {
+            DB::beginTransaction();
+
+            $kategori = ModelsKategoriBarang::findOrFail($this->dataId);
+            $kategoriId = $kategori->id;
+            
+            $kategori->delete();
+
+            // Delete from Google Sheets
+            try {
+                $googleSheets = new GoogleSheetsService();
+                $googleSheets->deleteKategoriBarang($kategoriId);
+            } catch (\Exception $e) {
+                // Google Sheets delete error shouldn't rollback DB transaction
+                $this->dispatch('swal:modal', [
+                    'type' => 'warning',
+                    'message' => 'Berhasil dihapus!',
+                    'text' => 'Data terhapus tapi gagal hapus di Google Sheets: ' . $e->getMessage()
+                ]);
+            }
+
+            DB::commit();
+            $this->dispatchAlert('success', 'Berhasil!', 'Kategori barang berhasil dihapus.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatch('swal:modal', [
+                'type' => 'error',
+                'message' => 'Gagal!',
+                'text' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ]);
+        }
     }
 
     public function updatingLengthData()
@@ -136,5 +229,113 @@ class KategoriBarang extends Component
         $this->nama = '';
         $this->isEditing = false;
         $this->dataId = null;
+    }
+
+    public function downloadPdf()
+    {
+        $data = ModelsKategoriBarang::withCount('barangs')->orderBy('nama', 'ASC')->get();
+        $pdf = Pdf::loadView('exports.kategori-barang-table', ['data' => $data])
+            ->setPaper('a4', 'portrait');
+        
+        return response()->streamDownload(function () use ($pdf) {
+            echo $pdf->output();
+        }, 'Kategori_Barang_' . date('Y-m-d') . '.pdf');
+    }
+
+    public function downloadExcel()
+    {
+        $data = ModelsKategoriBarang::orderBy('nama', 'ASC')->get();
+        return Excel::download(new KategoriBarangExport($data), 'Kategori_Barang_' . date('Y-m-d') . '.xlsx');
+    }
+
+    public function downloadTemplate()
+    {
+        $headers = [
+            ['ID', 'Nama Kategori']
+        ];
+
+        $examples = [
+            ['', 'KONEKTOR'],
+            ['', 'INPUT'],
+            ['', 'OUTPUT'],
+        ];
+
+        $data = array_merge($headers, $examples);
+
+        return Excel::download(new class($data) implements \Maatwebsite\Excel\Concerns\FromArray {
+            protected $data;
+            
+            public function __construct($data)
+            {
+                $this->data = $data;
+            }
+            
+            public function array(): array
+            {
+                return $this->data;
+            }
+        }, 'Template_Import_Kategori_Barang.xlsx');
+    }
+
+    public function importExcel()
+    {
+        $this->validate([
+            'importFile' => 'required|mimes:xlsx,xls,csv|max:2048'
+        ]);
+
+        try {
+            Excel::import(new KategoriBarangImport, $this->importFile->getRealPath());
+            
+            $this->importFile = null;
+            
+            $this->dispatch('swal:modal', [
+                'type' => 'success',
+                'message' => 'Berhasil!',
+                'text' => 'Data kategori berhasil diimport.'
+            ]);
+
+            $this->dispatch('closeModal', 'importModal');
+
+            // Sync all imported data to Google Sheets
+            $this->syncAllToGoogleSheets();
+
+        } catch (\Maatwebsite\Excel\Validators\ValidationException $e) {
+            $failures = $e->failures();
+            $errorMessages = [];
+            
+            foreach ($failures as $failure) {
+                $errorMessages[] = "Baris {$failure->row()}: " . implode(', ', $failure->errors());
+            }
+            
+            $this->dispatch('swal:modal', [
+                'type' => 'error',
+                'message' => 'Import Gagal!',
+                'text' => implode("\n", $errorMessages)
+            ]);
+        } catch (\Exception $e) {
+            $this->dispatch('swal:modal', [
+                'type' => 'error',
+                'message' => 'Error!',
+                'text' => 'Terjadi kesalahan saat import: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    private function syncAllToGoogleSheets()
+    {
+        try {
+            $googleSheets = new GoogleSheetsService();
+            $kategoris = ModelsKategoriBarang::all();
+            
+            foreach ($kategoris as $kategori) {
+                $googleSheets->syncKategoriBarang($kategori);
+            }
+        } catch (\Exception $e) {
+            $this->dispatch('swal:modal', [
+                'type' => 'warning',
+                'message' => 'Peringatan!',
+                'text' => 'Data berhasil diimport tapi gagal sync ke Google Sheets: ' . $e->getMessage()
+            ]);
+        }
     }
 }

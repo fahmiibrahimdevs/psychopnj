@@ -58,9 +58,10 @@
                                     <th width="5%" class="text-center tw-whitespace-nowrap">No</th>
                                     <th class="tw-whitespace-nowrap">Kategori</th>
                                     <th class="tw-whitespace-nowrap">Jenis</th>
-                                    <th class="tw-whitespace-nowrap">Nama</th>
+                                    <th class="tw-whitespace-nowrap">Deskripsi</th>
                                     <th class="tw-whitespace-nowrap">Dept/Project</th>
                                     <th class="tw-whitespace-nowrap text-right">Nominal</th>
+                                    <th class="tw-whitespace-nowrap">Dibuat Oleh</th>
                                     <th class="text-center tw-whitespace-nowrap"><i class="fas fa-cog"></i></th>
                                 </tr>
                             </thead>
@@ -84,8 +85,11 @@
                                                 -
                                             @endif
                                         </td>
-                                        <td class="text-right tw-font-semibold {{ $row->kategori === "pemasukan" ? "tw-text-green-600" : "tw-text-red-600" }}">Rp {{ number_format($row->nominal, 0, ",", ".") }}</td>
-                                        <td>
+                                        <td class="text-right tw-font-semibold {{ $row->kategori === "pemasukan" ? "tw-text-green-600" : "tw-text-red-600" }} tw-whitespace-nowrap">Rp {{ number_format($row->nominal, 0, ",", ".") }}</td>
+                                        <td class="text-left tw-text-sm tw-whitespace-nowrap">
+                                            <span class="tw-text-gray-600">{{ $row->user->name ?? "-" }}</span>
+                                        </td>
+                                        <td class="tw-whitespace-nowrap">
                                             <button wire:click.prevent="edit({{ $row->id }})" class="btn btn-primary" data-toggle="modal" data-target="#formDataModal">
                                                 <i class="fas fa-edit"></i>
                                             </button>
@@ -96,7 +100,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="7" class="text-center">Tidak ada data anggaran</td>
+                                        <td colspan="8" class="text-center">Tidak ada data anggaran</td>
                                     </tr>
                                 @endforelse
                             </tbody>

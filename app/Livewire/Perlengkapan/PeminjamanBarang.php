@@ -85,7 +85,7 @@ class PeminjamanBarang extends Component
 
         $tahunAktif = TahunKepengurusan::where('status', 'aktif')->first();
 
-        $query = ModelsPeminjamanBarang::with(['pencatat', 'details.barang'])
+        $query = ModelsPeminjamanBarang::with(['pencatat', 'details.barang', 'user'])
             ->when($tahunAktif, function ($q) use ($tahunAktif) {
                 $q->where('tahun_kepengurusan_id', $tahunAktif->id);
             })
@@ -173,6 +173,7 @@ class PeminjamanBarang extends Component
                 'tanggal_pinjam' => $this->tanggal_pinjam,
                 'keperluan' => $this->keperluan,
                 'status' => 'dipinjam',
+                'id_user' => auth()->id(),
             ]);
 
             foreach ($this->selectedBarangs as $item) {

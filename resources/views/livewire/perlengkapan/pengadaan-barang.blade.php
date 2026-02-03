@@ -44,83 +44,116 @@
                                     <th class="tw-whitespace-nowrap text-right">Total</th>
                                     <th class="tw-whitespace-nowrap">Pengusul</th>
                                     <th class="tw-whitespace-nowrap text-center">Status</th>
+                                    <th class="tw-whitespace-nowrap">Dibuat Oleh</th>
                                     <th class="text-center tw-whitespace-nowrap"><i class="fas fa-cog"></i></th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @php
                                     $currentCategory = null;
+                                    $groupTotal = 0;
+                                    $groupedData = [];
+
+                                    // Group data by category
+                                    foreach ($data as $item) {
+                                        $categoryKey = "lainnya";
+                                        $categoryLabel = "Lainnya";
+
+                                        if ($item->department_id) {
+                                            $categoryKey = "dept_" . $item->department_id;
+                                            $categoryLabel = "Dept. " . $item->department->nama_department;
+                                        } elseif ($item->project_id) {
+                                            $categoryKey = "project_" . $item->project_id;
+                                            $categoryLabel = "Project/Kegiatan: " . $item->project->nama_project;
+                                        }
+
+                                        if (! isset($groupedData[$categoryKey])) {
+                                            $groupedData[$categoryKey] = [
+                                                "label" => $categoryLabel,
+                                                "items" => [],
+                                                "total" => 0,
+                                            ];
+                                        }
+
+                                        $groupedData[$categoryKey]["items"][] = $item;
+                                        $groupedData[$categoryKey]["total"] += $item->total;
+                                    }
                                 @endphp
 
-                                @forelse ($data as $row)
-                                    @php
-                                        $categoryName = $row->department->nama_department ?? ($row->project->nama_project ?? "Lainnya");
-                                    @endphp
+                                @forelse ($groupedData as $categoryKey => $group)
+                                    {{-- Category Header --}}
+                                    <tr>
+                                        <td colspan="7" class="tw-bg-gray-50 tw-font-semibold tw-tracking-wider tw-text-left tw-px-4 tw-py-2 tw-text-gray-700">
+                                            {{ $group["label"] }}
+                                        </td>
+                                    </tr>
 
-                                    @if ($currentCategory !== $categoryName)
-                                        <tr>
-                                            <td colspan="6" class="tw-bg-gray-50 tw-font-semibold tw-tracking-wider tw-text-left tw-px-4 tw-py-2 tw-text-gray-700">
-                                                {{ $categoryName }}
+                                    {{-- Items in this category --}}
+                                    @foreach ($group["items"] as $row)
+                                        <tr class="text-center">
+                                            <td>{{ $loop->parent->index * count($group["items"]) + $loop->iteration }}</td>
+                                            <td class="text-left">
+                                                <div class="tw-font-normal tw-text-gray-800 tw-tracking-normal">
+                                                    {{ $row->nama_barang }}
+                                                    @if ($row->link_pembelian)
+                                                        <a href="{{ $row->link_pembelian }}" target="_blank" class="tw-ml-1 text-info" title="Lihat Link">
+                                                            <i class="fas fa-external-link-alt"></i>
+                                                        </a>
+                                                    @endif
+                                                </div>
+                                                <div class="tw-text-sm tw-text-gray-500 tw-mt-1">{{ $row->jumlah }} x Rp {{ number_format($row->harga, 0, ",", ".") }}</div>
+                                            </td>
+                                            <td class="text-right">Rp {{ number_format($row->total, 0, ",", ".") }}</td>
+                                            <td class="text-left">{{ $row->pengusul->nama_lengkap ?? "-" }}</td>
+                                            <td>
+                                                @if ($row->status === "diusulkan")
+                                                    <span class="badge tw-bg-yellow-100 tw-text-yellow-800">Diusulkan</span>
+                                                @elseif ($row->status === "disetujui")
+                                                    <span class="badge tw-bg-green-100 tw-text-green-800">Disetujui</span>
+                                                @elseif ($row->status === "ditolak")
+                                                    <span class="badge tw-bg-red-100 tw-text-red-800">Ditolak</span>
+                                                @elseif ($row->status === "selesai")
+                                                    <span class="badge tw-bg-blue-100 tw-text-blue-800">Selesai</span>
+                                                @endif
+                                            </td>
+                                            <td class="text-left tw-text-sm tw-whitespace-nowrap">
+                                                <span class="tw-text-gray-600">{{ $row->user->name ?? '-' }}</span>
+                                            </td>
+                                            <td class="tw-whitespace-nowrap">
+                                                @if ($row->status === "diusulkan")
+                                                    <button wire:click.prevent="approveConfirm({{ $row->id }})" class="btn btn-success" title="Setujui">
+                                                        <i class="fas fa-check"></i>
+                                                    </button>
+                                                    <button wire:click.prevent="rejectConfirm({{ $row->id }})" class="btn btn-warning" title="Tolak">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                    <button wire:click.prevent="edit({{ $row->id }})" class="btn btn-primary" data-toggle="modal" data-target="#formDataModal" title="Edit">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                @elseif ($row->status === "disetujui")
+                                                    <button wire:click.prevent="markAsSelesai({{ $row->id }})" class="btn btn-info" title="Tandai Selesai">
+                                                        <i class="fas fa-flag-checkered"></i>
+                                                    </button>
+                                                    <button wire:click.prevent="rollbackConfirm({{ $row->id }})" class="btn btn-warning" title="Batalkan Persetujuan">
+                                                        <i class="fas fa-undo"></i>
+                                                    </button>
+                                                @endif
+                                                <button wire:click.prevent="deleteConfirm({{ $row->id }})" class="btn btn-danger" title="Hapus">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
                                             </td>
                                         </tr>
-                                        @php
-                                            $currentCategory = $categoryName;
-                                        @endphp
-                                    @endif
+                                    @endforeach
 
-                                    <tr class="text-center">
-                                        <td>{{ $loop->index + 1 + ($data->currentPage() - 1) * $data->perPage() }}</td>
-                                        <td class="text-left">
-                                            <div class="tw-font-normal tw-text-gray-800 tw-tracking-normal">
-                                                {{ $row->nama_barang }}
-                                                @if ($row->link_pembelian)
-                                                    <a href="{{ $row->link_pembelian }}" target="_blank" class="tw-ml-1 text-info" title="Lihat Link">
-                                                        <i class="fas fa-external-link-alt"></i>
-                                                    </a>
-                                                @endif
-                                            </div>
-                                            <div class="tw-text-sm tw-text-gray-500 tw-mt-1">{{ $row->jumlah }} x Rp {{ number_format($row->harga, 0, ",", ".") }}</div>
-                                        </td>
-                                        <td class="text-right">Rp {{ number_format($row->total, 0, ",", ".") }}</td>
-                                        <td class="text-left">{{ $row->pengusul->nama_lengkap ?? "-" }}</td>
-                                        <td>
-                                            @if ($row->status === "diusulkan")
-                                                <span class="badge tw-bg-yellow-100 tw-text-yellow-800">Diusulkan</span>
-                                            @elseif ($row->status === "disetujui")
-                                                <span class="badge tw-bg-green-100 tw-text-green-800">Disetujui</span>
-                                            @elseif ($row->status === "ditolak")
-                                                <span class="badge tw-bg-red-100 tw-text-red-800">Ditolak</span>
-                                            @elseif ($row->status === "selesai")
-                                                <span class="badge tw-bg-blue-100 tw-text-blue-800">Selesai</span>
-                                            @endif
-                                        </td>
-                                        <td class="tw-whitespace-nowrap">
-                                            @if ($row->status === "diusulkan")
-                                                <button wire:click.prevent="approveConfirm({{ $row->id }})" class="btn btn-success" title="Setujui">
-                                                    <i class="fas fa-check"></i>
-                                                </button>
-                                                <button wire:click.prevent="rejectConfirm({{ $row->id }})" class="btn btn-warning" title="Tolak">
-                                                    <i class="fas fa-times"></i>
-                                                </button>
-                                                <button wire:click.prevent="edit({{ $row->id }})" class="btn btn-primary" data-toggle="modal" data-target="#formDataModal" title="Edit">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
-                                            @elseif ($row->status === "disetujui")
-                                                <button wire:click.prevent="markAsSelesai({{ $row->id }})" class="btn btn-info" title="Tandai Selesai">
-                                                    <i class="fas fa-flag-checkered"></i>
-                                                </button>
-                                                <button wire:click.prevent="rollbackConfirm({{ $row->id }})" class="btn btn-warning" title="Batalkan Persetujuan">
-                                                    <i class="fas fa-undo"></i>
-                                                </button>
-                                            @endif
-                                            <button wire:click.prevent="deleteConfirm({{ $row->id }})" class="btn btn-danger" title="Hapus">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
-                                        </td>
+                                    {{-- Total Row for this category --}}
+                                    <tr class="tw-bg-gray-100 tw-font-semibold">
+                                        <td colspan="2" class="text-right tw-px-4 tw-py-2">Total {{ $group["label"] }}:</td>
+                                        <td class="text-right tw-px-4 tw-py-2">Rp {{ number_format($group["total"], 0, ",", ".") }}</td>
+                                        <td colspan="4"></td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="6" class="text-center">Tidak ada data pengadaan barang</td>
+                                        <td colspan="7" class="text-center">Tidak ada data pengadaan barang</td>
                                     </tr>
                                 @endforelse
                             </tbody>

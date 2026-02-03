@@ -1,4 +1,4 @@
-# Setup Google Sheets Sync untuk Barang
+# Setup Google Sheets Sync untuk Barang & Kategori
 
 ## Langkah-langkah Setup:
 
@@ -6,13 +6,25 @@
 
 1. Buka [Google Sheets](https://sheets.google.com)
 2. Buat spreadsheet baru dengan nama: **Data Barang Psychorobotic**
-3. Buat sheet dengan nama: **Barang**
-4. Buat header di baris pertama (A1-K1):
-    ```
-    ID | Kode | Nama Barang | Kategori | Jenis | Jumlah | Satuan | Tersedia | Kondisi | Lokasi | Keterangan
-    ```
+3. Buat 2 sheet dengan nama:
+    - **Barang**
+    - **Kategori Barang**
 
-### 2. Share Spreadsheet dengan Service Account
+#### Sheet "Barang"
+
+Buat header di baris pertama (A1-K1):
+
+```
+ID | Kode | Nama Barang | Kategori | Jenis | Jumlah | Satuan | Tersedia | Kondisi | Lokasi | Keterangan
+```
+
+#### Sheet "Kategori Barang"
+
+Buat header di baris pertama (A1-B1):
+
+````
+ID | Nama Kategori
+```### 2. Share Spreadsheet dengan Service Account
 
 1. Copy email service account dari file `credentials-sheets.json`:
 
@@ -52,7 +64,7 @@ Edit file `.env` dan update baris ini:
 
 ```env
 GOOGLE_SHEETS_BARANG_ID=paste_spreadsheet_id_anda_disini
-```
+````
 
 Contoh:
 
@@ -71,13 +83,26 @@ php artisan cache:clear
 
 ## Cara Kerja
 
+### Sheet "Barang"
+
 Setiap kali Anda melakukan operasi CRUD di halaman Barang:
 
 - **CREATE**: Data baru akan otomatis ditambahkan ke Google Sheets
 - **UPDATE**: Data di Google Sheets akan diupdate sesuai kode barang
 - **DELETE**: Baris data di Google Sheets akan dihapus
 
+### Sheet "Kategori Barang"
+
+Setiap kali Anda melakukan operasi CRUD di halaman Kategori Barang:
+
+- **CREATE**: Kategori baru akan otomatis ditambahkan ke Google Sheets
+- **UPDATE**: Nama kategori di Google Sheets akan diupdate
+- **DELETE**: Baris kategori di Google Sheets akan dihapus
+- **IMPORT**: Support import dari Excel/CSV
+
 ## Format Data di Google Sheets
+
+### Sheet "Barang"
 
 | Kolom       | Contoh Data       |
 | ----------- | ----------------- |
@@ -88,10 +113,16 @@ Setiap kali Anda melakukan operasi CRUD di halaman Barang:
 | Jenis       | Inventaris        |
 | Jumlah      | 5                 |
 | Satuan      | unit              |
-| Tersedia    | 5                 |
 | Kondisi     | Baik              |
 | Lokasi      | Rak A             |
 | Keterangan  | Untuk kegiatan    |
+
+### Sheet "Kategori Barang"
+
+| Kolom         | Contoh Data |
+| ------------- | ----------- |
+| ID            | 1           |
+| Nama Kategori | KONEKTOR    |
 
 ## Troubleshooting
 
@@ -104,11 +135,14 @@ Setiap kali Anda melakukan operasi CRUD di halaman Barang:
 **Solusi**:
 
 - Cek GOOGLE_SHEETS_BARANG_ID di file .env sudah benar
-- Pastikan sheet dengan nama "Barang" sudah dibuat
+- Pastikan sheet dengan nama **"Barang"** dan **"Kategori Barang"** sudah dibuat
 
 ### Error: "Unable to parse range"
 
-**Solusi**: Pastikan nama sheet adalah **Barang** (huruf B besar)
+**Solusi**:
+
+- Pastikan nama sheet adalah **Barang** (huruf B besar)
+- Pastikan nama sheet adalah **Kategori Barang** (dengan spasi, huruf K dan B besar)
 
 ### Data tidak muncul di Google Sheets
 
@@ -120,12 +154,19 @@ Setiap kali Anda melakukan operasi CRUD di halaman Barang:
 
 ## Testing
 
-Untuk testing sync:
+### Testing Sync Barang:
 
 1. Buat barang baru di aplikasi
-2. Buka Google Sheets
+2. Buka Google Sheets → Sheet "Barang"
 3. Refresh halaman
 4. Data barang baru seharusnya muncul di baris terakhir
+
+### Testing Sync Kategori:
+
+1. Buat kategori baru di aplikasi
+2. Buka Google Sheets → Sheet "Kategori Barang"
+3. Refresh halaman
+4. Data kategori baru seharusnya muncul di baris terakhir
 
 ## Notes
 

@@ -20,6 +20,7 @@ class Barang extends Model
         'lokasi',
         'foto',
         'keterangan',
+        'id_user',
     ];
 
     public function kategori()
@@ -46,6 +47,11 @@ class Barang extends Model
     public function getStokTersediaAttribute()
     {
         return $this->jumlah - $this->jumlah_dipinjam;
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'id_user');
     }
 
     // Generate kode otomatis

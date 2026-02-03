@@ -1,10 +1,28 @@
 <div>
+    @push("scripts")
+        <script>
+            document.addEventListener('livewire:initialized', () => {
+                Livewire.on('closeModal', (modalId) => {
+                    $('#' + modalId).modal('hide');
+                });
+            });
+        </script>
+    @endpush
+
     <section class="section custom-section">
         <div class="section-header">
             <h1>Barang</h1>
             <div class="section-header-breadcrumb">
                 <div class="d-flex align-items-center">
                     <div>
+                        <button wire:click="downloadTemplate" class="btn btn-info btn-icon icon-left">
+                            <i class="fas fa-file-download"></i>
+                            Template
+                        </button>
+                        <button class="btn btn-warning btn-icon icon-left" data-toggle="modal" data-target="#importModal">
+                            <i class="fas fa-file-upload"></i>
+                            Import
+                        </button>
                         <button wire:click="downloadPdf" class="btn btn-danger btn-icon icon-left">
                             <i class="fas fa-file-pdf"></i>
                             PDF
@@ -72,6 +90,7 @@
                                     <th class="tw-whitespace-nowrap tw-text-center">Lokasi</th>
                                     <th class="tw-whitespace-nowrap tw-text-center">Kondisi Barang</th>
                                     <th width="10%" class="text-center tw-whitespace-nowrap">Tersedia</th>
+                                    <th class="tw-whitespace-nowrap">Dibuat Oleh</th>
                                     <th width="15%" class="text-center tw-whitespace-nowrap"><i class="fas fa-cog"></i></th>
                                 </tr>
                             </thead>
@@ -153,6 +172,9 @@
                                                         {{ $tersedia }}
                                                     </span>
                                                 </td>
+                                                <td class="text-left tw-text-sm tw-whitespace-nowrap">
+                                                    <span class="tw-text-gray-600">{{ $row->user->name ?? '-' }}</span>
+                                                </td>
                                                 <td>
                                                     <button wire:click.prevent="edit({{ $row->id }})" class="btn btn-primary" data-toggle="modal" data-target="#formDataModal">
                                                         <i class="fas fa-edit"></i>
@@ -166,7 +188,7 @@
                                     @endforeach
                                 @empty
                                     <tr>
-                                        <td colspan="10" class="text-center">Tidak ada data barang</td>
+                                        <td colspan="11" class="text-center">Tidak ada data barang</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -344,6 +366,63 @@
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div class="modal fade" wire:ignore.self id="importModal" aria-labelledby="importModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="importModalLabel">Import Data Barang</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Format File:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Download template terlebih dahulu</li>
+                            <li>Isi data sesuai format (Excel/CSV)</li>
+                            <li>Kolom: Nama_Barang, Kategori, Jenis, Jumlah, Satuan, Kondisi, Lokasi, Keterangan</li>
+                            <li><strong>Kategori baru akan otomatis dibuat</strong></li>
+                        </ul>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="importFile">
+                            Pilih File Excel/CSV
+                            <span class="text-danger">*</span>
+                        </label>
+                        <input type="file" wire:model="importFile" id="importFile" class="form-control" accept=".xlsx,.xls,.csv" />
+                        @error("importFile")
+                            <span class="text-danger">{{ $message }}</span>
+                        @enderror
+
+                        <small class="text-muted">Format: XLSX, XLS, atau CSV (Max 2MB)</small>
+                    </div>
+
+                    <div wire:loading wire:target="importFile" class="text-center">
+                        <i class="fas fa-spinner fa-spin"></i>
+                        Memproses file...
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                    <button type="button" wire:click="importExcel" wire:loading.attr="disabled" wire:target="importExcel" class="btn btn-primary">
+                        <span wire:loading.remove wire:target="importExcel">
+                            <i class="fas fa-upload"></i>
+                            Import
+                        </span>
+                        <span wire:loading wire:target="importExcel">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            Importing...
+                        </span>
+                    </button>
+                </div>
             </div>
         </div>
     </div>

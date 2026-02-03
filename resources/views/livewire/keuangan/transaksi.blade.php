@@ -68,8 +68,8 @@
                     </div>
 
                     <!-- Filter -->
-                    <div class="tw-flex tw-gap-2 tw-mb-4 tw-flex-wrap">
-                        <select wire:model.live="filterJenis" class="form-control tw-w-auto">
+                    <div class="tw-flex tw-gap-2 tw-mb-4 tw-flex-wrap tw-mr-4">
+                        <select wire:model.live="filterJenis" class="form-control tw-w-auto tw-ml-auto">
                             <option value="">Semua Jenis</option>
                             <option value="pemasukan">Pemasukan</option>
                             <option value="pengeluaran">Pengeluaran</option>
@@ -91,12 +91,11 @@
                                 <tr class="tw-text-gray-700">
                                     <th width="5%" class="text-center tw-whitespace-nowrap">No</th>
                                     <th class="tw-whitespace-nowrap">Tanggal</th>
-                                    <th class="tw-whitespace-nowrap">Jenis</th>
-                                    <th class="tw-whitespace-nowrap">Kategori</th>
                                     <th class="tw-whitespace-nowrap">Deskripsi</th>
                                     <th class="tw-whitespace-nowrap text-right">Pemasukan</th>
                                     <th class="tw-whitespace-nowrap text-right">Pengeluaran</th>
                                     <th class="tw-whitespace-nowrap text-right">Saldo</th>
+                                    <th class="tw-whitespace-nowrap">Dibuat Oleh</th>
                                     <th class="text-center tw-whitespace-nowrap"><i class="fas fa-cog"></i></th>
                                 </tr>
                             </thead>
@@ -105,22 +104,29 @@
                                     <tr class="text-center">
                                         <td>{{ $loop->index + 1 }}</td>
                                         <td class="text-left tw-whitespace-nowrap">{{ \Carbon\Carbon::parse($row->tanggal)->format("d M Y") }}</td>
-                                        <td class="text-left tw-whitespace-nowrap">
-                                            <span class="tw-px-2 tw-py-1 tw-rounded tw-text-xs tw-font-medium {{ $row->jenis === "pemasukan" ? "tw-bg-green-100 tw-text-green-700" : "tw-bg-red-100 tw-text-red-700" }}">
-                                                {{ ucfirst($row->jenis) }}
-                                            </span>
-                                        </td>
-                                        <td class="text-left tw-whitespace-nowrap">{{ $this->getKategoriLabel($row->kategori) }}</td>
-                                        <td class="text-left">
-                                            {{ $row->deskripsi }}
+                                        <td class="tw-text-left">
+                                            @php
+                                                $prefix = "";
+                                                if ($row->kategori === "dept" && $row->department) {
+                                                    $prefix = "Dept. " . $row->department->nama_department . ":";
+                                                } elseif ($row->kategori === "project" && $row->project) {
+                                                    $prefix = $row->project->nama_project . ":";
+                                                } elseif ($row->kategori === "saldo_awal") {
+                                                    $prefix = "Saldo Awal:";
+                                                } elseif ($row->kategori === "iuran_kas") {
+                                                    $prefix = "Iuran Kas:";
+                                                } elseif ($row->kategori === "sponsor") {
+                                                    $prefix = "Sponsor:";
+                                                } elseif ($row->kategori === "lainnya") {
+                                                    $prefix = "Lainnya:";
+                                                }
+                                            @endphp
 
-                                            @if ($row->kategori === "dept" && $row->department)
-                                                <br />
-                                                <small class="tw-text-gray-500">{{ $row->department->nama_department }}</small>
-                                            @elseif ($row->kategori === "project" && $row->project)
-                                                <br />
-                                                <small class="tw-text-gray-500">{{ $row->project->nama_project }}</small>
+                                            @if ($prefix)
+                                                <div class="tw-font-medium tw-text-gray-700">{{ $prefix }}</div>
                                             @endif
+
+                                            <div class="tw-text-gray-600">{{ $row->deskripsi }}</div>
                                         </td>
                                         <td class="text-right tw-text-green-600 tw-font-medium tw-whitespace-nowrap">
                                             {{ $row->jenis === "pemasukan" ? "Rp " . number_format($row->nominal, 0, ",", ".") : "-" }}
@@ -129,6 +135,9 @@
                                             {{ $row->jenis === "pengeluaran" ? "Rp " . number_format($row->nominal, 0, ",", ".") : "-" }}
                                         </td>
                                         <td class="text-right tw-font-semibold tw-whitespace-nowrap {{ ($runningTotals[$row->id] ?? 0) >= 0 ? "tw-text-blue-600" : "tw-text-red-600" }}">Rp {{ number_format($runningTotals[$row->id] ?? 0, 0, ",", ".") }}</td>
+                                        <td class="text-left tw-text-sm tw-whitespace-nowrap">
+                                            <span class="tw-text-gray-600">{{ $row->user->name ?? "-" }}</span>
+                                        </td>
                                         <td class="tw-whitespace-nowrap">
                                             <button wire:click.prevent="edit({{ $row->id }})" class="btn btn-primary" data-toggle="modal" data-target="#formDataModal">
                                                 <i class="fas fa-edit"></i>
@@ -140,7 +149,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="9" class="text-center">Tidak ada transaksi</td>
+                                        <td colspan="8" class="text-center">Tidak ada transaksi</td>
                                     </tr>
                                 @endforelse
                             </tbody>

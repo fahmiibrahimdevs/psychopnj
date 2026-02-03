@@ -16,6 +16,7 @@ class IuranKas extends Model
         'status',
         'tanggal_bayar',
         'id_keuangan',
+        'id_user',
     ];
 
     protected $casts = [
@@ -36,5 +37,10 @@ class IuranKas extends Model
     public function keuangan()
     {
         return $this->belongsTo(Keuangan::class, 'id_keuangan');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'id_user');
     }
 }

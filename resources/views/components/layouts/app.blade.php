@@ -99,7 +99,7 @@
                                 <li class="nav-item dropdown {{ request()->is("program-pembelajaran") || request()->is("pertemuan") || request()->is("projects") || request()->is("presensi-kehadiran") ? "active" : "" }}">
                                     <a href="#" data-toggle="dropdown" class="nav-link has-dropdown">
                                         <i class="far fa-users-class"></i>
-                                        <span>Akademik</span>
+                                        <span>PRE</span>
                                     </a>
                                     <ul class="dropdown-menu">
                                         <li class="nav-item {{ request()->is("program-pembelajaran") ? "active" : "" }}">

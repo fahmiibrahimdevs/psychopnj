@@ -7,6 +7,44 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## Psychorobotic Management System
+
+Sistem manajemen organisasi Psychorobotic yang dibangun dengan Laravel 11 dan Livewire 3.
+
+### Fitur Utama
+
+- **Manajemen Barang**: CRUD barang dengan sync Google Sheets otomatis
+- **Manajemen Kategori**: CRUD kategori barang dengan sync Google Sheets
+- **Import/Export**: Import Excel/CSV dan Export PDF/Excel untuk Barang dan Kategori
+- **Google Sheets Integration**: Real-time sync ke Google Sheets untuk backup dan monitoring
+- **Keuangan**: Manajemen transaksi keuangan dan laporan
+- **Organisasi**: Manajemen anggota dan struktur organisasi
+
+### Dokumentasi
+
+- **[GOOGLE_SHEETS_SETUP.md](GOOGLE_SHEETS_SETUP.md)** - Panduan setup Google Sheets API untuk sync Barang dan Kategori
+- **[IMPORT_BARANG_GUIDE.md](IMPORT_BARANG_GUIDE.md)** - Panduan import data Barang dari Excel
+- **[IMPORT_KATEGORI_GUIDE.md](IMPORT_KATEGORI_GUIDE.md)** - Panduan import data Kategori dari Excel
+
+### Setup Google Sheets
+
+1. Buat Google Spreadsheet dengan 2 sheet:
+    - **Barang** (10 kolom)
+    - **Kategori Barang** (2 kolom)
+2. Share dengan service account email dari `credentials-sheets.json`
+3. Set `GOOGLE_SHEETS_BARANG_ID` di file `.env`
+4. Lihat detail di [GOOGLE_SHEETS_SETUP.md](GOOGLE_SHEETS_SETUP.md)
+
+### Teknologi
+
+- Laravel 11
+- Livewire 3
+- Google API Client v2.19.0
+- Maatwebsite Excel
+- DomPDF
+
+---
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:

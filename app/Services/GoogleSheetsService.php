@@ -27,7 +27,7 @@ class GoogleSheetsService
     /**
      * Get all data from sheet
      */
-    public function getSheetData($range = 'Barang!A2:K')
+    public function getSheetData($range = 'Barang!A2:J')
     {
         try {
             $response = $this->service->spreadsheets_values->get($this->spreadsheetId, $range);
@@ -41,10 +41,10 @@ class GoogleSheetsService
     /**
      * Append data to sheet
      */
-    public function appendRow($values)
+    public function appendRow($values, $sheetName = 'Barang')
     {
         try {
-            $range = 'Barang!A:K';
+            $range = $sheetName . '!A:Z';
             $body = new Google_Service_Sheets_ValueRange([
                 'values' => [$values]
             ]);
@@ -69,10 +69,10 @@ class GoogleSheetsService
     /**
      * Update specific row
      */
-    public function updateRow($rowNumber, $values)
+    public function updateRow($rowNumber, $values, $sheetName = 'Barang', $endColumn = 'K')
     {
         try {
-            $range = "Barang!A{$rowNumber}:K{$rowNumber}";
+            $range = "{$sheetName}!A{$rowNumber}:{$endColumn}{$rowNumber}";
             $body = new Google_Service_Sheets_ValueRange([
                 'values' => [$values]
             ]);
@@ -97,16 +97,10 @@ class GoogleSheetsService
     /**
      * Delete row by clearing data
      */
-    public function deleteRow($rowNumber)
+    public function deleteRow($rowNumber, $sheetName = 'Barang', $endColumn = 'K')
     {
         try {
-            $range = "Barang!A{$rowNumber}:K{$rowNumber}";
-            $body = new Google_Service_Sheets_ValueRange([
-                'values' => [['']]
-            ]);
-            $params = [
-                'valueInputOption' => 'RAW'
-            ];
+            $range = "{$sheetName}!A{$rowNumber}:{$endColumn}{$rowNumber}";
             
             $this->service->spreadsheets_values->clear(
                 $this->spreadsheetId,
@@ -128,7 +122,7 @@ class GoogleSheetsService
     {
         try {
             // Get all data including kode column (B)
-            $data = $this->getSheetData('Barang!A2:K');
+            $data = $this->getSheetData('Barang!A2:J');
             
             if (!$data) {
                 return null;
@@ -149,6 +143,33 @@ class GoogleSheetsService
     }
 
     /**
+     * Find row number by ID in specific sheet
+     */
+    public function findRowById($id, $sheetName = 'Kategori Barang', $idColumn = 'A')
+    {
+        try {
+            $range = "{$sheetName}!{$idColumn}2:{$idColumn}";
+            $data = $this->service->spreadsheets_values->get($this->spreadsheetId, $range);
+            $values = $data->getValues();
+            
+            if (!$values) {
+                return null;
+            }
+            
+            foreach ($values as $index => $row) {
+                if (isset($row[0]) && $row[0] == $id) {
+                    return $index + 2; // +2 karena index 0 = row 2 (row 1 adalah header)
+                }
+            }
+            
+            return null;
+        } catch (\Exception $e) {
+            \Log::error('Google Sheets Find Row By ID Error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
      * Sync barang data to Google Sheets
      */
     public function syncBarang($barang)
@@ -161,7 +182,6 @@ class GoogleSheetsService
             $barang->jenis == 'inventaris' ? 'Inventaris' : 'Habis Pakai',
             $barang->jumlah,
             $barang->satuan,
-            $barang->stok_tersedia,
             $barang->kondisi == 'baik' ? 'Baik' : ($barang->kondisi == 'rusak_ringan' ? 'Rusak Ringan' : 'Rusak Berat'),
             $barang->lokasi ?: '-',
             $barang->keterangan ?: '-',
@@ -175,7 +195,7 @@ class GoogleSheetsService
         if ($rowNumber) {
             // Update existing row
             \Log::info('Updating row ' . $rowNumber);
-            return $this->updateRow($rowNumber, $values);
+            return $this->updateRow($rowNumber, $values, 'Barang', 'J');
         } else {
             // Append new row
             \Log::info('Appending new row');
@@ -191,7 +211,47 @@ class GoogleSheetsService
         $rowNumber = $this->findRowByKode($kode);
         
         if ($rowNumber) {
-            return $this->deleteRow($rowNumber);
+            return $this->deleteRow($rowNumber, 'Barang', 'J');
+        }
+        
+        return false;
+    }
+
+    /**
+     * Sync kategori barang to Google Sheets
+     */
+    public function syncKategoriBarang($kategori)
+    {
+        $values = [
+            $kategori->id,
+            $kategori->nama,
+        ];
+
+        // Cari row berdasarkan ID
+        $rowNumber = $this->findRowById($kategori->id, 'Kategori Barang', 'A');
+
+        \Log::info('Google Sheets Sync Kategori - ID: ' . $kategori->id . ', Row Found: ' . ($rowNumber ?: 'null'));
+
+        if ($rowNumber) {
+            // Update existing row
+            \Log::info('Updating kategori row ' . $rowNumber);
+            return $this->updateRow($rowNumber, $values, 'Kategori Barang', 'B');
+        } else {
+            // Append new row
+            \Log::info('Appending new kategori row');
+            return $this->appendRow($values, 'Kategori Barang');
+        }
+    }
+
+    /**
+     * Delete kategori from Google Sheets
+     */
+    public function deleteKategoriBarang($id)
+    {
+        $rowNumber = $this->findRowById($id, 'Kategori Barang', 'A');
+        
+        if ($rowNumber) {
+            return $this->deleteRow($rowNumber, 'Kategori Barang', 'B');
         }
         
         return false;

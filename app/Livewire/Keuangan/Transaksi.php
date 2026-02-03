@@ -69,7 +69,7 @@ class Transaksi extends Component
         $this->searchResetPage();
         $search = '%'.$this->searchTerm.'%';
 
-        $query = ModelsKeuangan::with(['department', 'project'])
+        $query = ModelsKeuangan::with(['department', 'project', 'user'])
             ->where('id_tahun', $this->activeTahunId)
             ->where('deskripsi', 'LIKE', $search);
             

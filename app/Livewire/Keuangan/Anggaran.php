@@ -9,6 +9,7 @@ use App\Models\TahunKepengurusan;
 use App\Models\Anggaran as ModelsAnggaran;
 use App\Models\Department;
 use App\Models\Project;
+use Illuminate\Support\Facades\Auth;
 
 class Anggaran extends Component
 {
@@ -63,7 +64,7 @@ class Anggaran extends Component
         $this->searchResetPage();
         $search = '%'.$this->searchTerm.'%';
 
-        $query = ModelsAnggaran::with(['department', 'project'])
+        $query = ModelsAnggaran::with(['department', 'project', 'user'])
             ->where('id_tahun', $this->activeTahunId)
             ->where('nama', 'LIKE', $search);
             
@@ -97,6 +98,7 @@ class Anggaran extends Component
             'id_project'    => $this->jenis === 'project' ? $this->id_project : null,
             'nama'          => $this->nama,
             'nominal'       => $this->nominal,
+            'id_user'       => Auth::id(),
         ]);
 
         $this->dispatchAlert('success', 'Success!', 'Anggaran berhasil ditambahkan.');
