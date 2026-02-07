@@ -11,12 +11,17 @@ return [
      */
     'truncate_tables' => true,
 
+    /**
+     * Role Structure for laratrust.
+     *
+     * Insert the roles and permissions to be created.
+     */
     'roles_structure' => [
         'pengurus' => [
-            'users' => 'c,r,u,d',
+            'dashboard_pengurus' => 'r',
         ],
         'anggota' => [
-            'users' => 'c,r,u,d',
+            'dashboard_anggota' => 'r',
         ],
     ],
 

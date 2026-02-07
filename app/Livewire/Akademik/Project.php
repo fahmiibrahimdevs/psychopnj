@@ -5,9 +5,12 @@ namespace App\Livewire\Akademik;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\Attributes\Title;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Pagination\LengthAwarePaginator;
 use App\Models\TahunKepengurusan;
 use App\Models\Anggota;
 use App\Models\Project as ModelsProject;
+use App\Models\ProjectTeamMember;
 
 class Project extends Component
 {
@@ -22,8 +25,6 @@ class Project extends Component
         'id_tahun'        => 'required',
         'nama_project'    => 'required',
         'deskripsi'       => 'required',
-        'id_leader'       => 'required',
-        'id_anggota'      => '',
         'status'          => 'required',
         'tanggal_mulai'   => 'nullable|date',
         'tanggal_selesai' => 'nullable|date',
@@ -42,20 +43,33 @@ class Project extends Component
 
     public function mount()
     {
-        $this->tahuns = TahunKepengurusan::select('id', 'nama_tahun')->orderBy('id', 'ASC')->get();
-        $activeTahun = TahunKepengurusan::where('status', 'aktif')->first();
+        $this->tahuns = DB::table('tahun_kepengurusan')
+            ->select('id', 'nama_tahun')
+            ->orderBy('id', 'ASC')
+            ->get();
+            
+        $activeTahun = DB::table('tahun_kepengurusan')
+            ->select('id')
+            ->where('status', 'aktif')
+            ->first();
+            
         $this->activeTahunId = $activeTahun ? $activeTahun->id : null;
         
         if ($activeTahun) {
-            $this->pengurus = Anggota::where('id_tahun', $activeTahun->id)
+            $this->pengurus = DB::table('anggota')
+                ->select('id', 'nama_lengkap', 'nama_jabatan')
+                ->where('id_tahun', $activeTahun->id)
                 ->where('status_anggota', 'pengurus')
                 ->where('status_aktif', 'aktif')
-                ->select('id', 'nama_lengkap', 'nama_jabatan')
+                ->orderBy('nama_lengkap')
                 ->get();
-            $this->anggotas = Anggota::where('id_tahun', $activeTahun->id)
+                
+            $this->anggotas = DB::table('anggota')
+                ->select('id', 'nama_lengkap', 'status_anggota')
+                ->where('id_tahun', $activeTahun->id)
                 ->where('status_anggota', 'anggota')
                 ->where('status_aktif', 'aktif')
-                ->select('id', 'nama_lengkap', 'status_anggota')
+                ->orderBy('nama_lengkap')
                 ->get();
         } else {
             $this->pengurus = collect();
@@ -68,33 +82,35 @@ class Project extends Component
 
     private function loadAvailableAnggotas($excludeProjectId = null)
     {
-        $activeTahun = TahunKepengurusan::where('status', 'aktif')->first();
+        $activeTahun = DB::table('tahun_kepengurusan')
+            ->select('id')
+            ->where('status', 'aktif')
+            ->first();
+            
         if (!$activeTahun) {
             $this->anggotas = collect();
             return;
         }
 
-        // Get all anggota IDs that are already assigned to projects
-        $assignedAnggotaIds = [];
-        $projects = ModelsProject::where('id_tahun', $activeTahun->id)
+        // Get all anggota IDs that are already assigned to projects (through teams)
+        $assignedAnggotaIds = DB::table('project_team_members')
+            ->join('project_teams', 'project_team_members.id_project_team', '=', 'project_teams.id')
+            ->join('projects', 'project_teams.id_project', '=', 'projects.id')
+            ->where('projects.id_tahun', $activeTahun->id)
             ->when($excludeProjectId, function($query) use ($excludeProjectId) {
-                $query->where('id', '!=', $excludeProjectId);
+                $query->where('projects.id', '!=', $excludeProjectId);
             })
-            ->get();
-        
-        foreach ($projects as $project) {
-            if ($project->id_anggota) {
-                $ids = explode(',', $project->id_anggota);
-                $assignedAnggotaIds = array_merge($assignedAnggotaIds, $ids);
-            }
-        }
-        $assignedAnggotaIds = array_unique($assignedAnggotaIds);
+            ->pluck('project_team_members.id_anggota')
+            ->unique()
+            ->toArray();
 
-        $this->anggotas = Anggota::where('id_tahun', $activeTahun->id)
+        $this->anggotas = DB::table('anggota')
+            ->select('id', 'nama_lengkap', 'status_anggota')
+            ->where('id_tahun', $activeTahun->id)
             ->where('status_anggota', 'anggota')
             ->where('status_aktif', 'aktif')
             ->whereNotIn('id', $assignedAnggotaIds)
-            ->select('id', 'nama_lengkap', 'status_anggota')
+            ->orderBy('nama_lengkap')
             ->get();
     }
 
@@ -103,17 +119,56 @@ class Project extends Component
         $this->searchResetPage();
         $search = '%'.$this->searchTerm.'%';
 
-        $data = ModelsProject::select('projects.*', 'tahun_kepengurusan.nama_tahun', 'anggota.nama_lengkap as leader_name')
-                ->leftJoin('tahun_kepengurusan', 'projects.id_tahun', '=', 'tahun_kepengurusan.id')
-                ->leftJoin('anggota', 'projects.id_leader', '=', 'anggota.id')
-                ->where(function ($query) use ($search) {
-                    $query->where('nama_tahun', 'LIKE', $search);
-                    $query->orWhere('nama_project', 'LIKE', $search);
-                    $query->orWhere('anggota.nama_lengkap', 'LIKE', $search);
-                })
-                ->where('tahun_kepengurusan.status', 'aktif')
-                ->orderBy('projects.id', 'ASC')
-                ->paginate($this->lengthData);
+        // Optimized single query with subqueries for counts
+        $query = DB::table('projects')
+            ->select(
+                'projects.id',
+                'projects.id_tahun',
+                'projects.nama_project',
+                'projects.deskripsi',
+                'projects.status',
+                'projects.tanggal_mulai',
+                'projects.tanggal_selesai',
+                'tahun_kepengurusan.nama_tahun',
+                // Subquery for teams count
+                DB::raw('(SELECT COUNT(*) FROM project_teams WHERE project_teams.id_project = projects.id) as teams_count'),
+                // Subquery for leaders count
+                DB::raw('(SELECT COUNT(*) FROM project_team_members 
+                         INNER JOIN project_teams ON project_teams.id = project_team_members.id_project_team
+                         WHERE project_teams.id_project = projects.id 
+                         AND project_team_members.role = "leader") as leaders_count'),
+                // Subquery for members count
+                DB::raw('(SELECT COUNT(*) FROM project_team_members 
+                         INNER JOIN project_teams ON project_teams.id = project_team_members.id_project_team
+                         WHERE project_teams.id_project = projects.id 
+                         AND project_team_members.role = "anggota") as members_count')
+            )
+            ->leftJoin('tahun_kepengurusan', 'projects.id_tahun', '=', 'tahun_kepengurusan.id')
+            ->where('tahun_kepengurusan.status', 'aktif')
+            ->where(function ($query) use ($search) {
+                $query->where('tahun_kepengurusan.nama_tahun', 'LIKE', $search)
+                      ->orWhere('projects.nama_project', 'LIKE', $search);
+            })
+            ->orderBy('projects.id', 'DESC');
+
+        // Get total count efficiently
+        $total = DB::table(DB::raw("({$query->toSql()}) as sub"))
+            ->mergeBindings($query)
+            ->count();
+
+        // Get paginated results
+        $projects = $query
+            ->skip(($this->getPage() - 1) * $this->lengthData)
+            ->take($this->lengthData)
+            ->get();
+
+        $data = new LengthAwarePaginator(
+            $projects,
+            $total,
+            $this->lengthData,
+            $this->getPage(),
+            ['path' => request()->url()]
+        );
 
         return view('livewire.akademik.project', compact('data'));
     }
@@ -122,15 +177,10 @@ class Project extends Component
     {
         $this->validate();
 
-        $leaderIds = is_array($this->id_leader) ? implode(',', $this->id_leader) : $this->id_leader;
-        $anggotaIds = is_array($this->id_anggota) ? implode(',', $this->id_anggota) : $this->id_anggota;
-
         ModelsProject::create([
             'id_tahun'        => $this->id_tahun,
             'nama_project'    => $this->nama_project,
             'deskripsi'       => $this->deskripsi,
-            'id_leader'       => $leaderIds,
-            'id_anggota'      => $anggotaIds,
             'status'          => $this->status,
             'tanggal_mulai'   => $this->tanggal_mulai,
             'tanggal_selesai' => $this->tanggal_selesai,
@@ -144,49 +194,88 @@ class Project extends Component
     public function edit($id)
     {
         $this->isEditing = true;
-        $data = ModelsProject::where('id', $id)->first();
+        $data = DB::table('projects')
+            ->select(
+                'id',
+                'id_tahun',
+                'nama_project',
+                'deskripsi',
+                'status',
+                'tanggal_mulai',
+                'tanggal_selesai',
+                'thumbnail',
+                'link_gdrive'
+            )
+            ->where('id', $id)
+            ->first();
+            
         $this->dataId           = $id;
         $this->id_tahun         = $data->id_tahun;
         $this->nama_project     = $data->nama_project;
         $this->deskripsi        = $data->deskripsi;
-        $this->id_leader        = $data->id_leader ? explode(',', $data->id_leader) : [];
-        $this->id_anggota       = $data->id_anggota ? explode(',', $data->id_anggota) : [];
         $this->status           = $data->status;
         $this->tanggal_mulai    = $data->tanggal_mulai;
         $this->tanggal_selesai  = $data->tanggal_selesai;
         $this->thumbnail        = $data->thumbnail;
         $this->link_gdrive      = $data->link_gdrive;
         
-        // Reload available anggotas excluding current project's anggota
-        $this->loadAvailableAnggotas($id);
-        
-        // Re-add the current project's anggota to the list for editing
-        if ($data->id_anggota) {
-            $currentAnggotaIds = explode(',', $data->id_anggota);
-            $currentAnggotas = Anggota::whereIn('id', $currentAnggotaIds)
-                ->select('id', 'nama_lengkap', 'status_anggota')
-                ->get();
-            $this->anggotas = $this->anggotas->merge($currentAnggotas)->unique('id');
-        }
         $this->dispatch('initSelect2');
     }
 
     public function view($id)
     {
-        $data = ModelsProject::where('id', $id)->first();
+        // Get project data
+        $project = DB::table('projects')
+            ->select(
+                'projects.id',
+                'projects.nama_project',
+                'projects.deskripsi',
+                'projects.status',
+                'projects.tanggal_mulai',
+                'projects.tanggal_selesai',
+                'projects.link_gdrive'
+            )
+            ->where('projects.id', $id)
+            ->first();
+
+        // Get teams (just basic info)
+        $teams = DB::table('project_teams')
+            ->select(
+                'project_teams.id',
+                'project_teams.nama_kelompok',
+                'project_teams.deskripsi'
+            )
+            ->where('project_teams.id_project', $id)
+            ->orderBy('project_teams.nama_kelompok')
+            ->get();
+
+        // Get ALL members in single query
+        $teamIds = $teams->pluck('id')->toArray();
+        $allMembers = [];
         
-        // Get leader names
-        $leaderIds = $data->id_leader ? explode(',', $data->id_leader) : [];
-        $leaders = Anggota::whereIn('id', $leaderIds)->get();
-        
-        // Get anggota names
-        $anggotaIds = $data->id_anggota ? explode(',', $data->id_anggota) : [];
-        $anggotas = Anggota::whereIn('id', $anggotaIds)->get();
+        if (!empty($teamIds)) {
+            $allMembers = DB::table('project_team_members')
+                ->select(
+                    'project_team_members.id_project_team',
+                    'project_team_members.id_anggota',
+                    'project_team_members.role',
+                    'anggota.nama_lengkap'
+                )
+                ->join('anggota', 'project_team_members.id_anggota', '=', 'anggota.id')
+                ->whereIn('project_team_members.id_project_team', $teamIds)
+                ->orderByRaw("FIELD(role, 'leader', 'anggota')")
+                ->get()
+                ->groupBy('id_project_team');
+        }
+
+        // Attach members to teams
+        foreach ($teams as $team) {
+            $team->members = $allMembers[$team->id] ?? collect();
+        }
         
         $this->viewData = [
-            'project' => $data,
-            'leaders' => $leaders,
-            'anggotas' => $anggotas,
+            'project' => $project,
+            'teams' => $teams,
         ];
     }
 
@@ -194,22 +283,20 @@ class Project extends Component
     {
         $this->validate();
 
-        $leaderIds = is_array($this->id_leader) ? implode(',', $this->id_leader) : $this->id_leader;
-        $anggotaIds = is_array($this->id_anggota) ? implode(',', $this->id_anggota) : $this->id_anggota;
-
         if ($this->dataId) {
-            ModelsProject::findOrFail($this->dataId)->update([
-                'id_tahun'        => $this->id_tahun,
-                'nama_project'    => $this->nama_project,
-                'deskripsi'       => $this->deskripsi,
-                'id_leader'       => $leaderIds,
-                'id_anggota'      => $anggotaIds,
-                'status'          => $this->status,
-                'tanggal_mulai'   => $this->tanggal_mulai,
-                'tanggal_selesai' => $this->tanggal_selesai,
-                'thumbnail'       => $this->thumbnail,
-                'link_gdrive'     => $this->link_gdrive,
-            ]);
+            DB::table('projects')
+                ->where('id', $this->dataId)
+                ->update([
+                    'id_tahun'        => $this->id_tahun,
+                    'nama_project'    => $this->nama_project,
+                    'deskripsi'       => $this->deskripsi,
+                    'status'          => $this->status,
+                    'tanggal_mulai'   => $this->tanggal_mulai,
+                    'tanggal_selesai' => $this->tanggal_selesai,
+                    'thumbnail'       => $this->thumbnail,
+                    'link_gdrive'     => $this->link_gdrive,
+                    'updated_at'      => now(),
+                ]);
 
             $this->dispatchAlert('success', 'Success!', 'Project updated successfully.');
             $this->dataId = null;

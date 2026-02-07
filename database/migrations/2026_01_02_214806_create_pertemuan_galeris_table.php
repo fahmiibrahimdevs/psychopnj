@@ -6,11 +6,9 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
+        // Pertemuan Galeri (WITH timestamps)
         Schema::create('pertemuan_galeri', function (Blueprint $table) {
             $table->id();
             $table->foreignId('id_pertemuan')->constrained('pertemuan')->onDelete('cascade');
@@ -18,12 +16,12 @@ return new class extends Migration
             $table->string('file_path');
             $table->text('caption')->nullable();
             $table->timestamps();
+            
+            $table->index('id_pertemuan');
+            $table->index('tipe');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('pertemuan_galeri');

@@ -96,7 +96,7 @@
                                         <td class="text-left">{{ $row->keperluan }}</td>
                                         <td class="text-left">{{ $row->pencatat->nama_lengkap ?? "-" }}</td>
                                         <td class="text-left tw-text-sm tw-whitespace-nowrap">
-                                            <span class="tw-text-gray-600">{{ $row->user->name ?? '-' }}</span>
+                                            <span class="tw-text-gray-600">{{ $row->user->name ?? "-" }}</span>
                                         </td>
                                         <td class="tw-whitespace-nowrap">
                                             <button wire:click.prevent="showDetailModal({{ $row->id }})" class="btn btn-info" data-toggle="modal" data-target="#detailModal">

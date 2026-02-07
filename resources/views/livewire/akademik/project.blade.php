@@ -45,11 +45,6 @@
                             "ditunda" => "tw-bg-yellow-100 tw-text-yellow-600",
                         ];
                         $statusColor = $statusColors[$row->status] ?? "tw-bg-gray-100 tw-text-gray-600";
-
-                        $anggotaIds = $row->id_anggota ? explode(",", $row->id_anggota) : [];
-                        $anggotaCount = count($anggotaIds);
-                        $leaderIds = $row->id_leader ? explode(",", $row->id_leader) : [];
-                        $leaderCount = count($leaderIds);
                     @endphp
 
                     <div class="tw-bg-white tw-rounded-xl tw-p-4 tw-shadow-md tw-shadow-gray-300 tw-transition-all tw-duration-300 tw-flex tw-flex-col">
@@ -71,17 +66,24 @@
 
                         <div class="tw-flex tw-flex-wrap tw-gap-3 tw-text-xs tw-text-gray-500 tw-mb-3">
                             <span>
+                                <i class="fas fa-layer-group tw-mr-1"></i>
+                                {{ $row->teams_count }} Kelompok
+                            </span>
+                            <span>
                                 <i class="fas fa-user-tie tw-mr-1"></i>
-                                {{ $leaderCount }} Leader
+                                {{ $row->leaders_count }} Leader
                             </span>
                             <span>
                                 <i class="fas fa-users tw-mr-1"></i>
-                                {{ $anggotaCount }} Anggota
+                                {{ $row->members_count }} Anggota
                             </span>
                         </div>
 
                         <div class="tw-flex tw-items-center tw-justify-end tw-pt-3 tw-border-t tw-border-gray-100">
                             <div class="tw-flex tw-gap-1">
+                                <a href="{{ route("project.teams", ["projectId" => $row->id]) }}" class="btn btn-success" title="Kelola Kelompok">
+                                    <i class="fas fa-users"></i>
+                                </a>
                                 <button wire:click.prevent="view({{ $row->id }})" class="btn btn-info" data-toggle="modal" data-target="#viewModal">
                                     <i class="fas fa-eye"></i>
                                 </button>
@@ -95,16 +97,12 @@
                         </div>
                     </div>
                 @empty
-                    <div class="card">
-                        <div class="card-body tw-py-16">
-                            <div class="tw-flex tw-flex-col tw-items-center tw-justify-center">
-                                <div class="tw-text-gray-400 tw-mb-4">
-                                    <i class="fas fa-folder-open tw-text-6xl"></i>
-                                </div>
-                                <h3 class="tw-text-xl tw-font-semibold tw-text-gray-700 tw-mb-2">Tidak Ada Data</h3>
-                                <p class="tw-text-gray-500 tw-text-center">Belum ada project/kegiatan yang tersedia saat ini.</p>
-                            </div>
+                    <div class="tw-col-span-1 md:tw-col-span-2 lg:tw-col-span-3 xl:tw-col-span-3 tw-w-full tw-flex tw-flex-col tw-items-center tw-justify-center tw-py-16 tw-px-4">
+                        <div class="tw-text-gray-400 tw-mb-4">
+                            <i class="fas fa-inbox tw-text-6xl"></i>
                         </div>
+                        <h3 class="tw-text-xl tw-font-semibold tw-text-gray-700 tw-mb-2">Tidak Ada Data</h3>
+                        <p class="tw-text-gray-500 tw-text-center">Belum ada project/kegiatan yang tersedia saat ini.</p>
                     </div>
                 @endforelse
             </div>
@@ -150,19 +148,6 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="id_leader">Leader (Pengurus)</label>
-                            <select wire:model="id_leader" id="id_leader" class="form-control select2" multiple>
-                                @foreach ($pengurus as $p)
-                                    <option value="{{ $p->id }}">{{ $p->nama_lengkap }} ({{ $p->nama_jabatan }})</option>
-                                @endforeach
-                            </select>
-                            <small class="text-muted">Pilih satu atau lebih leader untuk project/kegiatan ini</small>
-                            @error("id_leader")
-                                <span class="text-danger">{{ $message }}</span>
-                            @enderror
-                        </div>
-
-                        <div class="form-group">
                             <label for="status">Status</label>
                             <select wire:model="status" id="status" class="form-control select2-single">
                                 <option value="" disabled>-- Pilih Status --</option>
@@ -176,17 +161,12 @@
                             @enderror
                         </div>
 
-                        <div class="form-group">
-                            <label for="id_anggota">Anggota Project/Kegiatan</label>
-                            <select wire:model="id_anggota" id="id_anggota" class="form-control select2" multiple>
-                                @foreach ($anggotas as $a)
-                                    <option value="{{ $a->id }}">{{ $a->nama_lengkap }} ({{ ucfirst($a->status_anggota) }})</option>
-                                @endforeach
-                            </select>
-                            <small class="text-muted">Pilih anggota yang tergabung dalam project/kegiatan ini</small>
-                            @error("id_anggota")
-                                <span class="text-danger">{{ $message }}</span>
-                            @enderror
+                        <div class="alert alert-info tw-mb-4">
+                            <i class="fas fa-info-circle tw-mr-2"></i>
+                            <strong>Info:</strong>
+                            Untuk menambahkan kelompok, leader, dan anggota, silakan kelola melalui halaman
+                            <strong>Kelola Kelompok</strong>
+                            setelah project dibuat.
                         </div>
 
                         <div class="row">
@@ -229,92 +209,121 @@
 
     <!-- View Modal -->
     <div class="modal fade" wire:ignore.self id="viewModal" aria-labelledby="viewModalLabel" aria-hidden="true">
-        <div class="modal-dialog tw-w-full tw-m-0 sm:tw-w-auto sm:tw-m-[1.75rem_auto]">
-            <div class="modal-content tw-rounded-none lg:tw-rounded-md">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="viewModalLabel">Detail Project/Kegiatan</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+        <div class="modal-dialog tw-w-full tw-m-0 sm:tw-w-full sm:tw-max-w-2xl sm:tw-m-[1.75rem_auto]">
+            <div class="modal-content tw-rounded-xl tw-border-0 tw-shadow-2xl">
+                <div class="modal-header tw-border-b-0 tw-pb-0 tw-pt-6 tw-px-6">
+                    <h5 class="modal-title tw-text-xl tw-font-bold tw-text-gray-800" id="viewModalLabel">Detail Project/Kegiatan</h5>
+                    <button type="button" class="close tw-opacity-50 hover:tw-opacity-100 tw-transition-opacity" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-                <div class="modal-body">
+                <div class="modal-body tw-px-6 tw-py-6">
                     @if ($viewData)
-                        <div class="tw-mb-4">
-                            <h4 class="tw-text-lg tw-font-semibold tw-text-gray-800">{{ $viewData["project"]->nama_project }}</h4>
+                        <!-- Project Header -->
+                        <div class="tw-mb-8">
+                            <h4 class="tw-text-2xl tw-font-bold tw-text-gray-900 tw-mb-2">{{ $viewData["project"]->nama_project }}</h4>
                             @php
                                 $statusStyles = [
-                                    "draft" => "tw-bg-gray-100 tw-text-gray-700",
-                                    "berjalan" => "tw-bg-green-100 tw-text-green-700",
-                                    "selesai" => "tw-bg-blue-100 tw-text-blue-700",
-                                    "ditunda" => "tw-bg-yellow-100 tw-text-yellow-700",
+                                    "draft" => "tw-bg-gray-100 tw-text-gray-600 tw-border tw-border-gray-200",
+                                    "berjalan" => "tw-bg-emerald-50 tw-text-emerald-600 tw-border tw-border-emerald-200",
+                                    "selesai" => "tw-bg-blue-50 tw-text-blue-600 tw-border tw-border-blue-200",
+                                    "ditunda" => "tw-bg-amber-50 tw-text-amber-600 tw-border tw-border-amber-200",
                                 ];
-                                $statusStyle = $statusStyles[$viewData["project"]->status] ?? "tw-bg-gray-100 tw-text-gray-700";
+                                $statusStyle = $statusStyles[$viewData["project"]->status] ?? "tw-bg-gray-100 tw-text-gray-600 tw-border tw-border-gray-200";
                             @endphp
 
-                            <span class="tw-px-2 tw-py-0.5 tw-rounded tw-text-xs tw-font-medium {{ $statusStyle }}">{{ ucfirst($viewData["project"]->status) }}</span>
+                            <span class="tw-inline-flex tw-items-center tw-px-2.5 tw-py-0.5 tw-rounded-md tw-text-xs tw-font-medium {{ $statusStyle }}">
+                                {{ ucfirst($viewData["project"]->status) }}
+                            </span>
                         </div>
 
-                        <div class="tw-mb-4">
-                            <label class="tw-text-sm font-bagus tw-font-semibold tw-tracking-normal">Deskripsi</label>
-                            <p class="tw-tracking-normal font-bagus tw-font-normal tw-text-sm">{{ $viewData["project"]->deskripsi }}</p>
+                        <!-- Description -->
+                        <div class="tw-mb-8">
+                            <label class="tw-block tw-text-xs tw-font-bold tw-text-gray-400 tw-uppercase tw-tracking-wider tw-mb-2">Deskripsi</label>
+                            <p class="tw-text-gray-700 tw-text-sm tw-leading-relaxed tw-whitespace-pre-line tw-tracking-normal">{{ $viewData["project"]->deskripsi ?: "-" }}</p>
                         </div>
 
-                        <div class="row tw-mb-4">
-                            <div class="col-6">
-                                <label class="tw-text-sm font-bagus tw-font-semibold tw-tracking-normal">Tanggal Mulai</label>
-                                <p class="tw-text-gray-700 tw-text-sm">
+                        <!-- Dates Grid -->
+                        <div class="tw-grid tw-grid-cols-2 tw-gap-6 tw-mb-8">
+                            <div>
+                                <label class="tw-block tw-text-xs tw-font-bold tw-text-gray-400 tw-uppercase tw-tracking-wider tw-mb-1">Tanggal Mulai</label>
+                                <p class="tw-text-gray-900 tw-text-sm tw-font-medium tw-tracking-normal">
                                     {{ $viewData["project"]->tanggal_mulai ? \Carbon\Carbon::parse($viewData["project"]->tanggal_mulai)->format("d M Y") : "-" }}
                                 </p>
                             </div>
-                            <div class="col-6">
-                                <label class="tw-text-sm font-bagus tw-font-semibold tw-tracking-normal">Tanggal Selesai</label>
-                                <p class="tw-text-gray-700 tw-text-sm">
+                            <div>
+                                <label class="tw-block tw-text-xs tw-font-bold tw-text-gray-400 tw-uppercase tw-tracking-wider tw-mb-1">Tanggal Selesai</label>
+                                <p class="tw-text-gray-900 tw-text-sm tw-font-medium tw-tracking-normal">
                                     {{ $viewData["project"]->tanggal_selesai ? \Carbon\Carbon::parse($viewData["project"]->tanggal_selesai)->format("d M Y") : "-" }}
                                 </p>
                             </div>
                         </div>
 
-                        <div class="tw-mb-4">
-                            <label class="tw-text-sm font-bagus tw-font-semibold tw-tracking-normal">Leader ({{ count($viewData["leaders"]) }})</label>
-                            <div class="tw-mt-1">
-                                @forelse ($viewData["leaders"] as $leader)
-                                    <span class="tw-bg-blue-100 tw-text-blue-700 tw-px-2 tw-py-0.5 tw-rounded tw-text-xs tw-font-medium tw-mr-1 tw-mb-1 tw-inline-block">{{ $leader->nama_lengkap }}</span>
-                                @empty
-                                    <span class="tw-text-gray-400 tw-text-sm">-</span>
-                                @endforelse
-                            </div>
-                        </div>
+                        <!-- Teams Table -->
+                        <div class="tw-mb-8">
+                            <div class="tw-text-xs tw-font-bold tw-text-gray-400 tw-uppercase tw-tracking-wider tw-mb-3">LIST KELOMPOK</div>
 
-                        <div class="tw-mb-2">
-                            <label class="tw-text-sm font-bagus tw-font-semibold tw-tracking-normal">Anggota ({{ count($viewData["anggotas"]) }})</label>
-                            <div class="tw-mt-1">
-                                @forelse ($viewData["anggotas"] as $anggota)
-                                    <span class="tw-bg-emerald-100 tw-text-emerald-700 tw-px-2 tw-py-0.5 tw-rounded tw-text-xs tw-font-medium tw-mr-1 tw-mb-1 tw-inline-block">{{ $anggota->nama_lengkap }}</span>
-                                @empty
-                                    <span class="tw-text-gray-400 tw-text-sm">-</span>
-                                @endforelse
-                            </div>
-                        </div>
+                            @if ($viewData["teams"] && count($viewData["teams"]) > 0)
+                                <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-overflow-hidden">
+                                    <table class="tw-w-full tw-table-auto">
+                                        <thead class="tw-bg-gray-50 tw-border-b tw-border-gray-200">
+                                            <tr>
+                                                <th class="tw-px-4 tw-py-3 tw-text-xs tw-font-bold tw-text-gray-500 tw-uppercase tw-tracking-wider tw-text-left">NAMA KELOMPOK</th>
+                                                <th class="tw-px-4 tw-py-3 tw-text-xs tw-font-bold tw-text-gray-500 tw-uppercase tw-tracking-wider tw-text-left">LEADER</th>
+                                                <th class="tw-px-4 tw-py-3 tw-text-xs tw-font-bold tw-text-gray-500 tw-uppercase tw-tracking-wider tw-text-right">JUMLAH ANGGOTA</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="tw-divide-y tw-divide-gray-100">
+                                            @foreach ($viewData["teams"] as $team)
+                                                @php
+                                                    $leader = collect($team->members)
+                                                        ->where("role", "leader")
+                                                        ->first();
+                                                    $anggotaCount = collect($team->members)
+                                                        ->where("role", "anggota")
+                                                        ->count();
+                                                @endphp
 
-                        @if ($viewData["project"]->link_gdrive)
-                            <div class="tw-my-4">
-                                <label class="tw-text-sm font-bagus tw-font-semibold tw-tracking-normal">Link Google Drive</label>
-                                <div class="tw-mt-1">
-                                    <a href="{{ $viewData["project"]->link_gdrive }}" target="_blank" class="tw-text-blue-600 tw-text-sm hover:tw-underline">
-                                        <i class="fab fa-google-drive tw-mr-1"></i>
-                                        Buka Google Drive
-                                    </a>
+                                                <tr class="tw-group hover:tw-bg-blue-50 tw-transition-colors">
+                                                    <td class="tw-px-4 tw-py-3.5 tw-text-sm tw-text-gray-700 tw-font-medium">{{ $team->nama_kelompok }}</td>
+                                                    <td class="tw-px-4 tw-py-3.5 tw-text-sm tw-text-gray-600">
+                                                        {{ $leader ? $leader->nama_lengkap : "-" }}
+                                                    </td>
+                                                    <td class="tw-px-4 tw-py-3.5 tw-text-sm tw-text-gray-600 tw-text-right">
+                                                        <span class="tw-bg-gray-100 tw-text-gray-600 tw-px-2.5 tw-py-1 tw-rounded-md tw-text-xs tw-font-medium">{{ $anggotaCount }} orang</span>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
                                 </div>
+                            @else
+                                <div class="tw-bg-gray-50 tw-border tw-border-dashed tw-border-gray-300 tw-rounded-lg tw-p-8 tw-text-center">
+                                    <i class="fas fa-users tw-text-3xl tw-text-gray-300 tw-mb-3"></i>
+                                    <p class="tw-text-sm tw-text-gray-500">Belum ada kelompok yang dibentuk</p>
+                                </div>
+                            @endif
+                        </div>
+
+                        <!-- GDrive Link -->
+                        @if ($viewData["project"]->link_gdrive)
+                            <div class="tw-mb-2">
+                                <label class="tw-block tw-text-xs tw-font-bold tw-text-gray-400 tw-uppercase tw-tracking-wider tw-mb-2">Link Google Drive</label>
+                                <a href="{{ $viewData["project"]->link_gdrive }}" target="_blank" rel="noopener noreferrer" class="tw-inline-flex tw-items-center tw-text-sm tw-text-blue-600 hover:tw-text-blue-700 hover:tw-underline tw-font-medium tw-transition-colors tw-tracking-normal">
+                                    <i class="fab fa-google-drive tw-mr-2 tw-text-lg"></i>
+                                    {{ Str::limit($viewData["project"]->link_gdrive, 50) }}
+                                </a>
                             </div>
                         @endif
                     @else
-                        <div class="tw-text-center tw-py-4">
-                            <i class="fas fa-spinner fa-spin tw-text-2xl tw-text-gray-400"></i>
+                        <div class="tw-flex tw-flex-col tw-items-center tw-justify-center tw-py-12">
+                            <i class="fas fa-circle-notch fa-spin tw-text-3xl tw-text-blue-500 tw-mb-3"></i>
+                            <span class="tw-text-sm tw-text-gray-500">Memuat data...</span>
                         </div>
                     @endif
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <div class="modal-footer tw-border-t-0 tw-bg-gray-50 tw-rounded-b-xl tw-px-6 tw-py-4">
+                    <button type="button" class="btn btn-secondary tw-bg-gray-200 tw-text-gray-700 tw-border-0 hover:tw-bg-gray-300 tw-font-medium tw-px-6" data-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>

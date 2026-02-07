@@ -9,6 +9,7 @@ use App\Models\TahunKepengurusan;
 use App\Models\Anggaran as ModelsAnggaran;
 use App\Models\Department;
 use App\Models\Project;
+use App\Models\JenisAnggaran;
 use Illuminate\Support\Facades\Auth;
 
 class Anggaran extends Component
@@ -25,8 +26,8 @@ class Anggaran extends Component
         'jenis'         => 'required',
         'nama'          => 'required',
         'nominal'       => 'required|numeric|min:0',
-        'id_department' => 'required_if:jenis,dept',
-        'id_project'    => 'required_if:jenis,project',
+        'id_department' => 'required_if:jenis,Departemen',
+        'id_project'    => 'required_if:jenis,Project',
     ];
 
     public $lengthData = 25;
@@ -40,11 +41,15 @@ class Anggaran extends Component
     public $kategori, $jenis, $id_department, $id_project, $nama, $nominal;
     public $activeTahunId;
     public $departments, $projects;
+    public $jenisAnggaranList = [];
 
     public function mount()
     {
         $activeTahun = TahunKepengurusan::where('status', 'aktif')->first();
         $this->activeTahunId = $activeTahun ? $activeTahun->id : null;
+
+        // Load jenis anggaran from database
+        $this->loadJenisAnggaran();
 
         // Filter departments by active tahun
         $this->departments = Department::where('id_tahun', $this->activeTahunId)
@@ -94,8 +99,8 @@ class Anggaran extends Component
             'id_tahun'      => $this->activeTahunId,
             'kategori'      => $this->kategori,
             'jenis'         => $this->jenis,
-            'id_department' => $this->jenis === 'dept' ? $this->id_department : null,
-            'id_project'    => $this->jenis === 'project' ? $this->id_project : null,
+            'id_department' => $this->jenis === 'Departemen' ? $this->id_department : null,
+            'id_project'    => $this->jenis === 'Project' ? $this->id_project : null,
             'nama'          => $this->nama,
             'nominal'       => $this->nominal,
             'id_user'       => Auth::id(),
@@ -125,8 +130,8 @@ class Anggaran extends Component
             ModelsAnggaran::findOrFail($this->dataId)->update([
                 'kategori'      => $this->kategori,
                 'jenis'         => $this->jenis,
-                'id_department' => $this->jenis === 'dept' ? $this->id_department : null,
-                'id_project'    => $this->jenis === 'project' ? $this->id_project : null,
+                'id_department' => $this->jenis === 'Departemen' ? $this->id_department : null,
+                'id_project'    => $this->jenis === 'Project' ? $this->id_project : null,
                 'nama'          => $this->nama,
                 'nominal'       => $this->nominal,
             ]);
@@ -199,14 +204,24 @@ class Anggaran extends Component
 
     public function getJenisLabel($jenis)
     {
-        $labels = [
-            'saldo_awal' => 'Saldo Awal',
-            'iuran_kas'  => 'Iuran Kas',
-            'sponsor'    => 'Sponsor',
-            'dept'       => 'Departemen',
-            'project'    => 'Project',
-            'lainnya'    => 'Lainnya',
-        ];
-        return $labels[$jenis] ?? $jenis;
+        // Karena sekarang sudah disimpan dalam format Capitalized, langsung return
+        return $jenis;
+    }
+
+    public function loadJenisAnggaran()
+    {
+        $this->jenisAnggaranList = JenisAnggaran::select('nama_kategori', 'nama_jenis')
+            ->orderBy('nama_kategori')
+            ->orderBy('nama_jenis')
+            ->get()
+            ->groupBy('nama_kategori')
+            ->toArray();
+    }
+
+    public function getJenisAnggaranByKategori($kategori)
+    {
+        return JenisAnggaran::where('nama_kategori', $kategori)
+            ->pluck('nama_jenis')
+            ->toArray();
     }
 }

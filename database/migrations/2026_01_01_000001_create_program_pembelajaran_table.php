@@ -6,27 +6,28 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
+        // Program Pembelajaran (WITH timestamps)
         Schema::create('program_pembelajaran', function (Blueprint $table) {
             $table->id();
-            $table->text('id_tahun')->default('');
-            $table->text('nama_program')->default('');
+            $table->foreignId('id_tahun')->constrained('tahun_kepengurusan')->onDelete('cascade');
+            $table->string('nama_program');
             $table->enum('jenis_program', ['internal', 'eksternal'])->default('internal');
-            $table->text('deskripsi')->default('-');
-            $table->text('jumlah_pertemuan')->default('0');
-            $table->text('penyelenggara')->default('');
+            $table->text('deskripsi')->nullable();
+            $table->integer('jumlah_pertemuan')->default(0);
+            $table->string('penyelenggara');
             $table->text('thumbnail')->nullable();
+            $table->enum('status', ['aktif', 'nonaktif'])->default('aktif');
             $table->timestamps();
+            
+            $table->index('id_tahun');
+            $table->index('status');
+            $table->index('jenis_program');
+            $table->index('nama_program');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('program_pembelajaran');

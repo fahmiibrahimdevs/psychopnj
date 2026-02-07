@@ -15,7 +15,6 @@ class IuranKas extends Model
         'nominal',
         'status',
         'tanggal_bayar',
-        'id_keuangan',
         'id_user',
     ];
 
@@ -32,11 +31,6 @@ class IuranKas extends Model
     public function anggota()
     {
         return $this->belongsTo(Anggota::class, 'id_anggota');
-    }
-
-    public function keuangan()
-    {
-        return $this->belongsTo(Keuangan::class, 'id_keuangan');
     }
 
     public function user()

@@ -6,29 +6,28 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
+        // Projects (WITH timestamps)
         Schema::create('projects', function (Blueprint $table) {
             $table->id();
-            $table->text('id_tahun')->default('');
-            $table->text('nama_project')->default('');
-            $table->text('deskripsi')->default('-');
-            $table->text('id_leader')->default('');
-            $table->text('id_anggota')->default('');
-            $table->enum('status', ['draft', 'berjalan', 'selesai', 'ditunda'])->default('draft');
+            $table->foreignId('id_tahun')->constrained('tahun_kepengurusan')->onDelete('cascade');
+            $table->string('nama_project');
+            $table->text('deskripsi')->nullable();
             $table->date('tanggal_mulai')->nullable();
             $table->date('tanggal_selesai')->nullable();
             $table->text('thumbnail')->nullable();
+            $table->text('link_gdrive')->nullable();
+            $table->enum('status', ['draft', 'berjalan', 'selesai', 'ditunda'])->default('draft');
             $table->timestamps();
+            
+            $table->index('id_tahun');
+            $table->index('status');
+            $table->index(['id_tahun', 'status']);
+            $table->index('tanggal_mulai');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('projects');

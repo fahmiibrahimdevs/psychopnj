@@ -9,8 +9,9 @@ class IuranKasPeriode extends Model
 {
     use HasFactory;
 
-    protected $table = 'iuran_kas_periodes';
+    protected $table = 'iuran_kas_periode';
     protected $guarded = ['id'];
+    public $timestamps = false;
 
     public function tahun()
     {

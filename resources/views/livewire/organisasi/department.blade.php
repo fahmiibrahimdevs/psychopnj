@@ -83,6 +83,7 @@
                                         <button wire:click.prevent="edit({{ $row->id }})" class="btn btn-primary tw-px-3 tw-py-1.5 tw-rounded-lg tw-transition-colors tw-text-sm" data-toggle="modal" data-target="#formDataModal">
                                             <i class="fas fa-edit"></i>
                                         </button>
+
                                         <button wire:click.prevent="deleteConfirm({{ $row->id }})" class="btn btn-danger tw-px-3 tw-py-1.5 tw-rounded-lg tw-transition-colors tw-text-sm">
                                             <i class="fas fa-trash"></i>
                                         </button>

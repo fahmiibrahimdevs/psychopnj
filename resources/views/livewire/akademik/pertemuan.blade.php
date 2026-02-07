@@ -155,7 +155,7 @@
                                     <div class="row">
                                         <div class="col-md-6">
                                             <div class="form-group">
-                                                <label for="id_program">Program Pembelajaran</label>
+                                                <label for="id_program">Program Kegiatan</label>
                                                 <select wire:model="id_program" id="id_program" class="form-control select2">
                                                     <option value="" disabled>-- Pilih Opsi --</option>
                                                     @foreach ($programs as $program)
@@ -236,6 +236,28 @@
                                                 @enderror
                                             </div>
                                         </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="d-block mb-2">
+                                            Jenis Presensi Kehadiran
+                                            <span class="text-danger">*</span>
+                                        </label>
+                                        <div class="tw-flex tw-gap-4">
+                                            <label class="tw-flex tw-items-center tw-cursor-pointer">
+                                                <input type="checkbox" wire:model="jenis_presensi" value="pengurus" class="tw-mr-2" />
+                                                <span>Pengurus</span>
+                                            </label>
+                                            <label class="tw-flex tw-items-center tw-cursor-pointer">
+                                                <input type="checkbox" wire:model="jenis_presensi" value="anggota" class="tw-mr-2" />
+                                                <span>Anggota</span>
+                                            </label>
+                                        </div>
+                                        @error("jenis_presensi")
+                                            <span class="text-danger d-block mt-1">{{ $message }}</span>
+                                        @enderror
+
+                                        <small class="text-muted">Pilih siapa yang bisa melakukan presensi di pertemuan ini</small>
                                     </div>
                                 </div>
                             </div>

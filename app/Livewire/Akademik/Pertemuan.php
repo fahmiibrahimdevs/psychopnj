@@ -6,7 +6,7 @@ use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\WithFileUploads;
 use Livewire\Attributes\Title;
-use App\Models\ProgramPembelajaran;
+use App\Models\ProgramKegiatan;
 use App\Models\Pertemuan as ModelsPertemuan;
 use App\Models\PertemuanFile;
 use App\Models\PertemuanGaleri;
@@ -35,7 +35,8 @@ class Pertemuan extends Component
         'minggu_ke'         => 'required',
         'thumbnail'         => 'nullable|image|max:2048',
         'status'            => 'required',
-        'files.*'           => 'nullable|file|mimes:ppt,pptx,pdf,zip,jpg,jpeg,png|max:10240',
+        'jenis_presensi'    => 'required|array',
+        'files.*'           => 'nullable|file|mimes:ppt,pptx,pdf,zip,jpg,jpeg,png|max:102400',
     ];
 
     public $lengthData = 25;
@@ -45,7 +46,7 @@ class Pertemuan extends Component
 
     public $dataId;
 
-    public $id_program, $nama_pemateri, $pertemuan_ke, $judul_pertemuan, $deskripsi, $tanggal, $minggu_ke, $thumbnail, $status;
+    public $id_program, $nama_pemateri, $pertemuan_ke, $judul_pertemuan, $deskripsi, $tanggal, $minggu_ke, $thumbnail, $status, $jenis_presensi = [];
     public $programs;
     public $oldThumbnail;
     public $activeTab = 'info'; // Track active tab
@@ -71,7 +72,7 @@ class Pertemuan extends Component
 
     public function mount()
     {
-        $this->programs = ProgramPembelajaran::select('program_pembelajaran.id', 'program_pembelajaran.nama_program')
+        $this->programs = ProgramKegiatan::select('program_pembelajaran.id', 'program_pembelajaran.nama_program')
                             ->leftJoin('tahun_kepengurusan', 'program_pembelajaran.id_tahun', '=', 'tahun_kepengurusan.id')
                             ->where('tahun_kepengurusan.status', 'aktif')
                             ->orderBy('program_pembelajaran.id', 'DESC')
@@ -120,10 +121,10 @@ class Pertemuan extends Component
 
         // Get active tahun kepengurusan name
         $activeTahun = \App\Models\TahunKepengurusan::where('status', 'aktif')->first();
-        $tahunFolder = $activeTahun ? $activeTahun->mulai : 'default';
+        $tahunFolder = $activeTahun ? $activeTahun->nama_tahun : 'default';
 
         // Get program name
-        $program = ProgramPembelajaran::findOrFail($this->id_program);
+        $program = ProgramKegiatan::findOrFail($this->id_program);
         $programFolder = strtoupper($program->nama_program);
 
         $thumbnailPath = null;
@@ -153,6 +154,7 @@ class Pertemuan extends Component
             'minggu_ke'         => $this->minggu_ke,
             'thumbnail'         => $thumbnailPath,
             'status'            => $this->status,
+            'jenis_presensi'    => implode(',', $this->jenis_presensi),
         ]);
 
         // Upload multiple files
@@ -177,6 +179,7 @@ class Pertemuan extends Component
         $this->minggu_ke        = $data->minggu_ke;
         $this->oldThumbnail     = $data->thumbnail;
         $this->status           = $data->status;
+        $this->jenis_presensi   = $data->jenis_presensi ? explode(',', $data->jenis_presensi) : ['pengurus', 'anggota'];
         $this->thumbnail        = null;
         
         // Load existing files
@@ -191,10 +194,10 @@ class Pertemuan extends Component
         {
             // Get active tahun kepengurusan name
             $activeTahun = \App\Models\TahunKepengurusan::where('status', 'aktif')->first();
-            $tahunFolder = $activeTahun ? $activeTahun->mulai : 'default';
+            $tahunFolder = $activeTahun ? $activeTahun->nama_tahun : 'default';
 
             // Get program name
-            $program = ProgramPembelajaran::findOrFail($this->id_program);
+            $program = ProgramKegiatan::findOrFail($this->id_program);
             $programFolder = strtoupper($program->nama_program);
 
             $thumbnailPath = $this->oldThumbnail;
@@ -229,6 +232,7 @@ class Pertemuan extends Component
                 'minggu_ke'         => $this->minggu_ke,
                 'thumbnail'         => $thumbnailPath,
                 'status'            => $this->status,
+                'jenis_presensi'    => implode(',', $this->jenis_presensi),
             ]);
 
             // Upload additional files
@@ -249,10 +253,10 @@ class Pertemuan extends Component
         
         // Get active tahun kepengurusan name
         $activeTahun = \App\Models\TahunKepengurusan::where('status', 'aktif')->first();
-        $tahunFolder = $activeTahun ? $activeTahun->mulai : 'default';
+        $tahunFolder = $activeTahun ? $activeTahun->nama_tahun : 'default';
         
         // Get program name
-        $program = ProgramPembelajaran::findOrFail($pertemuan->id_program);
+        $program = ProgramKegiatan::findOrFail($pertemuan->id_program);
         $programFolder = strtoupper($program->nama_program);
         
         foreach ($this->files as $file) {

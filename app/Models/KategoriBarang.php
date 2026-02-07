@@ -7,9 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 class KategoriBarang extends Model
 {
     protected $table = 'kategori_barang';
+    public $timestamps = false;
     
     protected $fillable = [
-        'nama',
+        'nama_kategori',
+        'deskripsi',
+        'status',
         'id_user',
     ];
 

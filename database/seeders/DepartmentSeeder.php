@@ -26,7 +26,7 @@ class DepartmentSeeder extends Seeder
 
             [
                 'id_tahun'            => '1',
-                'nama_department'         => 'Sekretaris',
+                'nama_department'     => 'Kesekretariatan',
                 'kategori'            => 'Administrasi & Dokumentasi',
                 'deskripsi'           => 'Berkoordinasi dengan masing-masing department perihal timeline Sebagai pusat dari segala jenis arsip dan berkas dari program kerja dan kegiatan, Mengumpulkan notulensi dan presensi kehadiran baik rapat maupun pertemuan, Mencerdaskan department lain perihal SOP dan hal administratif, Mengembangkan SOP Kesekretariatan KSM Psychorobotic',
                 'ikon'                => 'fas fa-file-alt',
@@ -73,7 +73,7 @@ class DepartmentSeeder extends Seeder
             ],
             [
                 'id_tahun'            => '1',
-                'nama_department'         => 'Polybot',
+                'nama_department'         => 'Polytechnic Robotic',
                 'kategori'            => 'Prestasi & Kompetisi',
                 'deskripsi'           => 'Mengelola proses pembentukan, pembinaan, dan pengembangan tim kompetisi KSM Psychorobotic untuk memastikan kesiapan teknis maupun nonteknis dalam seluruh agenda lomba. Menyusun rencana pelatihan, pendampingan teknis, serta timeline persiapan kompetisi yang terstruktur, mulai dari desain, riset, perakitan, hingga pengujian robot. Mengkoordinasikan kebutuhan logistik tim, termasuk peralatan, komponen, ruang kerja, dokumentasi perkembangan, dan dukungan teknis dari department terkait. Membangun jejaring dengan panitia kompetisi, komunitas robotika, serta pihak eksternal lain yang relevan guna memperluas peluang partisipasi dan meningkatkan kapasitas tim. Melakukan evaluasi berkala terhadap progres tim kompetisi untuk memastikan pengembangan kemampuan anggota berjalan sesuai target.',
                 'ikon'                => 'fas fa-trophy',

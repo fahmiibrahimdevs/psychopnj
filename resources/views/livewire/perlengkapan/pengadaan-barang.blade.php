@@ -117,7 +117,7 @@
                                                 @endif
                                             </td>
                                             <td class="text-left tw-text-sm tw-whitespace-nowrap">
-                                                <span class="tw-text-gray-600">{{ $row->user->name ?? '-' }}</span>
+                                                <span class="tw-text-gray-600">{{ $row->user->name ?? "-" }}</span>
                                             </td>
                                             <td class="tw-whitespace-nowrap">
                                                 @if ($row->status === "diusulkan")

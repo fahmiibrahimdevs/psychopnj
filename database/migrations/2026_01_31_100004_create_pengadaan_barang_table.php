@@ -6,38 +6,34 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
+        // Pengadaan Barang (WITH timestamps)
         Schema::create('pengadaan_barang', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('tahun_kepengurusan_id');
-            $table->unsignedBigInteger('department_id')->nullable();
-            $table->unsignedBigInteger('project_id')->nullable();
-            $table->unsignedBigInteger('pengusul_id');
-            $table->unsignedBigInteger('keuangan_id')->nullable();
+            $table->foreignId('tahun_kepengurusan_id')->constrained('tahun_kepengurusan')->onDelete('cascade');
+            $table->foreignId('department_id')->nullable()->constrained('departments')->onDelete('set null');
+            $table->foreignId('project_id')->nullable()->constrained('projects')->onDelete('set null');
+            $table->foreignId('pengusul_id')->constrained('anggota')->onDelete('cascade');
+            $table->foreignId('keuangan_id')->nullable()->constrained('keuangan')->onDelete('set null');
             $table->string('nama_barang');
             $table->integer('jumlah')->default(1);
             $table->integer('harga')->default(0);
             $table->integer('total')->default(0);
-            $table->string('link_pembelian')->nullable();
+            $table->string('link_pembelian', 500)->nullable();
             $table->enum('status', ['diusulkan', 'disetujui', 'ditolak', 'selesai'])->default('diusulkan');
             $table->text('catatan')->nullable();
+            $table->foreignId('id_user')->constrained('users')->onDelete('cascade');
             $table->timestamps();
-
-            $table->foreign('tahun_kepengurusan_id')->references('id')->on('tahun_kepengurusan')->onDelete('cascade');
-            $table->foreign('department_id')->references('id')->on('departments')->onDelete('set null');
-            $table->foreign('project_id')->references('id')->on('projects')->onDelete('set null');
-            $table->foreign('pengusul_id')->references('id')->on('anggota')->onDelete('cascade');
-            $table->foreign('keuangan_id')->references('id')->on('keuangan')->onDelete('set null');
+            
+            $table->index('tahun_kepengurusan_id');
+            $table->index('department_id');
+            $table->index('project_id');
+            $table->index('pengusul_id');
+            $table->index('status');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('pengadaan_barang');

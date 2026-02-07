@@ -9,6 +9,7 @@ use App\Models\Anggaran;
 use App\Models\Keuangan;
 use App\Models\Department;
 use App\Models\Project;
+use App\Models\JenisAnggaran;
 use Maatwebsite\Excel\Facades\Excel;
 
 class Laporan extends Component
@@ -89,7 +90,7 @@ class Laporan extends Component
 
         // Get realisasi by department
         $realisasiByDept = Keuangan::where('id_tahun', $this->activeTahunId)
-            ->where('kategori', 'dept')
+            ->where('kategori', 'Departemen')
             ->whereNotNull('id_department')
             ->selectRaw('id_department, SUM(nominal) as total')
             ->groupBy('id_department')
@@ -97,7 +98,7 @@ class Laporan extends Component
 
         // Get realisasi by project
         $realisasiByProject = Keuangan::where('id_tahun', $this->activeTahunId)
-            ->where('kategori', 'project')
+            ->where('kategori', 'Project')
             ->whereNotNull('id_project')
             ->selectRaw('id_project, SUM(nominal) as total')
             ->groupBy('id_project')
@@ -105,31 +106,27 @@ class Laporan extends Component
 
         // Build pemasukan report
         $laporanPemasukan = [];
-        $jenisLabelsPemasukan = [
-            'saldo_awal' => 'Saldo Awal',
-            'iuran_kas' => 'Iuran Kas',
-            'sponsor' => 'Sponsor',
-            'lainnya' => 'Lainnya',
-        ];
-        foreach ($jenisLabelsPemasukan as $jenis => $label) {
+        $jenisAnggaranPemasukan = JenisAnggaran::where('nama_kategori', 'pemasukan')->get();
+        
+        foreach ($jenisAnggaranPemasukan as $jenisAnggaran) {
+            $jenis = $jenisAnggaran->nama_jenis;
             $anggaran = $anggaranPemasukan->where('jenis', $jenis)->sum('nominal');
             
             // Fetch transactions for this category
-            // Saldo awal usually doesn't have transactions in this table for the period
-            $txs = collect([]);
             $txs = Keuangan::where('id_tahun', $this->activeTahunId)
                 ->where('jenis', 'pemasukan')
-                ->where('kategori', $jenis) // Assuming 'kategori' in DB matches key (iuran_kas, sponsor, lainnya)
+                ->where('kategori', $jenis)
                 ->orderBy('tanggal', 'asc')
                 ->get();
 
             // Realisasi matching
-            // Note: $realisasiByKategori uses keys like 'pemasukan_iuran_kas'
-            $realisasi = $realisasiByKategori->get('pemasukan_' . $jenis)->total ?? 0;
+            $realisasiKey = 'pemasukan_' . $jenis;
+            $realisasiItem = $realisasiByKategori->get($realisasiKey);
+            $realisasi = $realisasiItem ? $realisasiItem->total : 0;
             
             $persentase = $anggaran > 0 ? round(($realisasi / $anggaran) * 100, 1) : 0;
             $laporanPemasukan[] = [
-                'nama' => $label,
+                'nama' => $jenis,
                 'anggaran' => $anggaran,
                 'realisasi' => $realisasi,
                 'persentase' => $persentase,
@@ -139,10 +136,10 @@ class Laporan extends Component
 
         // Build pengeluaran by department
         $laporanDept = [];
-        $anggaranDept = $anggaranPengeluaran->where('jenis', 'dept');
+        $anggaranDept = $anggaranPengeluaran->where('jenis', 'Departemen');
         foreach ($anggaranDept as $a) {
             $txs = Keuangan::where('id_tahun', $this->activeTahunId)
-                ->where('kategori', 'dept')
+                ->where('kategori', 'Departemen')
                 ->where('id_department', $a->id_department)
                 ->orderBy('tanggal', 'asc')
                 ->get();
@@ -159,10 +156,10 @@ class Laporan extends Component
 
         // Build pengeluaran by project
         $laporanProject = [];
-        $anggaranProject = $anggaranPengeluaran->where('jenis', 'project');
+        $anggaranProject = $anggaranPengeluaran->where('jenis', 'Project');
         foreach ($anggaranProject as $a) {
             $txs = Keuangan::where('id_tahun', $this->activeTahunId)
-                ->where('kategori', 'project')
+                ->where('kategori', 'Project')
                 ->where('id_project', $a->id_project)
                 ->orderBy('tanggal', 'asc')
                 ->get();
@@ -179,14 +176,14 @@ class Laporan extends Component
 
         // Build pengeluaran lainnya
         $laporanLainnya = [];
-        $anggaranLainnya = $anggaranPengeluaran->where('jenis', 'lainnya');
+        $anggaranLainnya = $anggaranPengeluaran->where('jenis', 'Pengeluaran Lainnya');
         // Only one general pot for realisasi lainnya? Or is it matched by name?
         // Current logic assumes one pot 'pengeluaran_lainnya' for ALL 'lainnya' budgets.
         // Let's stick to that, or optimize if they want detailed tracking.
         // For now, let's just get ALL 'lainnya' transactions.
         $txsLainnya = Keuangan::where('id_tahun', $this->activeTahunId)
             ->where('jenis', 'pengeluaran')
-            ->where('kategori', 'lainnya')
+            ->where('kategori', 'Pengeluaran Lainnya')
             ->orderBy('tanggal', 'asc')
             ->get();
             

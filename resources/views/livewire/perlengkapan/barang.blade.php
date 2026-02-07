@@ -120,7 +120,7 @@
                                                 $item->load("kategori");
                                             }
                                             return $item->kategori && is_object($item->kategori)
-                                                ? $item->kategori->nama
+                                                ? $item->kategori->nama_kategori
                                                 : "Tanpa Kategori";
                                         });
                                     @endphp
@@ -173,7 +173,7 @@
                                                     </span>
                                                 </td>
                                                 <td class="text-left tw-text-sm tw-whitespace-nowrap">
-                                                    <span class="tw-text-gray-600">{{ $row->user->name ?? '-' }}</span>
+                                                    <span class="tw-text-gray-600">{{ $row->user->name ?? "-" }}</span>
                                                 </td>
                                                 <td>
                                                     <button wire:click.prevent="edit({{ $row->id }})" class="btn btn-primary" data-toggle="modal" data-target="#formDataModal">
@@ -242,7 +242,7 @@
                                     <select wire:model="kategori_barang_id" id="kategori_barang_id" class="form-control">
                                         <option value="">-- Pilih Kategori --</option>
                                         @foreach ($kategoris as $kat)
-                                            <option value="{{ $kat->id }}">{{ $kat->nama }}</option>
+                                            <option value="{{ $kat->id }}">{{ $kat->nama_kategori }}</option>
                                         @endforeach
                                     </select>
                                     @error("kategori_barang_id")

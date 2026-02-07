@@ -87,7 +87,7 @@ class Barang extends Component
             ->orderBy('created_at', 'DESC')
             ->paginate($this->lengthData);
 
-        $kategoris = KategoriBarang::orderBy('nama')->get();
+        $kategoris = KategoriBarang::orderBy('nama_kategori')->get();
 
         return view('livewire.perlengkapan.barang', compact('data', 'kategoris'));
     }
@@ -116,14 +116,14 @@ class Barang extends Component
             'id_user' => Auth::id(),
         ]);
 
-        // Sync to Google Sheets
-        try {
-            $barang->load('kategori');
-            $googleSheets = new GoogleSheetsService();
-            $googleSheets->syncBarang($barang);
-        } catch (\Exception $e) {
-            Log::error('Google Sheets Sync Error on Create: ' . $e->getMessage());
-        }
+        // Sync to Google Sheets - DISABLED
+        // try {
+        //     $barang->load('kategori');
+        //     $googleSheets = new GoogleSheetsService();
+        //     $googleSheets->syncBarang($barang);
+        // } catch (\Exception $e) {
+        //     Log::error('Google Sheets Sync Error on Create: ' . $e->getMessage());
+        // }
 
         $this->dispatchAlert('success', 'Berhasil!', 'Barang berhasil ditambahkan.');
     }
@@ -174,14 +174,14 @@ class Barang extends Component
                 'keterangan' => $this->keterangan,
             ]);
 
-            // Sync to Google Sheets
-            try {
-                $barang->load('kategori');
-                $googleSheets = new GoogleSheetsService();
-                $googleSheets->syncBarang($barang);
-            } catch (\Exception $e) {
-                Log::error('Google Sheets Sync Error on Update: ' . $e->getMessage());
-            }
+            // Sync to Google Sheets - DISABLED
+            // try {
+            //     $barang->load('kategori');
+            //     $googleSheets = new GoogleSheetsService();
+            //     $googleSheets->syncBarang($barang);
+            // } catch (\Exception $e) {
+            //     Log::error('Google Sheets Sync Error on Update: ' . $e->getMessage());
+            // }
 
             $this->dispatchAlert('success', 'Berhasil!', 'Barang berhasil diperbarui.');
             $this->dataId = null;
@@ -222,13 +222,13 @@ class Barang extends Component
         
         $barang->delete();
 
-        // Delete from Google Sheets
-        try {
-            $googleSheets = new GoogleSheetsService();
-            $googleSheets->deleteBarang($kode);
-        } catch (\Exception $e) {
-            Log::error('Google Sheets Delete Error: ' . $e->getMessage());
-        }
+        // Delete from Google Sheets - DISABLED
+        // try {
+        //     $googleSheets = new GoogleSheetsService();
+        //     $googleSheets->deleteBarang($kode);
+        // } catch (\Exception $e) {
+        //     Log::error('Google Sheets Delete Error: ' . $e->getMessage());
+        // }
 
         $this->dispatchAlert('success', 'Berhasil!', 'Barang berhasil dihapus.');
     }

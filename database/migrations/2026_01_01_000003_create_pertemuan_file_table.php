@@ -6,23 +6,20 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
+        // Pertemuan Files (WITH timestamps)
         Schema::create('pertemuan_file', function (Blueprint $table) {
             $table->id();
-            $table->text('id_pertemuan')->default('');
-            $table->text('file_path')->default('');
-            $table->text('ukuran_file')->default('0');
+            $table->foreignId('id_pertemuan')->constrained('pertemuan')->onDelete('cascade');
+            $table->string('file_path');
+            $table->bigInteger('ukuran_file')->nullable();
             $table->timestamps();
+            
+            $table->index('id_pertemuan');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('pertemuan_file');

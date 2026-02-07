@@ -103,7 +103,7 @@
                                     </a>
                                     <ul class="dropdown-menu">
                                         <li class="nav-item {{ request()->is("program-pembelajaran") ? "active" : "" }}">
-                                            <a href="/program-pembelajaran" class="nav-link">Program Pembelajaran</a>
+                                            <a href="/program-pembelajaran" class="nav-link">Program Kegiatan</a>
                                         </li>
                                         <li class="nav-item {{ request()->is("pertemuan") ? "active" : "" }}">
                                             <a href="/pertemuan" class="nav-link">Pertemuan</a>
@@ -116,12 +116,15 @@
                                         </li>
                                     </ul>
                                 </li>
-                                <li class="nav-item dropdown {{ request()->is("anggaran") || request()->is("transaksi-keuangan") || request()->is("iuran-kas") || request()->is("laporan-keuangan") ? "active" : "" }}">
+                                <li class="nav-item dropdown {{ request()->is("jenis-anggaran") || request()->is("anggaran") || request()->is("transaksi-keuangan") || request()->is("iuran-kas") || request()->is("laporan-keuangan") ? "active" : "" }}">
                                     <a href="#" data-toggle="dropdown" class="nav-link has-dropdown">
                                         <i class="far fa-money-bill-wave"></i>
                                         <span>Keuangan</span>
                                     </a>
                                     <ul class="dropdown-menu">
+                                        <li class="nav-item {{ request()->is("jenis-anggaran") ? "active" : "" }}">
+                                            <a href="/jenis-anggaran" class="nav-link">Jenis Anggaran</a>
+                                        </li>
                                         <li class="nav-item {{ request()->is("anggaran") ? "active" : "" }}">
                                             <a href="/anggaran" class="nav-link">Anggaran</a>
                                         </li>
@@ -153,6 +156,17 @@
                                         </li>
                                         <li class="nav-item {{ request()->is("pengadaan-barang") ? "active" : "" }}">
                                             <a href="/pengadaan-barang" class="nav-link">Pengadaan Barang</a>
+                                        </li>
+                                    </ul>
+                                </li>
+                                <li class="nav-item dropdown {{ request()->is("surat-administrasi") ? "active" : "" }}">
+                                    <a href="#" data-toggle="dropdown" class="nav-link has-dropdown">
+                                        <i class="far fa-envelope"></i>
+                                        <span>Sekretaris</span>
+                                    </a>
+                                    <ul class="dropdown-menu">
+                                        <li class="nav-item {{ request()->is("surat-administrasi") ? "active" : "" }}">
+                                            <a href="/surat-administrasi" class="nav-link">Administrasi Surat</a>
                                         </li>
                                     </ul>
                                 </li>

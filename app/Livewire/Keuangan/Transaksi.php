@@ -4,19 +4,26 @@ namespace App\Livewire\Keuangan;
 
 use Livewire\Component;
 use Livewire\WithPagination;
+use Livewire\WithFileUploads;
 use Livewire\Attributes\Title;
 use App\Models\TahunKepengurusan;
 use App\Models\Keuangan as ModelsKeuangan;
+use App\Models\Anggaran as ModelsAnggaran;
 use App\Models\Department;
 use App\Models\Project;
+use App\Models\JenisAnggaran;
+use App\Models\TransaksiFile;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Exports\KeuanganExport;
+use App\Traits\ImageCompressor;
 
 class Transaksi extends Component
 {
-    use WithPagination;
+    use WithPagination, WithFileUploads, ImageCompressor;
     #[Title('Transaksi Keuangan')]
 
     protected $listeners = [
@@ -24,13 +31,16 @@ class Transaksi extends Component
     ];
 
     protected $rules = [
-        'tanggal'       => 'required|date',
-        'jenis'         => 'required',
-        'kategori'      => 'required',
-        'deskripsi'     => 'required',
-        'nominal'       => 'required|numeric|min:0',
-        'id_department' => 'required_if:kategori,dept',
-        'id_project'    => 'required_if:kategori,project',
+        'tanggal'          => 'required|date',
+        'jenis'            => 'required',
+        'kategori'         => 'required',
+        'deskripsi'        => 'required',
+        'nominal'          => 'required|numeric|min:0',
+        'id_department'    => 'required_if:kategori,Departemen',
+        'id_project'       => 'required_if:kategori,Project',
+        'filesNota.*'      => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+        'filesReimburse.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+        'filesFoto.*'      => 'nullable|file|mimes:jpg,jpeg,png,mp4,mov,avi,mkv|max:51200',
     ];
 
     public $lengthData = 25;
@@ -45,6 +55,16 @@ class Transaksi extends Component
     public $tanggal, $jenis, $kategori, $id_department, $id_project, $deskripsi, $nominal, $bukti;
     public $activeTahunId;
     public $departments, $projects;
+    
+    // File uploads
+    public $filesNota = [];
+    public $filesReimburse = [];
+    public $filesFoto = [];
+    public $existingFiles = [];
+    
+    // Image compression settings
+    protected $imageTargetSizeKB = 500;
+    protected $imageMaxWidth = 1920;
 
     public function mount()
     {
@@ -108,25 +128,59 @@ class Transaksi extends Component
             ->where('jenis', 'pengeluaran')->sum('nominal');
         $saldoAkhir = $totalPemasukan - $totalPengeluaran;
 
-        return view('livewire.keuangan.transaksi', compact('data', 'runningTotals', 'totalPemasukan', 'totalPengeluaran', 'saldoAkhir'));
+        // Load kategori dari tabel JenisAnggaran
+        $jenisAnggaranPemasukan = JenisAnggaran::where('nama_kategori', 'pemasukan')
+            ->orderBy('nama_jenis')
+            ->get();
+        $jenisAnggaranPengeluaran = JenisAnggaran::where('nama_kategori', 'pengeluaran')
+            ->orderBy('nama_jenis')
+            ->get();
+
+        return view('livewire.keuangan.transaksi', compact(
+            'data', 
+            'runningTotals', 
+            'totalPemasukan', 
+            'totalPengeluaran', 
+            'saldoAkhir',
+            'jenisAnggaranPemasukan',
+            'jenisAnggaranPengeluaran'
+        ));
+    }
+
+    public function updatedJenis()
+    {
+        // Reset kategori, department, dan project ketika jenis berubah
+        $this->kategori = '';
+        $this->id_department = null;
+        $this->id_project = null;
+    }
+
+    public function updated($propertyName)
+    {
+        $this->dispatch('initSelect2');
     }
 
     public function store()
     {
         $this->validate();
 
-        ModelsKeuangan::create([
+        $transaksi = ModelsKeuangan::create([
             'id_tahun'      => $this->activeTahunId,
             'tanggal'       => $this->tanggal,
             'jenis'         => $this->jenis,
             'kategori'      => $this->kategori,
-            'id_department' => $this->kategori === 'dept' ? $this->id_department : null,
-            'id_project'    => $this->kategori === 'project' ? $this->id_project : null,
+            'id_department' => $this->kategori === 'Departemen' ? $this->id_department : null,
+            'id_project'    => $this->kategori === 'Project' ? $this->id_project : null,
             'deskripsi'     => $this->deskripsi,
             'nominal'       => $this->nominal,
             'bukti'         => $this->bukti,
             'id_user'       => Auth::id(),
         ]);
+
+        // Upload files if any
+        if (!empty($this->filesNota) || !empty($this->filesReimburse) || !empty($this->filesFoto)) {
+            $this->uploadTransaksiFiles($transaksi->id);
+        }
 
         $this->dispatchAlert('success', 'Success!', 'Transaksi berhasil ditambahkan.');
     }
@@ -144,6 +198,15 @@ class Transaksi extends Component
         $this->deskripsi     = $data->deskripsi;
         $this->nominal       = $data->nominal;
         $this->bukti         = $data->bukti;
+        
+        // Load existing files
+        $this->existingFiles = TransaksiFile::where('id_transaksi', $id)
+            ->orderBy('tipe')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->toArray();
+        
+        $this->dispatch('initSelect2');
     }
 
     public function update()
@@ -155,12 +218,17 @@ class Transaksi extends Component
                 'tanggal'       => $this->tanggal,
                 'jenis'         => $this->jenis,
                 'kategori'      => $this->kategori,
-                'id_department' => $this->kategori === 'dept' ? $this->id_department : null,
-                'id_project'    => $this->kategori === 'project' ? $this->id_project : null,
+                'id_department' => $this->kategori === 'Departemen' ? $this->id_department : null,
+                'id_project'    => $this->kategori === 'Project' ? $this->id_project : null,
                 'deskripsi'     => $this->deskripsi,
                 'nominal'       => $this->nominal,
                 'bukti'         => $this->bukti,
             ]);
+
+            // Upload new files if any
+            if (!empty($this->filesNota) || !empty($this->filesReimburse) || !empty($this->filesFoto)) {
+                $this->uploadTransaksiFiles($this->dataId);
+            }
 
             $this->dispatchAlert('success', 'Success!', 'Transaksi berhasil diperbarui.');
             $this->dataId = null;
@@ -210,6 +278,7 @@ class Transaksi extends Component
     public function isEditingMode($mode)
     {
         $this->isEditing = $mode;
+        $this->dispatch('initSelect2');
     }
     
     private function resetInputFields()
@@ -222,6 +291,10 @@ class Transaksi extends Component
         $this->deskripsi     = '';
         $this->nominal       = '';
         $this->bukti         = '';
+        $this->filesNota     = [];
+        $this->filesReimburse = [];
+        $this->filesFoto     = [];
+        $this->existingFiles = [];
     }
 
     public function cancel()
@@ -293,5 +366,147 @@ class Transaksi extends Component
         }
 
         return $data;
+    }
+
+    /**
+     * Upload transaction files with security and compression
+     */
+    private function uploadTransaksiFiles($transaksiId)
+    {
+        $transaksi = ModelsKeuangan::with(['department', 'project'])->findOrFail($transaksiId);
+        
+        // Build base path
+        $basePath = $this->buildFilePath($transaksi);
+        
+        // Upload nota files
+        if (!empty($this->filesNota)) {
+            $this->processFileUpload($this->filesNota, 'nota', $transaksiId, $basePath);
+        }
+        
+        // Upload reimburse files
+        if (!empty($this->filesReimburse)) {
+            $this->processFileUpload($this->filesReimburse, 'reimburse', $transaksiId, $basePath);
+        }
+        
+        // Upload foto files
+        if (!empty($this->filesFoto)) {
+            $this->processFileUpload($this->filesFoto, 'foto', $transaksiId, $basePath);
+        }
+    }
+
+    /**
+     * Build file path based on transaction category
+     */
+    private function buildFilePath($transaksi): string
+    {
+        // Get tahun kepengurusan
+        $tahun = $transaksi->tahunKepengurusan->nama_tahun ?? date('Y');
+        
+        // Jenis transaksi (Pemasukan/Pengeluaran)
+        $jenis = ucfirst($transaksi->jenis);
+        
+        // Bulan (format: 01, 02, 03, etc.)
+        $bulan = $transaksi->tanggal->format('m');
+        
+        // Determine kategori folder name
+        if ($transaksi->kategori === 'Departemen' && $transaksi->department) {
+            $kategoriFolder = 'Dept. ' . $transaksi->department->nama_department;
+        } elseif ($transaksi->kategori === 'Project' && $transaksi->project) {
+            $kategoriFolder = 'Project ' . $transaksi->project->nama_project;
+        } else {
+            $kategoriFolder = $transaksi->kategori;
+        }
+        
+        return "{$tahun}/Bendahara/{$jenis}/{$bulan}/{$kategoriFolder}";
+    }
+
+    /**
+     * Process file upload with validation, compression, and security
+     */
+    private function processFileUpload($files, $tipe, $transaksiId, $basePath)
+    {
+        $transaksi = ModelsKeuangan::findOrFail($transaksiId);
+        
+        foreach ($files as $file) {
+            // Security: Validate mime type
+            $mimeType = $file->getMimeType();
+            $extension = $file->getClientOriginalExtension();
+            $originalName = $file->getClientOriginalName();
+            
+            // Generate safe filename
+            $tanggal = $transaksi->tanggal->format('Y-m-d');
+            $random = substr(str_shuffle('abcdefghijklmnopqrstuvwxyz0123456789'), 0, 2);
+            $safeFilename = "{$tipe}_{$tanggal}-{$random}.{$extension}";
+            
+            // Store file
+            $filePath = $file->storeAs($basePath, $safeFilename, 'public');
+            $fullPath = storage_path('app/public/' . $filePath);
+            $fileSize = $file->getSize();
+            
+            // Compress images (not videos or PDFs)
+            if (in_array($mimeType, ['image/jpeg', 'image/jpg', 'image/png'])) {
+                $this->compressImageToSize($fullPath, $this->imageTargetSizeKB, $this->imageMaxWidth);
+                
+                // Update file size after compression
+                if (file_exists($fullPath)) {
+                    $fileSize = filesize($fullPath);
+                }
+                
+                // Update path if PNG was converted to JPG
+                if ($extension === 'png' && !file_exists($fullPath)) {
+                    $filePath = preg_replace('/\.png$/i', '.jpg', $filePath);
+                    $safeFilename = preg_replace('/\.png$/i', '.jpg', $safeFilename);
+                }
+            }
+            
+            // Save to database
+            TransaksiFile::create([
+                'id_transaksi' => $transaksiId,
+                'tipe' => $tipe,
+                'file_path' => $filePath,
+                'original_name' => $originalName,
+                'file_size' => $fileSize,
+                'mime_type' => $mimeType,
+            ]);
+        }
+    }
+
+    /**
+     * Delete file from storage and database
+     */
+    public function deleteFile($fileId)
+    {
+        try {
+            $file = TransaksiFile::findOrFail($fileId);
+            
+            // Delete from storage
+            if (Storage::disk('public')->exists($file->file_path)) {
+                Storage::disk('public')->delete($file->file_path);
+            }
+            
+            // Delete from database
+            $file->delete();
+            
+            // Refresh existing files
+            if ($this->dataId) {
+                $this->existingFiles = TransaksiFile::where('id_transaksi', $this->dataId)
+                    ->orderBy('tipe')
+                    ->orderBy('created_at', 'desc')
+                    ->get()
+                    ->toArray();
+            }
+            
+            $this->dispatch('swal:modal', [
+                'type' => 'success',
+                'message' => 'Success!',
+                'text' => 'File berhasil dihapus.'
+            ]);
+        } catch (\Exception $e) {
+            $this->dispatch('swal:modal', [
+                'type' => 'error',
+                'message' => 'Error!',
+                'text' => 'Gagal menghapus file: ' . $e->getMessage()
+            ]);
+        }
     }
 }

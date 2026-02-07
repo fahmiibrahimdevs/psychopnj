@@ -26,18 +26,17 @@ class Anggota extends Component
         'id_department'       => 'required',
         'nama_lengkap'        => 'required',
         'nama_jabatan'        => 'required',
-        'kelas'               => 'required',
-        'jurusan'             => 'required',
+        'jurusan_prodi_kelas' => 'required',
         'nim'                 => '',
+        'ttl'                 => '',
+        'alamat'              => '',
+        'email'               => 'required|email',
         'no_hp'               => '',
         'status_anggota'      => 'required',
         'status_aktif'        => 'required',
         'foto'                => '',
-        'email'               => 'required|email',
         'password'            => '',
         'password_confirmation' => '',
-        'motivasi'            => '',
-        'pengalaman'          => '',
     ];
 
     public $lengthData = 25;
@@ -48,10 +47,11 @@ class Anggota extends Component
     public $dataId;
     public $viewData;
     public $activeTab = 'pengurus';
+    public $perPagePengurus = 25;
+    public $perPageAnggota = 25;
 
-    public $id_user, $id_tahun, $id_department, $nama_lengkap, $nama_jabatan, $kelas, $jurusan, $nim, $no_hp, $status_anggota, $status_aktif, $foto;
-    public $email, $password, $password_confirmation;
-    public $motivasi, $pengalaman;
+    public $id_user, $id_tahun, $id_department, $nama_lengkap, $nama_jabatan, $jurusan_prodi_kelas, $nim, $ttl, $alamat, $email, $no_hp, $status_anggota, $status_aktif, $foto;
+    public $password, $password_confirmation;
     public $tahuns, $departments;
 
     public function mount()
@@ -63,18 +63,17 @@ class Anggota extends Component
         $this->id_department       = '';
         $this->nama_lengkap        = '';
         $this->nama_jabatan        = '';
-        $this->kelas               = '';
-        $this->jurusan             = '';
+        $this->jurusan_prodi_kelas = '';
         $this->nim                 = '';
-        $this->no_hp               = '';
+        $this->ttl                 = '';
+        $this->alamat              = '';
+        $this->email               = '';
+        $this->no_hp               = '08';
         $this->status_anggota      = '';
         $this->status_aktif        = '';
         $this->foto                = '';
-        $this->email               = '';
         $this->password            = '';
         $this->password_confirmation = '';
-        $this->motivasi            = '';
-        $this->pengalaman          = '';
         $this->getTahunKepengurusan();
         $this->getDepartment($this->id_tahun);
     }
@@ -128,40 +127,129 @@ class Anggota extends Component
         $this->dispatch('initSelect2');
     }
 
+    public function loadMorePengurus()
+    {
+        $this->perPagePengurus += 25;
+    }
+
+    public function loadMoreAnggota()
+    {
+        $this->perPageAnggota += 25;
+    }
+
     public function render()
     {
-        $this->searchResetPage();
         $search = '%'.$this->searchTerm.'%';
 
-        $dataPengurus = ModelsAnggota::select('anggota.id', 'departments.nama_department', 'anggota.nama_jabatan', 'anggota.nama_lengkap', 'anggota.kelas', 'anggota.jurusan', 'anggota.status_anggota', 'anggota.status_aktif', 'anggota.foto', 'tahun_kepengurusan.nama_tahun')
+        // Get data pengurus with load more
+        $dataPengurus = DB::table('anggota')
+                ->select(
+                    'anggota.id',
+                    'anggota.id_department',
+                    'anggota.nama_lengkap',
+                    'anggota.nama_jabatan',
+                    'anggota.jurusan_prodi_kelas',
+                    'anggota.nim',
+                    'anggota.email',
+                    'anggota.no_hp',
+                    'anggota.status_aktif',
+                    'anggota.foto',
+                    'departments.nama_department',
+                    'tahun_kepengurusan.nama_tahun'
+                )
                 ->join('tahun_kepengurusan', 'tahun_kepengurusan.id', '=', 'anggota.id_tahun')
                 ->leftJoin('departments', 'departments.id', '=', 'anggota.id_department')
-                ->where(function ($query) use ($search) {
-                    $query->where('nama_lengkap', 'LIKE', $search);
-                    $query->orWhere('nama_jabatan', 'LIKE', $search);
-                    $query->orWhere('kelas', 'LIKE', $search);
-                    $query->orWhere('jurusan', 'LIKE', $search);
-                })
                 ->where('tahun_kepengurusan.status', 'aktif')
                 ->where('anggota.status_anggota', 'pengurus')
-                ->orderBy('id', 'ASC')
-                ->paginate($this->lengthData);
+                ->where(function ($query) use ($search) {
+                    $query->where('anggota.nama_lengkap', 'LIKE', $search)
+                          ->orWhere('anggota.nama_jabatan', 'LIKE', $search)
+                          ->orWhere('anggota.jurusan_prodi_kelas', 'LIKE', $search)
+                          ->orWhere('departments.nama_department', 'LIKE', $search);
+                })
+                ->orderBy('anggota.id_department', 'ASC')
+                ->orderBy('anggota.id', 'ASC')
+                ->limit($this->perPagePengurus)
+                ->get()
+                ->groupBy('nama_department');
 
-        $dataAnggota = ModelsAnggota::select('anggota.id', 'departments.nama_department', 'anggota.nama_jabatan', 'anggota.nama_lengkap', 'anggota.kelas', 'anggota.jurusan', 'anggota.status_anggota', 'anggota.status_aktif', 'anggota.foto', 'tahun_kepengurusan.nama_tahun')
+        $countPengurus = DB::table('anggota')
+                ->join('tahun_kepengurusan', 'tahun_kepengurusan.id', '=', 'anggota.id_tahun')
+                ->where('tahun_kepengurusan.status', 'aktif')
+                ->where('anggota.status_anggota', 'pengurus')
+                ->count();
+
+        // Get data anggota with load more
+        $dataAnggota = DB::table('anggota')
+                ->select(
+                    'anggota.id',
+                    'anggota.id_department',
+                    'anggota.nama_lengkap',
+                    'anggota.nama_jabatan',
+                    'anggota.jurusan_prodi_kelas',
+                    'anggota.nim',
+                    'anggota.email',
+                    'anggota.no_hp',
+                    'anggota.status_aktif',
+                    'anggota.foto',
+                    'departments.nama_department',
+                    'tahun_kepengurusan.nama_tahun'
+                )
                 ->join('tahun_kepengurusan', 'tahun_kepengurusan.id', '=', 'anggota.id_tahun')
                 ->leftJoin('departments', 'departments.id', '=', 'anggota.id_department')
-                ->where(function ($query) use ($search) {
-                    $query->where('nama_lengkap', 'LIKE', $search);
-                    $query->orWhere('nama_jabatan', 'LIKE', $search);
-                    $query->orWhere('kelas', 'LIKE', $search);
-                    $query->orWhere('jurusan', 'LIKE', $search);
-                })
                 ->where('tahun_kepengurusan.status', 'aktif')
                 ->where('anggota.status_anggota', 'anggota')
-                ->orderBy('id', 'ASC')
-                ->paginate($this->lengthData);
+                ->where(function ($query) use ($search) {
+                    $query->where('anggota.nama_lengkap', 'LIKE', $search)
+                          ->orWhere('anggota.nama_jabatan', 'LIKE', $search)
+                          ->orWhere('anggota.jurusan_prodi_kelas', 'LIKE', $search);
+                })
+                ->orderBy('anggota.id', 'ASC')
+                ->limit($this->perPageAnggota)
+                ->get()
+                ->groupBy('nama_department');
 
-        return view('livewire.organisasi.anggota', compact('dataPengurus', 'dataAnggota'));
+        $countAnggota = DB::table('anggota')
+                ->join('tahun_kepengurusan', 'tahun_kepengurusan.id', '=', 'anggota.id_tahun')
+                ->where('tahun_kepengurusan.status', 'aktif')
+                ->where('anggota.status_anggota', 'anggota')
+                ->count();
+
+        // Statistik berdasarkan Jurusan/Prodi/Kelas untuk Pengurus
+        $statistikPengurus = DB::table('anggota')
+                ->join('tahun_kepengurusan', 'tahun_kepengurusan.id', '=', 'anggota.id_tahun')
+                ->where('tahun_kepengurusan.status', 'aktif')
+                ->where('anggota.status_anggota', 'pengurus')
+                ->select('jurusan_prodi_kelas', DB::raw('count(*) as total'))
+                ->groupBy('jurusan_prodi_kelas')
+                ->orderByDesc('total')
+                ->get()
+                ->map(function ($item) use ($countPengurus) {
+                    return [
+                        'jurusan_prodi_kelas' => $item->jurusan_prodi_kelas,
+                        'total' => $item->total,
+                        'persentase' => $countPengurus > 0 ? round(($item->total / $countPengurus) * 100, 1) : 0
+                    ];
+                });
+
+        // Statistik berdasarkan Jurusan/Prodi/Kelas untuk Anggota
+        $statistikAnggota = DB::table('anggota')
+                ->join('tahun_kepengurusan', 'tahun_kepengurusan.id', '=', 'anggota.id_tahun')
+                ->where('tahun_kepengurusan.status', 'aktif')
+                ->where('anggota.status_anggota', 'anggota')
+                ->select('jurusan_prodi_kelas', DB::raw('count(*) as total'))
+                ->groupBy('jurusan_prodi_kelas')
+                ->orderByDesc('total')
+                ->get()
+                ->map(function ($item) use ($countAnggota) {
+                    return [
+                        'jurusan_prodi_kelas' => $item->jurusan_prodi_kelas,
+                        'total' => $item->total,
+                        'persentase' => $countAnggota > 0 ? round(($item->total / $countAnggota) * 100, 1) : 0
+                    ];
+                });
+
+        return view('livewire.organisasi.anggota', compact('dataPengurus', 'dataAnggota', 'countPengurus', 'countAnggota', 'statistikPengurus', 'statistikAnggota'));
     }
 
     public function store()
@@ -216,7 +304,7 @@ class Anggota extends Component
                     'active' => $this->status_aktif == 'aktif' ? '1' : '0',
                 ]);
                 
-                // Assign role berdasarkan status_anggota (pengurus atau anggota)
+                // Assign role berdasarkan status_anggota
                 $user->addRole($this->status_anggota);
                 
                 $userId = $user->id;
@@ -226,18 +314,18 @@ class Anggota extends Component
         ModelsAnggota::create([
             'id_user'             => $userId,
             'id_tahun'            => $this->id_tahun,
-            'id_department'       => $this->id_department, // Update column name
+            'id_department'       => $this->id_department ?: 0,
             'nama_lengkap'        => $this->nama_lengkap,
             'nama_jabatan'        => $this->nama_jabatan,
-            'kelas'               => $this->kelas,
-            'jurusan'             => $this->jurusan,
+            'jurusan_prodi_kelas' => $this->jurusan_prodi_kelas,
             'nim'                 => $this->nim,
+            'ttl'                 => $this->ttl,
+            'alamat'              => $this->alamat,
+            'email'               => $this->email,
             'no_hp'               => $this->no_hp,
             'status_anggota'      => $this->status_anggota,
             'status_aktif'        => $this->status_aktif,
             'foto'                => $this->foto,
-            'motivasi'            => $this->motivasi,
-            'pengalaman'          => $this->pengalaman,
         ]);
 
         $this->dispatchAlert('success', 'Success!', 'Data created successfully.');
@@ -245,30 +333,50 @@ class Anggota extends Component
 
     public function edit($id)
     {
-        $this->isEditing        = true;
-        $data = ModelsAnggota::where('id', $id)->first();
+        $this->isEditing = true;
+        $data = DB::table('anggota')
+            ->select(
+                'id',
+                'id_user',
+                'id_tahun',
+                'id_department',
+                'nama_lengkap',
+                'nama_jabatan',
+                'jurusan_prodi_kelas',
+                'nim',
+                'ttl',
+                'alamat',
+                'email',
+                'no_hp',
+                'status_anggota',
+                'status_aktif',
+                'foto'
+            )
+            ->where('id', $id)
+            ->first();
+            
         $this->getTahunKepengurusan();
         $this->dataId           = $id;
         $this->id_user          = $data->id_user;
         $this->id_tahun         = $data->id_tahun;
         $this->getDepartment($data->id_tahun);
-        $this->id_department    = $data->id_department; // Column name check
+        $this->id_department    = $data->id_department;
         $this->nama_lengkap     = $data->nama_lengkap;
         $this->nama_jabatan     = $data->nama_jabatan;
-        $this->kelas            = $data->kelas;
-        $this->jurusan          = $data->jurusan;
+        $this->jurusan_prodi_kelas = $data->jurusan_prodi_kelas;
         $this->nim              = $data->nim;
+        $this->ttl              = $data->ttl;
+        $this->alamat           = $data->alamat;
+        $this->email            = $data->email;
         $this->no_hp            = $data->no_hp;
         $this->status_anggota   = $data->status_anggota;
         $this->status_aktif     = $data->status_aktif;
         $this->foto             = $data->foto;
-        $this->motivasi         = $data->motivasi;
-        $this->pengalaman       = $data->pengalaman;
         
-        // Load email dari user
+        // Load email dari user jika berbeda
         if ($data->id_user) {
             $user = \App\Models\User::find($data->id_user);
-            if ($user) {
+            if ($user && $user->email !== $data->email) {
                 $this->email = $user->email;
             }
         }
@@ -278,13 +386,26 @@ class Anggota extends Component
 
     public function view($id)
     {
-        $this->viewData = ModelsAnggota::select(
-                'anggota.*',
+        $this->viewData = DB::table('anggota')
+            ->select(
+                'anggota.id',
+                'anggota.id_user',
+                'anggota.id_tahun',
+                'anggota.id_department',
+                'anggota.nama_lengkap',
+                'anggota.nama_jabatan',
+                'anggota.jurusan_prodi_kelas',
+                'anggota.nim',
+                'anggota.ttl',
+                'anggota.alamat',
+                'anggota.email',
+                'anggota.no_hp',
+                'anggota.status_anggota',
+                'anggota.status_aktif',
+                'anggota.foto',
                 'departments.nama_department',
                 'tahun_kepengurusan.nama_tahun',
-                'tahun_kepengurusan.mulai',
-                'tahun_kepengurusan.akhir',
-                'users.email'
+                'users.email as user_email'
             )
             ->join('tahun_kepengurusan', 'tahun_kepengurusan.id', '=', 'anggota.id_tahun')
             ->leftJoin('departments', 'departments.id', '=', 'anggota.id_department')
@@ -350,7 +471,7 @@ class Anggota extends Component
                         'active' => $this->status_aktif == 'aktif' ? '1' : '0',
                     ]);
                     
-                    // Assign role berdasarkan status_anggota
+                    // Assign role
                     $user->addRole($this->status_anggota);
                     
                     $userId = $user->id;
@@ -360,18 +481,18 @@ class Anggota extends Component
             ModelsAnggota::findOrFail($this->dataId)->update([
                 'id_user'             => $userId,
                 'id_tahun'            => $this->id_tahun,
-                'id_department'       => $this->id_department,
+                'id_department'       => $this->id_department ?: 0,
                 'nama_lengkap'        => $this->nama_lengkap,
                 'nama_jabatan'        => $this->nama_jabatan,
-                'kelas'               => $this->kelas,
-                'jurusan'             => $this->jurusan,
+                'jurusan_prodi_kelas' => $this->jurusan_prodi_kelas,
                 'nim'                 => $this->nim,
+                'ttl'                 => $this->ttl,
+                'alamat'              => $this->alamat,
+                'email'               => $this->email,
                 'no_hp'               => $this->no_hp,
                 'status_anggota'      => $this->status_anggota,
                 'status_aktif'        => $this->status_aktif,
                 'foto'                => $this->foto,
-                'motivasi'            => $this->motivasi,
-                'pengalaman'          => $this->pengalaman,
             ]);
 
             $this->dispatchAlert('success', 'Success!', 'Data updated successfully.');
@@ -465,18 +586,18 @@ class Anggota extends Component
         $this->id_department       = '';
         $this->nama_lengkap        = '';
         $this->nama_jabatan        = '';
-        $this->kelas               = '';
-        $this->jurusan             = '';
+        $this-> jurusan_prodi_kelas = '';
         $this->nim                 = '';
-        $this->no_hp               = '';
+        $this->ttl                 = '';
+        $this->alamat              = '';
+        $this->email               = '';
+        $this->no_hp               = '08';
         $this->status_anggota      = '';
         $this->status_aktif        = '';
         $this->foto                = '';
-        $this->email               = '';
         $this->password            = '';
         $this->password_confirmation = '';
-        $this->motivasi            = '';
-        $this->pengalaman          = '';
+
     }
 
     public function cancel()

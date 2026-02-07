@@ -16,12 +16,14 @@ class DatabaseSeeder extends Seeder
         // User::factory(10)->create();
         $this->call([
             LaratrustSeeder::class,
-            AdminSeeder::class,
+            // AdminSeeder::class,
             TahunKepengurusanSeeder::class,
             DepartmentSeeder::class,
             OpenRecruitmentSeeder::class,
             AnggotaSeeder::class,
             ProfilOrganisasiSeeder::class,
+            JenisAnggaranSeeder::class,
+            KategoriDokumenSeeder::class,
         ]);
         // User::factory()->create([
         //     'name' => 'Test User',

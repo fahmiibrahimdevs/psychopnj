@@ -7,13 +7,82 @@
         <div class="section-body">
             <ul class="nav nav-pills" id="myTab3" role="tablist">
                 <li class="nav-item">
-                    <a class="nav-link {{ $activeTab === "pengurus" ? "active" : "" }}" wire:click.prevent="switchTab('pengurus')" id="pengurus-tab3" data-toggle="tab" href="#pengurus" role="tab" aria-controls="pengurus" aria-selected="{{ $activeTab === "pengurus" ? "true" : "false" }}">Pengurus</a>
+                    <a class="nav-link {{ $activeTab === "pengurus" ? "active" : "" }}" wire:click.prevent="switchTab('pengurus')" id="pengurus-tab3" data-toggle="tab" href="#pengurus" role="tab" aria-controls="pengurus" aria-selected="{{ $activeTab === "pengurus" ? "true" : "false" }}">Pengurus ({{ $countPengurus }})</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ $activeTab === "anggota" ? "active" : "" }}" wire:click.prevent="switchTab('anggota')" id="anggota-tab3" data-toggle="tab" href="#anggota" role="tab" aria-controls="anggota" aria-selected="{{ $activeTab === "anggota" ? "true" : "false" }}">Anggota</a>
+                    <a class="nav-link {{ $activeTab === "anggota" ? "active" : "" }}" wire:click.prevent="switchTab('anggota')" id="anggota-tab3" data-toggle="tab" href="#anggota" role="tab" aria-controls="anggota" aria-selected="{{ $activeTab === "anggota" ? "true" : "false" }}">Anggota ({{ $countAnggota }})</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ $activeTab === "statistik" ? "active" : "" }}" wire:click.prevent="switchTab('statistik')" id="statistik-tab3" data-toggle="tab" href="#statistik" role="tab" aria-controls="statistik" aria-selected="{{ $activeTab === "statistik" ? "true" : "false" }}">Statistik Kelas</a>
                 </li>
             </ul>
             <div class="tab-content" id="myTabContent2">
+                <div class="tab-pane fade {{ $activeTab === "statistik" ? "show active" : "" }}" id="statistik" role="tabpanel" aria-labelledby="statistik-tab3">
+                    <div class="card">
+                        <h3>
+                            <i class="fas fa-chart-pie"></i>
+                            Statistik Kelas Berdasarkan Jurusan/Prodi/Kelas
+                        </h3>
+                        <div class="card-body tw-px-4 lg:tw-px-6">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h5 class="text-center mb-4 font-bagus tw-text-sm">Pengurus ({{ $countPengurus }})</h5>
+                                    @if ($statistikPengurus->count() > 0)
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3 d-flex justify-content-center" wire:ignore>
+                                                <div style="width: 100%; max-width: 300px">
+                                                    <canvas id="chartPengurusOprec"></canvas>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="tw-space-y-2" style="max-height: 400px; overflow-y: auto">
+                                                    @foreach ($statistikPengurus as $index => $stat)
+                                                        <div class="tw-flex tw-justify-between tw-items-center tw-text-sm tw-border-b tw-pb-1">
+                                                            <div class="tw-flex tw-items-center" style="flex: 1; min-width: 0">
+                                                                <div class="tw-w-3 tw-h-3 tw-rounded-full tw-mr-2 tw-flex-shrink-0" style="background-color: {{ ["#3b82f6", "#22c55e", "#f97316", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6", "#f59e0b", "#06b6d4", "#84cc16", "#f43f5e", "#a855f7"][$index % 12] }}"></div>
+                                                                <span class="tw-truncate" title="{{ $stat["jurusan_prodi_kelas"] }}">{{ $stat["jurusan_prodi_kelas"] }}</span>
+                                                            </div>
+                                                            <span class="tw-font-semibold tw-ml-2 tw-whitespace-nowrap">{{ $stat["total"] }} ({{ $stat["persentase"] }}%)</span>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @else
+                                        <p class="text-muted text-center">Belum ada data</p>
+                                    @endif
+                                </div>
+                                <div class="col-md-6">
+                                    <h5 class="text-center mb-3">Anggota ({{ $countAnggota }})</h5>
+                                    @if ($statistikAnggota->count() > 0)
+                                        <div class="row">
+                                            <div class="col-md-6 mb-3 d-flex justify-content-center" wire:ignore>
+                                                <div style="width: 100%; max-width: 300px">
+                                                    <canvas id="chartAnggotaOprec"></canvas>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="tw-space-y-2" style="max-height: 400px; overflow-y: auto">
+                                                    @foreach ($statistikAnggota as $index => $stat)
+                                                        <div class="tw-flex tw-justify-between tw-items-center tw-text-sm tw-border-b tw-pb-1">
+                                                            <div class="tw-flex tw-items-center" style="flex: 1; min-width: 0">
+                                                                <div class="tw-w-3 tw-h-3 tw-rounded-full tw-mr-2 tw-flex-shrink-0" style="background-color: {{ ["#3b82f6", "#22c55e", "#f97316", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6", "#f59e0b", "#06b6d4", "#84cc16", "#f43f5e", "#a855f7"][$index % 12] }}"></div>
+                                                                <span class="tw-truncate" title="{{ $stat["jurusan_prodi_kelas"] }}">{{ $stat["jurusan_prodi_kelas"] }}</span>
+                                                            </div>
+                                                            <span class="tw-font-semibold tw-ml-2 tw-whitespace-nowrap">{{ $stat["total"] }} ({{ $stat["persentase"] }}%)</span>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @else
+                                        <p class="text-muted text-center">Belum ada data</p>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div class="tab-pane fade {{ $activeTab === "pengurus" ? "show active" : "" }}" id="pengurus" role="tabpanel" aria-labelledby="pengurus-tab3">
                     <div class="card">
                         <h3>Tabel Open Recruitment - Pengurus</h3>
@@ -46,64 +115,74 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @forelse ($dataPengurus as $row)
-                                            <tr class="text-center">
-                                                <td>{{ $loop->index + 1 }}</td>
-                                                <td class="text-left">
-                                                    <div class="tw-flex tw-items-center">
-                                                        <div class="tw-w-10 tw-h-10 tw-mr-3">
-                                                            <img src="{{ asset("assets/stisla/img/avatar/avatar-1.png") }}" alt="avatar" class="tw-rounded-full" />
-                                                        </div>
-                                                        <div>
-                                                            <p>{{ $row->nama_lengkap }}</p>
-                                                            <p class="tw-text-gray-500">{{ $row->kelas }}, {{ $row->jurusan }}</p>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td class="text-left tw-capitalize">{{ $row->nama_department }}</td>
-                                                <td class="text-left tw-capitalize">{{ $row->nama_jabatan }}</td>
-                                                <td class="text-left">
-                                                    @if ($row->status_seleksi === "pending")
-                                                        <span class="tw-bg-yellow-100 tw-text-yellow-600 tw-font-semibold tw-px-3 tw-py-1 tw-rounded-full">
-                                                            <i class="far fa-clock"></i>
-                                                            Pending
-                                                        </span>
-                                                    @elseif ($row->status_seleksi === "lulus")
-                                                        <span class="tw-bg-green-100 tw-text-green-600 tw-tracking-wider tw-font-semibold tw-px-3 tw-py-1 tw-rounded-full">
-                                                            <i class="far fa-badge-check"></i>
-                                                            Lulus
-                                                        </span>
-                                                    @else
-                                                        <span class="tw-bg-red-100 tw-text-red-600 tw-tracking-wider tw-font-semibold tw-px-3 tw-py-1 tw-rounded-full">
-                                                            <i class="far fa-times-circle"></i>
-                                                            Gagal
-                                                        </span>
-                                                    @endif
-                                                </td>
-                                                <td class="tw-whitespace-nowrap">
-                                                    <button wire:click.prevent="view({{ $row->id }})" class="btn btn-info" data-toggle="modal" data-target="#viewDataModal" title="Lihat Detail">
-                                                        <i class="fas fa-eye"></i>
-                                                    </button>
-                                                    @if ($row->status_seleksi !== "lulus")
-                                                        <button wire:click.prevent="updateStatus({{ $row->id }}, 'lulus')" class="btn btn-success" title="Tandai Lulus">
-                                                            <i class="fas fa-check"></i>
-                                                        </button>
-                                                    @endif
+                                        @php
+                                            $counter = 1;
+                                        @endphp
 
-                                                    @if ($row->status_seleksi !== "gagal")
-                                                        <button wire:click.prevent="updateStatus({{ $row->id }}, 'gagal')" class="btn btn-danger" title="Tandai Gagal">
-                                                            <i class="fas fa-times"></i>
-                                                        </button>
-                                                    @endif
-
-                                                    <button wire:click.prevent="edit({{ $row->id }})" class="btn btn-primary" data-toggle="modal" data-target="#formDataModal" title="Edit">
-                                                        <i class="fas fa-edit"></i>
-                                                    </button>
-                                                    <button wire:click.prevent="deleteConfirm({{ $row->id }})" class="btn btn-secondary" title="Hapus">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
-                                                </td>
+                                        @forelse ($dataPengurus as $departmentName => $pengurusList)
+                                            <tr>
+                                                <td class="tw-font-semibold tw-tracking-wider tw-bg-gray-100" colspan="6">Department: {{ $departmentName }}</td>
                                             </tr>
+
+                                            @foreach ($pengurusList as $row)
+                                                <tr class="text-center">
+                                                    <td>{{ $counter++ }}</td>
+                                                    <td class="text-left">
+                                                        <div class="tw-flex tw-items-center">
+                                                            <div class="tw-w-10 tw-h-10 tw-mr-3">
+                                                                <img src="{{ asset("assets/stisla/img/avatar/avatar-1.png") }}" alt="avatar" class="tw-rounded-full" />
+                                                            </div>
+                                                            <div>
+                                                                <p>{{ $row->nama_lengkap }}</p>
+                                                                <p class="tw-text-gray-500">{{ $row->jurusan_prodi_kelas }}</p>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td class="text-left tw-capitalize">{{ $row->nama_department }}</td>
+                                                    <td class="text-left tw-capitalize">{{ $row->nama_jabatan }}</td>
+                                                    <td class="text-left">
+                                                        @if ($row->status_seleksi === "pending")
+                                                            <span class="tw-bg-yellow-100 tw-text-yellow-600 tw-font-semibold tw-px-3 tw-py-1 tw-rounded-full">
+                                                                <i class="far fa-clock"></i>
+                                                                Pending
+                                                            </span>
+                                                        @elseif ($row->status_seleksi === "lulus")
+                                                            <span class="tw-bg-green-100 tw-text-green-600 tw-tracking-wider tw-font-semibold tw-px-3 tw-py-1 tw-rounded-full">
+                                                                <i class="far fa-badge-check"></i>
+                                                                Lulus
+                                                            </span>
+                                                        @else
+                                                            <span class="tw-bg-red-100 tw-text-red-600 tw-tracking-wider tw-font-semibold tw-px-3 tw-py-1 tw-rounded-full">
+                                                                <i class="far fa-times-circle"></i>
+                                                                Gagal
+                                                            </span>
+                                                        @endif
+                                                    </td>
+                                                    <td class="tw-whitespace-nowrap">
+                                                        <button wire:click.prevent="view({{ $row->id }})" class="btn btn-info" data-toggle="modal" data-target="#viewDataModal" title="Lihat Detail">
+                                                            <i class="fas fa-eye"></i>
+                                                        </button>
+                                                        @if ($row->status_seleksi !== "lulus")
+                                                            <button wire:click.prevent="updateStatus({{ $row->id }}, 'lulus')" class="btn btn-success" title="Tandai Lulus">
+                                                                <i class="fas fa-check"></i>
+                                                            </button>
+                                                        @endif
+
+                                                        @if ($row->status_seleksi !== "gagal")
+                                                            <button wire:click.prevent="updateStatus({{ $row->id }}, 'gagal')" class="btn btn-danger" title="Tandai Gagal">
+                                                                <i class="fas fa-times"></i>
+                                                            </button>
+                                                        @endif
+
+                                                        <button wire:click.prevent="edit({{ $row->id }})" class="btn btn-primary" data-toggle="modal" data-target="#formDataModal" title="Edit">
+                                                            <i class="fas fa-edit"></i>
+                                                        </button>
+                                                        <button wire:click.prevent="deleteConfirm({{ $row->id }})" class="btn btn-secondary" title="Hapus">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
                                         @empty
                                             <tr>
                                                 <td colspan="6" class="text-center">No data available in the table</td>
@@ -112,9 +191,14 @@
                                     </tbody>
                                 </table>
                             </div>
-                            <div class="mt-5 px-3">
-                                {{ $dataPengurus->links() }}
-                            </div>
+                            @if ($dataPengurus->flatten()->count() < $countPengurus)
+                                <div class="text-center mt-3">
+                                    <button wire:click="loadMorePengurus" class="btn btn-primary">
+                                        <i class="fas fa-chevron-down"></i>
+                                        Load More
+                                    </button>
+                                </div>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -150,7 +234,7 @@
                                     <tbody>
                                         @forelse ($dataAnggota as $row)
                                             <tr class="text-center">
-                                                <td>{{ $loop->index + 1 }}</td>
+                                                <td>{{ $loop->iteration }}</td>
                                                 <td class="text-left">
                                                     <div class="tw-flex tw-items-center">
                                                         <div class="tw-w-10 tw-h-10 tw-mr-3">
@@ -158,7 +242,7 @@
                                                         </div>
                                                         <div>
                                                             <p>{{ $row->nama_lengkap }}</p>
-                                                            <p class="tw-text-gray-500">{{ $row->kelas }}, {{ $row->jurusan }}</p>
+                                                            <p class="tw-text-gray-500">{{ $row->jurusan_prodi_kelas }}</p>
                                                         </div>
                                                     </div>
                                                 </td>
@@ -212,9 +296,14 @@
                                     </tbody>
                                 </table>
                             </div>
-                            <div class="mt-5 px-3">
-                                {{ $dataAnggota->links() }}
-                            </div>
+                            @if ($dataAnggota->count() < $countAnggota)
+                                <div class="text-center mt-3">
+                                    <button wire:click="loadMoreAnggota" class="btn btn-primary">
+                                        <i class="fas fa-chevron-down"></i>
+                                        Load More
+                                    </button>
+                                </div>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -247,39 +336,18 @@
                                 <span class="text-danger">{{ $message }}</span>
                             @enderror
                         </div>
-                        <div class="row">
-                            <div class="col-lg-6">
-                                <div class="form-group">
-                                    <label for="nama_lengkap">Nama Lengkap</label>
-                                    <input type="text" wire:model="nama_lengkap" id="nama_lengkap" class="form-control" />
-                                    @error("nama_lengkap")
-                                        <span class="text-danger">{{ $message }}</span>
-                                    @enderror
-                                </div>
-                            </div>
-                            <div class="col-lg-6">
-                                <div class="form-group">
-                                    <label for="kelas">Kelas</label>
-                                    <input type="text" wire:model="kelas" id="kelas" class="form-control" />
-                                    @error("kelas")
-                                        <span class="text-danger">{{ $message }}</span>
-                                    @enderror
-                                </div>
-                            </div>
+                        <div class="form-group">
+                            <label for="nama_lengkap">Nama Lengkap</label>
+                            <input type="text" wire:model="nama_lengkap" id="nama_lengkap" class="form-control" />
+                            @error("nama_lengkap")
+                                <span class="text-danger">{{ $message }}</span>
+                            @enderror
                         </div>
                         <div class="form-group">
-                            <label for="jurusan">Jurusan</label>
-                            <select wire:model="jurusan" id="jurusan" class="form-control">
-                                <option value="" disabled>-- Opsi Pilihan --</option>
-                                <option value="Teknik Sipil">Teknik Sipil</option>
-                                <option value="Teknik Mesin">Teknik Mesin</option>
-                                <option value="Teknik Elektro">Teknik Elektro</option>
-                                <option value="Akuntansi">Akuntansi</option>
-                                <option value="Administrasi Niaga">Administrasi Niaga</option>
-                                <option value="Teknik Grafika Penerbitan">Teknik Grafika Penerbitan</option>
-                                <option value="Teknik Informatika dan Komputer">Teknik Informatika dan Komputer</option>
-                            </select>
-                            @error("jurusan")
+                            <label for="jurusan_prodi_kelas">Jurusan/Prodi/Kelas</label>
+                            <input type="text" wire:model="jurusan_prodi_kelas" id="jurusan_prodi_kelas" class="form-control" placeholder="Contoh: TE/EC/4D" />
+                            <small class="form-text text-muted">Format: Jurusan/Prodi/Kelas (Contoh: TE/EC/4D)</small>
+                            @error("jurusan_prodi_kelas")
                                 <span class="text-danger">{{ $message }}</span>
                             @enderror
                         </div>
@@ -317,26 +385,6 @@
                             </div>
                         @endif
 
-                        <div class="row">
-                            <div class="col-lg-6">
-                                <div class="form-group">
-                                    <label for="motivasi">Motivasi</label>
-                                    <textarea wire:model="motivasi" id="motivasi" class="form-control" style="height: 100px !important"></textarea>
-                                    @error("motivasi")
-                                        <span class="text-danger">{{ $message }}</span>
-                                    @enderror
-                                </div>
-                            </div>
-                            <div class="col-lg-6">
-                                <div class="form-group">
-                                    <label for="pengalaman">Pengalaman</label>
-                                    <textarea wire:model="pengalaman" id="pengalaman" class="form-control" style="height: 100px !important"></textarea>
-                                    @error("pengalaman")
-                                        <span class="text-danger">{{ $message }}</span>
-                                    @enderror
-                                </div>
-                            </div>
-                        </div>
                         <div class="form-group">
                             <label for="status_seleksi">Status Seleksi</label>
                             <select wire:model="status_seleksi" id="status_seleksi" class="form-control select2">
@@ -381,13 +429,8 @@
                                 <h3 class="tw-text-2xl tw-font-semibold tw-text-gray-900 tw-mb-2">{{ $viewData->nama_lengkap ?? "" }}</h3>
                                 <div class="tw-flex tw-flex-wrap tw-gap-3 tw-mb-3">
                                     <span class="tw-text-sm tw-text-gray-600">
-                                        <i class="fas fa-chalkboard tw-mr-1"></i>
-                                        {{ $viewData->kelas ?? "-" }}
-                                    </span>
-                                    <span class="tw-text-sm tw-text-gray-400">•</span>
-                                    <span class="tw-text-sm tw-text-gray-600">
-                                        <i class="fas fa-university tw-mr-1"></i>
-                                        {{ $viewData->jurusan ?? "-" }}
+                                        <i class="fas fa-graduation-cap tw-mr-1"></i>
+                                        {{ $viewData->jurusan_prodi_kelas ?? "-" }}
                                     </span>
                                 </div>
                                 <div>
@@ -419,13 +462,8 @@
                                     <h6 class="tw-text-sm tw-font-semibold tw-text-gray-700 tw-uppercase tw-tracking-wide tw-mb-4">Data Akademik</h6>
                                     <div class="tw-space-y-3">
                                         <div class="tw-flex tw-justify-between tw-items-center">
-                                            <span class="tw-text-sm tw-text-gray-600">Kelas</span>
-                                            <span class="tw-text-sm tw-font-medium tw-text-gray-900">{{ $viewData->kelas ?? "-" }}</span>
-                                        </div>
-                                        <div class="tw-h-px tw-bg-gray-200"></div>
-                                        <div class="tw-flex tw-justify-between tw-items-center">
-                                            <span class="tw-text-sm tw-text-gray-600">Jurusan</span>
-                                            <span class="tw-text-sm tw-font-medium tw-text-gray-900 tw-text-right tw-max-w-xs">{{ $viewData->jurusan ?? "-" }}</span>
+                                            <span class="tw-text-sm tw-text-gray-600">Jurusan/Prodi/Kelas</span>
+                                            <span class="tw-text-sm tw-font-medium tw-text-gray-900 tw-text-right tw-max-w-xs">{{ $viewData->jurusan_prodi_kelas ?? "-" }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -470,28 +508,6 @@
                                 </div>
                             </div>
                         @endif
-
-                        @if ($viewData->motivasi || $viewData->pengalaman)
-                            <div class="row">
-                                @if ($viewData->motivasi)
-                                    <div class="col-lg-6 tw-mb-4">
-                                        <div class="tw-bg-gray-50 tw-rounded-lg tw-p-4 tw-h-full">
-                                            <h6 class="tw-text-sm tw-font-semibold tw-text-gray-700 tw-uppercase tw-tracking-wide tw-mb-3">Motivasi</h6>
-                                            <p class="tw-text-sm tw-text-gray-700 tw-leading-relaxed">{{ $viewData->motivasi }}</p>
-                                        </div>
-                                    </div>
-                                @endif
-
-                                @if ($viewData->pengalaman)
-                                    <div class="col-lg-6 tw-mb-4">
-                                        <div class="tw-bg-gray-50 tw-rounded-lg tw-p-4 tw-h-full">
-                                            <h6 class="tw-text-sm tw-font-semibold tw-text-gray-700 tw-uppercase tw-tracking-wide tw-mb-3">Pengalaman</h6>
-                                            <p class="tw-text-sm tw-text-gray-700 tw-leading-relaxed">{{ $viewData->pengalaman }}</p>
-                                        </div>
-                                    </div>
-                                @endif
-                            </div>
-                        @endif
                     @endif
                 </div>
 
@@ -501,6 +517,197 @@
             </div>
         </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    <script>
+        // Data dari server
+        const statistikPengurusData = {!! json_encode($statistikPengurus) !!};
+        const statistikAnggotaData = {!! json_encode($statistikAnggota) !!};
+
+        let chartPengurusOprecInstance = null;
+        let chartAnggotaOprecInstance = null;
+
+        function initChartsOprec() {
+            // Check if Chart.js is loaded
+            if (typeof Chart === 'undefined') {
+                console.log('Chart.js not loaded yet, retrying in 100ms...');
+                setTimeout(initChartsOprec, 100);
+                return;
+            }
+
+            console.log('Chart.js loaded! Initializing open recruitment charts...');
+
+            // Chart colors
+            const colors = ['#3b82f6', '#22c55e', '#f97316', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f59e0b', '#06b6d4', '#84cc16', '#f43f5e', '#a855f7'];
+
+            // Register plugin
+            if (typeof ChartDataLabels !== 'undefined') {
+                Chart.register(ChartDataLabels);
+                console.log('ChartDataLabels registered for oprec');
+            }
+
+            // Destroy existing charts
+            if (chartPengurusOprecInstance) {
+                chartPengurusOprecInstance.destroy();
+                chartPengurusOprecInstance = null;
+            }
+            if (chartAnggotaOprecInstance) {
+                chartAnggotaOprecInstance.destroy();
+                chartAnggotaOprecInstance = null;
+            }
+
+            // Chart Pengurus
+            const ctxPengurusOprec = document.getElementById('chartPengurusOprec');
+            if (ctxPengurusOprec && statistikPengurusData.length > 0) {
+                try {
+                    console.log('Creating Pengurus Oprec chart with data:', statistikPengurusData);
+
+                    chartPengurusOprecInstance = new Chart(ctxPengurusOprec, {
+                        type: 'pie',
+                        data: {
+                            labels: statistikPengurusData.map((item) => item.jurusan_prodi_kelas),
+                            datasets: [
+                                {
+                                    data: statistikPengurusData.map((item) => item.total),
+                                    backgroundColor: colors,
+                                    borderColor: '#ffffff',
+                                    borderWidth: 2,
+                                    hoverOffset: 10,
+                                    hoverBorderWidth: 3,
+                                },
+                            ],
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            plugins: {
+                                legend: {
+                                    display: false,
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    padding: 12,
+                                    cornerRadius: 8,
+                                    callbacks: {
+                                        label: function (context) {
+                                            const label = context.label || '';
+                                            const value = context.parsed || 0;
+                                            const percentage = statistikPengurusData[context.dataIndex].persentase;
+                                            return label + ': ' + value + ' (' + percentage + '%)';
+                                        },
+                                    },
+                                },
+                                datalabels: {
+                                    color: '#fff',
+                                    font: {
+                                        weight: 'bold',
+                                        size: 11,
+                                    },
+                                    formatter: (value, context) => {
+                                        if (value === 0) return '';
+                                        const percentage = statistikPengurusData[context.dataIndex].persentase;
+                                        return percentage >= 5 ? percentage + '%' : '';
+                                    },
+                                },
+                            },
+                        },
+                    });
+                    console.log('Pengurus Oprec chart created successfully!');
+                } catch (e) {
+                    console.error('Error creating Pengurus Oprec chart:', e);
+                }
+            } else {
+                console.log('Canvas chartPengurusOprec not found or no data!');
+            }
+
+            // Chart Anggota
+            const ctxAnggotaOprec = document.getElementById('chartAnggotaOprec');
+            if (ctxAnggotaOprec && statistikAnggotaData.length > 0) {
+                try {
+                    console.log('Creating Anggota Oprec chart with data:', statistikAnggotaData);
+
+                    chartAnggotaOprecInstance = new Chart(ctxAnggotaOprec, {
+                        type: 'pie',
+                        data: {
+                            labels: statistikAnggotaData.map((item) => item.jurusan_prodi_kelas),
+                            datasets: [
+                                {
+                                    data: statistikAnggotaData.map((item) => item.total),
+                                    backgroundColor: colors,
+                                    borderColor: '#ffffff',
+                                    borderWidth: 2,
+                                    hoverOffset: 10,
+                                    hoverBorderWidth: 3,
+                                },
+                            ],
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            plugins: {
+                                legend: {
+                                    display: false,
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    padding: 12,
+                                    cornerRadius: 8,
+                                    callbacks: {
+                                        label: function (context) {
+                                            const label = context.label || '';
+                                            const value = context.parsed || 0;
+                                            const percentage = statistikAnggotaData[context.dataIndex].persentase;
+                                            return label + ': ' + value + ' (' + percentage + '%)';
+                                        },
+                                    },
+                                },
+                                datalabels: {
+                                    color: '#fff',
+                                    font: {
+                                        weight: 'bold',
+                                        size: 11,
+                                    },
+                                    formatter: (value, context) => {
+                                        if (value === 0) return '';
+                                        const percentage = statistikAnggotaData[context.dataIndex].persentase;
+                                        return percentage >= 5 ? percentage + '%' : '';
+                                    },
+                                },
+                            },
+                        },
+                    });
+                    console.log('Anggota Oprec chart created successfully!');
+                } catch (e) {
+                    console.error('Error creating Anggota Oprec chart:', e);
+                }
+            } else {
+                console.log('Canvas chartAnggotaOprec not found or no data!');
+            }
+        }
+
+        // Multiple initialization attempts
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initChartsOprec);
+        } else {
+            initChartsOprec();
+        }
+
+        // Livewire hooks
+        document.addEventListener('livewire:navigated', initChartsOprec);
+
+        if (typeof Livewire !== 'undefined') {
+            Livewire.hook('commit', ({ component, commit, respond, succeed, fail }) => {
+                succeed(({ snapshot, effect }) => {
+                    queueMicrotask(() => {
+                        if (component.name === 'organisasi.open-recruitment') {
+                            setTimeout(initChartsOprec, 300);
+                        }
+                    });
+                });
+            });
+        }
+    </script>
 </div>
 
 @push("general-css")

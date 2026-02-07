@@ -16,7 +16,7 @@ use App\Traits\ImageCompressor;
 class ProgramPembelajaran extends Component
 {
     use WithPagination, WithFileUploads, ImageCompressor;
-    #[Title('Program Pembelajaran')]
+    #[Title('Program Kegiatan')]
 
     protected $listeners = [
         'delete'

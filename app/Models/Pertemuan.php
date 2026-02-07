@@ -18,6 +18,6 @@ class Pertemuan extends Model
 
     public function program()
     {
-        return $this->belongsTo(ProgramPembelajaran::class, 'id_program');
+        return $this->belongsTo(ProgramKegiatan::class, 'id_program');
     }
 }

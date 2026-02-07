@@ -14,7 +14,7 @@ use App\Livewire\Organisasi\ControlUser;
 use App\Livewire\Organisasi\OpenRecruitment;
 use App\Livewire\Organisasi\ProfilOrganisasi;
 use App\Livewire\Organisasi\TahunKepengurusan;
-use App\Livewire\Akademik\ProgramPembelajaran;
+use App\Livewire\Akademik\ProgramKegiatan;
 use App\Livewire\Akademik\Pertemuan;
 use App\Livewire\Akademik\PresensiPertemuan;
 
@@ -40,13 +40,15 @@ Route::group(['middleware' => ['auth', 'role:pengurus']], function () {
     Route::get('control-user', ControlUser::class)->name('control-user');
     
     // Akademik Routes
-    Route::get('program-pembelajaran', ProgramPembelajaran::class)->name('program-pembelajaran');
+    Route::get('program-pembelajaran', ProgramKegiatan::class)->name('program-pembelajaran');
     Route::get('pertemuan', Pertemuan::class)->name('pertemuan');
     Route::get('projects', \App\Livewire\Akademik\Project::class)->name('projects');
+    Route::get('project/{projectId}/teams', \App\Livewire\Akademik\ProjectTeams::class)->name('project.teams');
     Route::get('presensi-kehadiran', PresensiPertemuan::class)->name('presensi-kehadiran');
     
     // Keuangan Routes
     Route::get('anggaran', \App\Livewire\Keuangan\Anggaran::class)->name('anggaran');
+    Route::get('jenis-anggaran', \App\Livewire\Keuangan\JenisAnggaran::class)->name('jenis-anggaran');
     Route::get('transaksi-keuangan', \App\Livewire\Keuangan\Transaksi::class)->name('transaksi-keuangan');
     Route::get('iuran-kas', \App\Livewire\Keuangan\IuranKas::class)->name('iuran-kas');
     Route::get('laporan-keuangan', \App\Livewire\Keuangan\Laporan::class)->name('laporan-keuangan');
@@ -56,13 +58,19 @@ Route::group(['middleware' => ['auth', 'role:pengurus']], function () {
     Route::get('barang', \App\Livewire\Perlengkapan\Barang::class)->name('barang');
     Route::get('peminjaman-barang', \App\Livewire\Perlengkapan\PeminjamanBarang::class)->name('peminjaman-barang');
     Route::get('pengadaan-barang', \App\Livewire\Perlengkapan\PengadaanBarang::class)->name('pengadaan-barang');
+
+    // Sekretaris Routes
+    Route::get('surat-administrasi', \App\Livewire\Sekretaris\Surat::class)->name('surat-administrasi');
     
     // LPJ Export
     Route::get('lpj/export-pdf', [\App\Http\Controllers\LpjExportController::class, 'exportPdf'])->name('lpj.pdf');
     Route::get('lpj/export-excel', [\App\Http\Controllers\LpjExportController::class, 'exportExcel'])->name('lpj.excel');
 });
 
-Route::group(['middleware' => ['auth', 'role:user']], function () {});
+
+Route::group(['middleware' => ['auth', 'role:anggota']], function () {
+    // Routes untuk anggota biasa (jika ada)
+});
 
 // Route::middleware('auth')->group(function () {
 //     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

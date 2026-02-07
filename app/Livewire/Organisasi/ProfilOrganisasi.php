@@ -57,14 +57,37 @@ class ProfilOrganisasi extends Component
         $this->searchResetPage();
         $search = '%'.$this->searchTerm.'%';
 
-        $data = ModelsProfilOrganisasi::select('profil_organisasi.*', 'tahun_kepengurusan.nama_tahun')
-                ->join('tahun_kepengurusan', 'profil_organisasi.id_tahun', '=', 'tahun_kepengurusan.id')
-                ->where(function ($query) use ($search) {
-                    $query->where('nama_tahun', 'LIKE', $search);
-                })
-                ->orderBy('id', 'ASC')
-                ->where('tahun_kepengurusan.status', 'aktif')
-                ->paginate($this->lengthData);
+        $query = DB::table('profil_organisasi')
+            ->select(
+                'profil_organisasi.id',
+                'profil_organisasi.id_tahun',
+                'profil_organisasi.headline',
+                'profil_organisasi.deskripsi',
+                'profil_organisasi.visi',
+                'profil_organisasi.misi',
+                'profil_organisasi.foto',
+                'profil_organisasi.tagline',
+                'tahun_kepengurusan.nama_tahun'
+            )
+            ->join('tahun_kepengurusan', 'profil_organisasi.id_tahun', '=', 'tahun_kepengurusan.id')
+            ->where('tahun_kepengurusan.status', 'aktif')
+            ->where(function ($query) use ($search) {
+                $query->where('tahun_kepengurusan.nama_tahun', 'LIKE', $search);
+            })
+            ->orderBy('profil_organisasi.id', 'ASC');
+
+        $total = $query->count();
+        $profils = $query->skip(($this->getPage() - 1) * $this->lengthData)
+            ->take($this->lengthData)
+            ->get();
+
+        $data = new \Illuminate\Pagination\LengthAwarePaginator(
+            $profils,
+            $total,
+            $this->lengthData,
+            $this->getPage(),
+            ['path' => request()->url()]
+        );
 
         return view('livewire.organisasi.profil-organisasi', compact('data'));
     }
@@ -73,7 +96,7 @@ class ProfilOrganisasi extends Component
     {
         $this->validate();
 
-        ModelsProfilOrganisasi::create([
+        DB::table('profil_organisasi')->insert([
             'id_tahun'            => $this->id_tahun,
             'headline'            => $this->headline,
             'deskripsi'           => $this->deskripsi,
@@ -81,6 +104,8 @@ class ProfilOrganisasi extends Component
             'misi'                => $this->misi,
             'foto'                => $this->foto,
             'tagline'             => $this->tagline,
+            'created_at'          => now(),
+            'updated_at'          => now(),
         ]);
 
         $this->dispatchAlert('success', 'Success!', 'Data created successfully.');
@@ -88,8 +113,12 @@ class ProfilOrganisasi extends Component
 
     public function edit($id)
     {
-        $this->isEditing        = true;
-        $data = ModelsProfilOrganisasi::where('id', $id)->first();
+        $this->isEditing = true;
+        $data = DB::table('profil_organisasi')
+            ->select('id', 'id_tahun', 'headline', 'deskripsi', 'visi', 'misi', 'foto', 'tagline')
+            ->where('id', $id)
+            ->first();
+            
         $this->dataId           = $id;
         $this->id_tahun         = $data->id_tahun;
         $this->headline         = $data->headline;
@@ -108,15 +137,18 @@ class ProfilOrganisasi extends Component
 
         if( $this->dataId )
         {
-            ModelsProfilOrganisasi::findOrFail($this->dataId)->update([
-                'id_tahun'            => $this->id_tahun,
-                'headline'            => $this->headline,
-                'deskripsi'           => $this->deskripsi,
-                'visi'                => $this->visi,
-                'misi'                => $this->misi,
-                'foto'                => $this->foto,
-                'tagline'             => $this->tagline,
-            ]);
+            DB::table('profil_organisasi')
+                ->where('id', $this->dataId)
+                ->update([
+                    'id_tahun'            => $this->id_tahun,
+                    'headline'            => $this->headline,
+                    'deskripsi'           => $this->deskripsi,
+                    'visi'                => $this->visi,
+                    'misi'                => $this->misi,
+                    'foto'                => $this->foto,
+                    'tagline'             => $this->tagline,
+                    'updated_at'          => now(),
+                ]);
 
             $this->dispatchAlert('success', 'Success!', 'Data updated successfully.');
             $this->dataId = null;
@@ -135,7 +167,10 @@ class ProfilOrganisasi extends Component
 
     public function delete()
     {
-        ModelsProfilOrganisasi::findOrFail($this->dataId)->delete();
+        DB::table('profil_organisasi')
+            ->where('id', $this->dataId)
+            ->delete();
+            
         $this->dispatchAlert('success', 'Success!', 'Data deleted successfully.');
     }
 

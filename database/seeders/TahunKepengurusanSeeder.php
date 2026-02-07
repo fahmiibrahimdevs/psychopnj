@@ -15,11 +15,9 @@ class TahunKepengurusanSeeder extends Seeder
     {
         $data = [
             [
-                'nama_tahun'          => '2026/2027',
-                'mulai'               => '2026',
-                'akhir'               => '2027',
+                'nama_tahun'          => '2026',
                 'status'              => 'aktif',
-                'deskripsi'           => 'Angkatan tahun 2026/2027',
+                'deskripsi'           => 'Angkatan tahun 2024',
             ],
         ];
 

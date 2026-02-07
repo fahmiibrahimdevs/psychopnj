@@ -54,6 +54,7 @@
                                             <button wire:click.prevent="edit({{ $row->id }})" class="btn btn-primary" data-toggle="modal" data-target="#formDataModal">
                                                 <i class="fas fa-edit"></i>
                                             </button>
+
                                             <button wire:click.prevent="deleteConfirm({{ $row->id }})" class="btn btn-danger">
                                                 <i class="fas fa-trash"></i>
                                             </button>
@@ -95,26 +96,6 @@
                             @error("nama_tahun")
                                 <span class="text-danger">{{ $message }}</span>
                             @enderror
-                        </div>
-                        <div class="row">
-                            <div class="col-6">
-                                <div class="form-group">
-                                    <label for="mulai">Tahun Mulai</label>
-                                    <input type="year" wire:model="mulai" id="mulai" class="form-control" />
-                                    @error("mulai")
-                                        <span class="text-danger">{{ $message }}</span>
-                                    @enderror
-                                </div>
-                            </div>
-                            <div class="col-6">
-                                <div class="form-group">
-                                    <label for="akhir">Tahun Akhir</label>
-                                    <input type="year" wire:model="akhir" id="akhir" class="form-control" />
-                                    @error("akhir")
-                                        <span class="text-danger">{{ $message }}</span>
-                                    @enderror
-                                </div>
-                            </div>
                         </div>
                         <div class="form-group">
                             <label for="status">Status</label>

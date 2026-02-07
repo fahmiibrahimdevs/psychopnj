@@ -106,6 +106,37 @@
                             </div>
 
                             @if ($selectedPertemuan)
+                                <!-- Tabs Navigation -->
+                                <div class="tw-border-b tw-border-gray-200 tw-mb-4 tw-px-6">
+                                    <nav class="tw--mb-px tw-flex tw-space-x-4" aria-label="Tabs">
+                                        <button wire:click="switchTab('pengurus')" type="button" class="tw-whitespace-nowrap tw-py-4 tw-px-1 tw-border-b-2 tw-font-medium tw-text-sm {{ $activeTab === "pengurus" ? "tw-border-blue-500 tw-text-blue-600" : "tw-border-transparent tw-text-gray-500 hover:tw-text-gray-700 hover:tw-border-gray-300" }}">
+                                            <i class="fas fa-user-tie tw-mr-2"></i>
+                                            Pengurus
+                                            @if (isset($anggotaData["pengurus"]))
+                                                @php
+                                                    $pengurusCount = 0;
+                                                    foreach ($anggotaData["pengurus"] as $dept) {
+                                                        $pengurusCount += count($dept);
+                                                    }
+                                                @endphp
+
+                                                <span class="tw-ml-2 tw-py-0.5 tw-px-2 tw-rounded-full tw-text-xs tw-font-semibold {{ $activeTab === "pengurus" ? "tw-bg-blue-100 tw-text-blue-800" : "tw-bg-gray-100 tw-text-gray-600" }}">
+                                                    {{ $pengurusCount }}
+                                                </span>
+                                            @endif
+                                        </button>
+                                        <button wire:click="switchTab('anggota')" type="button" class="tw-whitespace-nowrap tw-py-4 tw-px-1 tw-border-b-2 tw-font-medium tw-text-sm {{ $activeTab === "anggota" ? "tw-border-blue-500 tw-text-blue-600" : "tw-border-transparent tw-text-gray-500 hover:tw-text-gray-700 hover:tw-border-gray-300" }}">
+                                            <i class="fas fa-users tw-mr-2"></i>
+                                            Anggota
+                                            @if (isset($anggotaData["anggota"]))
+                                                <span class="tw-ml-2 tw-py-0.5 tw-px-2 tw-rounded-full tw-text-xs tw-font-semibold {{ $activeTab === "anggota" ? "tw-bg-blue-100 tw-text-blue-800" : "tw-bg-gray-100 tw-text-gray-600" }}">
+                                                    {{ count($anggotaData["anggota"]) }}
+                                                </span>
+                                            @endif
+                                        </button>
+                                    </nav>
+                                </div>
+
                                 <!-- Tabel Presensi -->
                                 <div class="table-responsive">
                                     <table class="tw-table-auto tw-w-full">
@@ -126,106 +157,215 @@
                                             @endphp
 
                                             @foreach ($anggotaData as $statusAnggota => $anggotaGroup)
-                                                <!-- Header Group -->
-                                                <tr>
-                                                    <td colspan="7" class="tw-px-4 tw-py-2 tw-font-semibold font-bagus tw-text-sm tw-text-gray-700">
-                                                        @if ($statusAnggota == "pengurus")
-                                                            PENGURUS
-                                                        @else
-                                                            ANGGOTA
-                                                        @endif
-                                                    </td>
-                                                </tr>
+                                                @if ($statusAnggota === $activeTab)
+                                                    @if ($statusAnggota == "pengurus")
+                                                        {{-- Pengurus: Group by Department --}}
+                                                        @foreach ($anggotaGroup as $departmentName => $departmentMembers)
+                                                            <!-- Header Department -->
+                                                            <tr>
+                                                                <td colspan="7" class="tw-px-6 tw-py-3 tw-font-semibold font-bagus tw-text-sm tw-text-blue-700 tw-bg-blue-50">
+                                                                    <i class="fas fa-sitemap tw-mr-2"></i>
+                                                                    {{ strtoupper($departmentName ?: "TANPA DEPARTMENT") }}
+                                                                </td>
+                                                            </tr>
 
-                                                @foreach ($anggotaGroup as $anggota)
-                                                    @php
-                                                        $anggotaObj = (object) $anggota;
-                                                        // Check tempPresensiData first (unsaved changes), then presensiData (saved)
-                                                        $temp = $tempPresensiData[$anggotaObj->id] ?? null;
-                                                        $presensi = $presensiData[$anggotaObj->id] ?? null;
+                                                            @foreach ($departmentMembers as $anggota)
+                                                                @php
+                                                                    $anggotaObj = (object) $anggota;
+                                                                    // Check tempPresensiData first (unsaved changes), then presensiData (saved)
+                                                                    $temp = $tempPresensiData[$anggotaObj->id] ?? null;
+                                                                    $presensi = $presensiData[$anggotaObj->id] ?? null;
 
-                                                        // Use temp status if exists, otherwise use saved status
-                                                        if ($temp) {
-                                                            $status = is_array($temp) ? $temp["status"] ?? null : $temp;
-                                                            // Empty string means cleared
-                                                            if ($status === "") {
-                                                                $status = null;
-                                                            }
-                                                        } else {
-                                                            $status = is_array($presensi) ? $presensi["status"] ?? null : $presensi;
-                                                        }
+                                                                    // Use temp status if exists, otherwise use saved status
+                                                                    if ($temp) {
+                                                                        $status = is_array($temp) ? $temp["status"] ?? null : $temp;
+                                                                        // Empty string means cleared
+                                                                        if ($status === "") {
+                                                                            $status = null;
+                                                                        }
+                                                                    } else {
+                                                                        $status = is_array($presensi) ? $presensi["status"] ?? null : $presensi;
+                                                                    }
 
-                                                        $rowClass = "";
-                                                        if ($status == "hadir") {
-                                                            $rowClass = "tw-bg-green-100";
-                                                        } elseif ($status == "izin") {
-                                                            $rowClass = "tw-bg-orange-100";
-                                                        } elseif ($status == "sakit") {
-                                                            $rowClass = "tw-bg-blue-100";
-                                                        } elseif ($status == "alfa") {
-                                                            $rowClass = "tw-bg-red-100";
-                                                        }
+                                                                    $rowClass = "";
+                                                                    if ($status == "hadir") {
+                                                                        $rowClass = "tw-bg-green-100";
+                                                                    } elseif ($status == "izin") {
+                                                                        $rowClass = "tw-bg-orange-100";
+                                                                    } elseif ($status == "sakit") {
+                                                                        $rowClass = "tw-bg-blue-100";
+                                                                    } elseif ($status == "alfa") {
+                                                                        $rowClass = "tw-bg-red-100";
+                                                                    }
 
-                                                        // Get first letter for avatar
-                                                        $initials = strtoupper(substr($anggotaObj->nama_lengkap, 0, 1));
-                                                    @endphp
+                                                                    // Get first letter for avatar
+                                                                    $initials = strtoupper(substr($anggotaObj->nama_lengkap, 0, 1));
+                                                                @endphp
 
-                                                    <tr
-                                                        wire:key="anggota-{{ $selectedPertemuan }}-{{ $anggotaObj->id }}"
-                                                        x-data="{ selectedStatus: '{{ $status }}' }"
-                                                        data-anggota-id="{{ $anggotaObj->id }}"
-                                                        :class="{
-                                                            'tw-bg-green-100': selectedStatus === 'hadir',
-                                                            'tw-bg-orange-100': selectedStatus === 'izin',
-                                                            'tw-bg-blue-100': selectedStatus === 'sakit',
-                                                            'tw-bg-red-100': selectedStatus === 'alfa'
-                                                        }"
-                                                    >
-                                                        <td class="tw-text-center">{{ $counter++ }}</td>
-                                                        <td class="">
-                                                            <div class="tw-flex tw-items-center tw-gap-3">
-                                                                <div class="tw-w-10 tw-h-10 tw-rounded-full tw-bg-blue-500 tw-flex tw-items-center tw-justify-center tw-text-white tw-font-bold">
-                                                                    {{ $initials }}
-                                                                </div>
-                                                                <div>
-                                                                    <div class="tw-uppercase font-bagus tw-text-sm tw-font-normal">{{ $anggotaObj->nama_lengkap }}</div>
-                                                                    @if (is_array($presensi) && isset($presensi["waktu"]))
-                                                                        <div class="tw-text-xs tw-text-gray-600 tw-mt-1 font-bagus tw-text-sm tw-font-normal">
-                                                                            {{ \Carbon\Carbon::parse($presensi["waktu"])->format("d/m/Y H:i") }}
-                                                                            <span class="tw-mx-1">•</span>
-                                                                            {{ ucfirst($presensi["metode"]) }}
+                                                                <tr
+                                                                    wire:key="anggota-{{ $selectedPertemuan }}-{{ $anggotaObj->id }}"
+                                                                    x-data="{ 
+                                                                    selectedStatus: '{{ $status }}',
+                                                                    init() {
+                                                                        this.$watch('selectedStatus', value => {
+                                                                            @this.set('tempPresensiData.{{ $anggotaObj->id }}', { status: value || '' }, false);
+                                                                        });
+                                                                    }
+                                                                }"
+                                                                    data-anggota-id="{{ $anggotaObj->id }}"
+                                                                    :class="{
+                                                                    'tw-bg-green-100': selectedStatus === 'hadir',
+                                                                    'tw-bg-orange-100': selectedStatus === 'izin',
+                                                                    'tw-bg-blue-100': selectedStatus === 'sakit',
+                                                                    'tw-bg-red-100': selectedStatus === 'alfa'
+                                                                }"
+                                                                >
+                                                                    <td class="tw-text-center">{{ $counter++ }}</td>
+                                                                    <td class="">
+                                                                        <div class="tw-flex tw-items-center tw-gap-3">
+                                                                            <div class="tw-w-10 tw-h-10 tw-rounded-full tw-bg-blue-500 tw-flex tw-items-center tw-justify-center tw-text-white tw-font-bold">
+                                                                                {{ $initials }}
+                                                                            </div>
+                                                                            <div>
+                                                                                <div class="tw-uppercase font-bagus tw-text-sm tw-font-normal">{{ $anggotaObj->nama_lengkap }}</div>
+                                                                                @if (is_array($presensi) && isset($presensi["waktu"]))
+                                                                                    <div class="tw-text-xs tw-text-gray-600 tw-mt-1 font-bagus tw-font-normal">
+                                                                                        {{ \Carbon\Carbon::parse($presensi["waktu"])->format("d/m/Y H:i") }}
+                                                                                        <span class="tw-mx-1">•</span>
+                                                                                        {{ ucfirst($presensi["metode"]) }}
+                                                                                    </div>
+                                                                                @endif
+                                                                            </div>
                                                                         </div>
-                                                                    @endif
-                                                                </div>
-                                                            </div>
-                                                        </td>
-                                                        <td class="tw-text-center">{{ $anggotaObj->kelas ?? "-" }}</td>
-                                                        <td class="tw-text-center">
-                                                            <input type="radio" name="presensi_{{ $anggotaObj->id }}" x-model="selectedStatus" value="hadir" class="tw-w-5 tw-h-5 tw-cursor-pointer" />
-                                                            <div class="tw-mt-1" x-show="selectedStatus === 'hadir'" x-cloak>
-                                                                <button type="button" @click.prevent="selectedStatus = ''" class="tw-text-xs tw-text-red-500 hover:tw-text-red-700 tw-underline">clear</button>
-                                                            </div>
-                                                        </td>
-                                                        <td class="tw-text-center">
-                                                            <input type="radio" name="presensi_{{ $anggotaObj->id }}" x-model="selectedStatus" value="izin" class="tw-w-5 tw-h-5 tw-cursor-pointer" />
-                                                            <div class="tw-mt-1" x-show="selectedStatus === 'izin'" x-cloak>
-                                                                <button type="button" @click.prevent="selectedStatus = ''" class="tw-text-xs tw-text-red-500 hover:tw-text-red-700 tw-underline">clear</button>
-                                                            </div>
-                                                        </td>
-                                                        <td class="tw-text-center">
-                                                            <input type="radio" name="presensi_{{ $anggotaObj->id }}" x-model="selectedStatus" value="sakit" class="tw-w-5 tw-h-5 tw-cursor-pointer" />
-                                                            <div class="tw-mt-1" x-show="selectedStatus === 'sakit'" x-cloak>
-                                                                <button type="button" @click.prevent="selectedStatus = ''" class="tw-text-xs tw-text-red-500 hover:tw-text-red-700 tw-underline">clear</button>
-                                                            </div>
-                                                        </td>
-                                                        <td class="tw-text-center">
-                                                            <input type="radio" name="presensi_{{ $anggotaObj->id }}" x-model="selectedStatus" value="alfa" class="tw-w-5 tw-h-5 tw-cursor-pointer" />
-                                                            <div class="tw-mt-1" x-show="selectedStatus === 'alfa'" x-cloak>
-                                                                <button type="button" @click.prevent="selectedStatus = ''" class="tw-text-xs tw-text-red-500 hover:tw-text-red-700 tw-underline">clear</button>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                @endforeach
+                                                                    </td>
+                                                                    <td class="tw-text-center">{{ $anggotaObj->jurusan_prodi_kelas ?? "-" }}</td>
+                                                                    <td class="tw-text-center">
+                                                                        <input type="radio" name="presensi_{{ $anggotaObj->id }}" x-model="selectedStatus" value="hadir" class="tw-w-5 tw-h-5 tw-cursor-pointer" />
+                                                                        <div class="tw-mt-1" x-show="selectedStatus === 'hadir'" x-cloak>
+                                                                            <button type="button" @click.prevent="selectedStatus = ''" class="tw-text-xs tw-text-red-500 hover:tw-text-red-700 tw-underline">clear</button>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td class="tw-text-center">
+                                                                        <input type="radio" name="presensi_{{ $anggotaObj->id }}" x-model="selectedStatus" value="izin" class="tw-w-5 tw-h-5 tw-cursor-pointer" />
+                                                                        <div class="tw-mt-1" x-show="selectedStatus === 'izin'" x-cloak>
+                                                                            <button type="button" @click.prevent="selectedStatus = ''" class="tw-text-xs tw-text-red-500 hover:tw-text-red-700 tw-underline">clear</button>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td class="tw-text-center">
+                                                                        <input type="radio" name="presensi_{{ $anggotaObj->id }}" x-model="selectedStatus" value="sakit" class="tw-w-5 tw-h-5 tw-cursor-pointer" />
+                                                                        <div class="tw-mt-1" x-show="selectedStatus === 'sakit'" x-cloak>
+                                                                            <button type="button" @click.prevent="selectedStatus = ''" class="tw-text-xs tw-text-red-500 hover:tw-text-red-700 tw-underline">clear</button>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td class="tw-text-center">
+                                                                        <input type="radio" name="presensi_{{ $anggotaObj->id }}" x-model="selectedStatus" value="alfa" class="tw-w-5 tw-h-5 tw-cursor-pointer" />
+                                                                        <div class="tw-mt-1" x-show="selectedStatus === 'alfa'" x-cloak>
+                                                                            <button type="button" @click.prevent="selectedStatus = ''" class="tw-text-xs tw-text-red-500 hover:tw-text-red-700 tw-underline">clear</button>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            @endforeach
+                                                        @endforeach
+                                                    @else
+                                                        {{-- Anggota: Direct list --}}
+                                                        @foreach ($anggotaGroup as $anggota)
+                                                            @php
+                                                                $anggotaObj = (object) $anggota;
+                                                                // Check tempPresensiData first (unsaved changes), then presensiData (saved)
+                                                                $temp = $tempPresensiData[$anggotaObj->id] ?? null;
+                                                                $presensi = $presensiData[$anggotaObj->id] ?? null;
+
+                                                                // Use temp status if exists, otherwise use saved status
+                                                                if ($temp) {
+                                                                    $status = is_array($temp) ? $temp["status"] ?? null : $temp;
+                                                                    // Empty string means cleared
+                                                                    if ($status === "") {
+                                                                        $status = null;
+                                                                    }
+                                                                } else {
+                                                                    $status = is_array($presensi) ? $presensi["status"] ?? null : $presensi;
+                                                                }
+
+                                                                $rowClass = "";
+                                                                if ($status == "hadir") {
+                                                                    $rowClass = "tw-bg-green-100";
+                                                                } elseif ($status == "izin") {
+                                                                    $rowClass = "tw-bg-orange-100";
+                                                                } elseif ($status == "sakit") {
+                                                                    $rowClass = "tw-bg-blue-100";
+                                                                } elseif ($status == "alfa") {
+                                                                    $rowClass = "tw-bg-red-100";
+                                                                }
+
+                                                                // Get first letter for avatar
+                                                                $initials = strtoupper(substr($anggotaObj->nama_lengkap, 0, 1));
+                                                            @endphp
+
+                                                            <tr
+                                                                wire:key="anggota-{{ $selectedPertemuan }}-{{ $anggotaObj->id }}"
+                                                                x-data="{ 
+                                                        selectedStatus: '{{ $status }}',
+                                                        init() {
+                                                            this.$watch('selectedStatus', value => {
+                                                                @this.set('tempPresensiData.{{ $anggotaObj->id }}', { status: value || '' }, false);
+                                                            });
+                                                        }
+                                                    }"
+                                                                data-anggota-id="{{ $anggotaObj->id }}"
+                                                                :class="{
+                                                        'tw-bg-green-100': selectedStatus === 'hadir',
+                                                        'tw-bg-orange-100': selectedStatus === 'izin',
+                                                        'tw-bg-blue-100': selectedStatus === 'sakit',
+                                                        'tw-bg-red-100': selectedStatus === 'alfa'
+                                                    }"
+                                                            >
+                                                                <td class="tw-text-center">{{ $counter++ }}</td>
+                                                                <td class="">
+                                                                    <div class="tw-flex tw-items-center tw-gap-3">
+                                                                        <div class="tw-w-10 tw-h-10 tw-rounded-full tw-bg-blue-500 tw-flex tw-items-center tw-justify-center tw-text-white tw-font-bold">
+                                                                            {{ $initials }}
+                                                                        </div>
+                                                                        <div>
+                                                                            <div class="tw-uppercase font-bagus tw-text-sm tw-font-normal">{{ $anggotaObj->nama_lengkap }}</div>
+                                                                            @if (is_array($presensi) && isset($presensi["waktu"]))
+                                                                                <div class="tw-text-xs tw-text-gray-600 tw-mt-1 font-bagus tw-font-normal">
+                                                                                    {{ \Carbon\Carbon::parse($presensi["waktu"])->format("d/m/Y H:i") }}
+                                                                                    <span class="tw-mx-1">•</span>
+                                                                                    {{ ucfirst($presensi["metode"]) }}
+                                                                                </div>
+                                                                            @endif
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                <td class="tw-text-center">{{ $anggotaObj->jurusan_prodi_kelas ?? "-" }}</td>
+                                                                <td class="tw-text-center">
+                                                                    <input type="radio" name="presensi_{{ $anggotaObj->id }}" x-model="selectedStatus" value="hadir" class="tw-w-5 tw-h-5 tw-cursor-pointer" />
+                                                                    <div class="tw-mt-1" x-show="selectedStatus === 'hadir'" x-cloak>
+                                                                        <button type="button" @click.prevent="selectedStatus = ''" class="tw-text-xs tw-text-red-500 hover:tw-text-red-700 tw-underline">clear</button>
+                                                                    </div>
+                                                                </td>
+                                                                <td class="tw-text-center">
+                                                                    <input type="radio" name="presensi_{{ $anggotaObj->id }}" x-model="selectedStatus" value="izin" class="tw-w-5 tw-h-5 tw-cursor-pointer" />
+                                                                    <div class="tw-mt-1" x-show="selectedStatus === 'izin'" x-cloak>
+                                                                        <button type="button" @click.prevent="selectedStatus = ''" class="tw-text-xs tw-text-red-500 hover:tw-text-red-700 tw-underline">clear</button>
+                                                                    </div>
+                                                                </td>
+                                                                <td class="tw-text-center">
+                                                                    <input type="radio" name="presensi_{{ $anggotaObj->id }}" x-model="selectedStatus" value="sakit" class="tw-w-5 tw-h-5 tw-cursor-pointer" />
+                                                                    <div class="tw-mt-1" x-show="selectedStatus === 'sakit'" x-cloak>
+                                                                        <button type="button" @click.prevent="selectedStatus = ''" class="tw-text-xs tw-text-red-500 hover:tw-text-red-700 tw-underline">clear</button>
+                                                                    </div>
+                                                                </td>
+                                                                <td class="tw-text-center">
+                                                                    <input type="radio" name="presensi_{{ $anggotaObj->id }}" x-model="selectedStatus" value="alfa" class="tw-w-5 tw-h-5 tw-cursor-pointer" />
+                                                                    <div class="tw-mt-1" x-show="selectedStatus === 'alfa'" x-cloak>
+                                                                        <button type="button" @click.prevent="selectedStatus = ''" class="tw-text-xs tw-text-red-500 hover:tw-text-red-700 tw-underline">clear</button>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        @endforeach
+                                                    @endif
+                                                @endif
                                             @endforeach
                                         </tbody>
                                     </table>
@@ -249,20 +389,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <script>
         function collectAndSubmit() {
-            const tempData = {};
-            const rows = document.querySelectorAll('tr[data-anggota-id]');
-
-            rows.forEach(row => {
-                const id = row.getAttribute('data-anggota-id');
-                const alpineData = Alpine.$data(row);
-                if (alpineData && alpineData.selectedStatus !== undefined) {
-                    tempData[id] = { status: alpineData.selectedStatus || '' };
-                }
-            });
-
-            @this.set('tempPresensiData', tempData).then(() => {
-                @this.call('updatePresensi');
-            });
+            // Data sudah otomatis tersinkron via Alpine.js $watch
+            // Langsung panggil updatePresensi
+            @this.call('updatePresensi');
         }
 
         let presensiChart = null;

@@ -60,10 +60,10 @@
                                 @forelse ($data as $row)
                                     <tr class="text-center">
                                         <td>{{ $loop->index + 1 + ($data->currentPage() - 1) * $data->perPage() }}</td>
-                                        <td class="text-left">{{ $row->nama }}</td>
+                                        <td class="text-left">{{ $row->nama_kategori }}</td>
                                         <td>{{ $row->jumlah_barang }} barang</td>
                                         <td class="text-left tw-text-sm tw-whitespace-nowrap">
-                                            <span class="tw-text-gray-600">{{ $row->user->name ?? '-' }}</span>
+                                            <span class="tw-text-gray-600">{{ $row->user->name ?? "-" }}</span>
                                         </td>
                                         <td>
                                             <button wire:click.prevent="edit({{ $row->id }})" class="btn btn-primary" data-toggle="modal" data-target="#formDataModal">

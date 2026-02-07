@@ -6,29 +6,31 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
+        // Pertemuan (WITH timestamps)
         Schema::create('pertemuan', function (Blueprint $table) {
             $table->id();
-            $table->text('id_program')->default('');
-            $table->text('nama_pemateri')->default('');
-            $table->text('pertemuan_ke')->default('1');
-            $table->text('judul_pertemuan')->default('');
-            $table->text('deskripsi')->default('-');
+            $table->foreignId('id_program')->constrained('program_pembelajaran')->onDelete('cascade');
+            $table->string('nama_pemateri')->nullable();
+            $table->integer('pertemuan_ke')->default(1);
+            $table->string('judul_pertemuan');
+            $table->text('deskripsi')->nullable();
             $table->date('tanggal')->nullable();
-            $table->text('minggu_ke')->default('1');
+            $table->integer('minggu_ke')->default(1);
             $table->text('thumbnail')->nullable();
+            $table->string('jenis_presensi')->nullable(); // comma separated: pengurus,anggota
             $table->enum('status', ['hidden', 'visible'])->default('visible');
             $table->timestamps();
+            
+            $table->index('id_program');
+            $table->index('pertemuan_ke');
+            $table->index('tanggal');
+            $table->index('status');
+            $table->index(['id_program', 'status']);
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('pertemuan');

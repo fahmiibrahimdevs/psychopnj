@@ -242,11 +242,11 @@ class PengadaanBarang extends Component
 
             DB::transaction(function () use ($pengadaan) {
                 // Tentukan kategori keuangan
-                $kategori = 'lainnya';
+                $kategori = 'Pengeluaran Lainnya';
                 if ($pengadaan->department_id) {
-                    $kategori = 'dept';
+                    $kategori = 'Departemen';
                 } elseif ($pengadaan->project_id) {
-                    $kategori = 'project';
+                    $kategori = 'Project';
                 }
 
                 // Buat transaksi keuangan

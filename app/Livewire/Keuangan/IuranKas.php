@@ -20,8 +20,7 @@ class IuranKas extends Component
     #[Title('Iuran Kas')]
 
     public $activeTahunId;
-    public $periodeList = []; // Now contains strings or objects? Let's keep it strings for simplicity in view or objects if we want IDs.
-    // View expects strings currently. Let's keep fetching strings.
+    public $periodeList = [];
     
     public $newPeriode = '';
     public $nominalDefault = 5000;
@@ -91,6 +90,7 @@ class IuranKas extends Component
                 ->get();
 
             $memberIds = $members->pluck('id');
+            
             // Fetch payments
             $iuranRecords = ModelsIuranKas::where('id_tahun', $this->activeTahunId)
                 ->whereIn('id_anggota', $memberIds)
@@ -238,12 +238,13 @@ class IuranKas extends Component
             return;
         }
 
-        // JUST Create the Period Column definition. 
-        // NO anchor record needed in iuran_kas table.
+        // Create the Period
         IuranKasPeriode::create([
             'id_tahun' => $this->activeTahunId,
             'nama_periode' => $this->newPeriode
         ]);
+
+        $this->newPeriode = '';
 
         $this->dispatch('close-modal', ['id' => 'generateModal']);
         $this->dispatch('swal:modal', [

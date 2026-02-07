@@ -72,7 +72,7 @@ return [
         | NOTE: Currently the database check does not use cache.
         |
         */
-        'enabled' => env('LARATRUST_ENABLE_CACHE', env('APP_ENV') === 'production'),
+        'enabled' => false,
 
         /*
         |--------------------------------------------------------------------------

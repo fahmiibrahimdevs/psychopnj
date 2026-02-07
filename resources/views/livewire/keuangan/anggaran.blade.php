@@ -77,9 +77,9 @@
                                         <td class="text-left">{{ $this->getJenisLabel($row->jenis) }}</td>
                                         <td class="text-left">{{ $row->nama }}</td>
                                         <td class="text-left">
-                                            @if ($row->jenis === "dept" && $row->department)
+                                            @if ($row->jenis === "Departemen" && $row->department)
                                                 {{ $row->department->nama_department }}
-                                            @elseif ($row->jenis === "project" && $row->project)
+                                            @elseif ($row->jenis === "Project" && $row->project)
                                                 {{ $row->project->nama_project }}
                                             @else
                                                 -
@@ -146,15 +146,14 @@
                                     <label for="jenis">Jenis</label>
                                     <select wire:model.live="jenis" id="jenis" class="form-control">
                                         <option value="">-- Pilih Jenis --</option>
-                                        @if ($kategori === "pemasukan")
-                                            <option value="saldo_awal">Saldo Awal</option>
-                                            <option value="iuran_kas">Iuran Kas</option>
-                                            <option value="sponsor">Sponsor</option>
-                                            <option value="lainnya">Lainnya</option>
-                                        @elseif ($kategori === "pengeluaran")
-                                            <option value="dept">Departemen</option>
-                                            <option value="project">Project/Kegiatan</option>
-                                            <option value="lainnya">Lainnya</option>
+                                        @if ($kategori)
+                                            @php
+                                                $jenisOptions = $this->getJenisAnggaranByKategori($kategori);
+                                            @endphp
+
+                                            @foreach ($jenisOptions as $jenisOption)
+                                                <option value="{{ $jenisOption }}">{{ $this->getJenisLabel($jenisOption) }}</option>
+                                            @endforeach
                                         @endif
                                     </select>
                                     @error("jenis")
@@ -164,7 +163,7 @@
                             </div>
                         </div>
 
-                        @if ($jenis === "dept")
+                        @if ($jenis === "Departemen")
                             <div class="form-group">
                                 <label for="id_department">Departemen</label>
                                 <select wire:model="id_department" id="id_department" class="form-control">
@@ -179,7 +178,7 @@
                             </div>
                         @endif
 
-                        @if ($jenis === "project")
+                        @if ($jenis === "Project")
                             <div class="form-group">
                                 <label for="id_project">Project/Kegiatan</label>
                                 <select wire:model="id_project" id="id_project" class="form-control">

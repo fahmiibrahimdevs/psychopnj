@@ -28,6 +28,8 @@ class KategoriBarang extends Component
         'nama' => 'required|string|max:255',
     ];
 
+    private $SYNC_TO_SHEETS = false; // Disable Google Sheets sync
+
     public $lengthData = 25;
     public $searchTerm;
     public $previousSearchTerm = '';
@@ -52,8 +54,8 @@ class KategoriBarang extends Component
         $data = ModelsKategoriBarang::select('kategori_barang.*')
             ->with('user')
             ->selectRaw('(SELECT COUNT(*) FROM barangs WHERE barangs.kategori_barang_id = kategori_barang.id) as jumlah_barang')
-            ->where('nama', 'LIKE', $search)
-            ->orderBy('nama', 'ASC')
+            ->where('nama_kategori', 'LIKE', $search)
+            ->orderBy('nama_kategori', 'ASC')
             ->paginate($this->lengthData);
 
         return view('livewire.perlengkapan.kategori-barang', compact('data'));
@@ -67,21 +69,24 @@ class KategoriBarang extends Component
             DB::beginTransaction();
 
             $kategori = ModelsKategoriBarang::create([
-                'nama' => $this->nama,
+                'nama_kategori' => $this->nama,
+                'status' => 'aktif',
                 'id_user' => Auth::id(),
             ]);
 
-            // Sync to Google Sheets
-            try {
-                $googleSheets = new GoogleSheetsService();
-                $googleSheets->syncKategoriBarang($kategori);
-            } catch (\Exception $e) {
-                // Google Sheets sync error shouldn't rollback DB transaction
-                $this->dispatch('swal:modal', [
-                    'type' => 'warning',
-                    'message' => 'Berhasil disimpan!',
-                    'text' => 'Data tersimpan tapi gagal sync ke Google Sheets: ' . $e->getMessage()
-                ]);
+            // Sync to Google Sheets - DISABLED
+            if ($this->SYNC_TO_SHEETS) {
+                try {
+                    $googleSheets = new GoogleSheetsService();
+                    $googleSheets->syncKategoriBarang($kategori);
+                } catch (\Exception $e) {
+                    // Google Sheets sync error shouldn't rollback DB transaction
+                    $this->dispatch('swal:modal', [
+                        'type' => 'warning',
+                        'message' => 'Berhasil disimpan!',
+                        'text' => 'Data tersimpan tapi gagal sync ke Google Sheets: ' . $e->getMessage()
+                    ]);
+                }
             }
 
             DB::commit();
@@ -101,7 +106,7 @@ class KategoriBarang extends Component
         $this->isEditing = true;
         $data = ModelsKategoriBarang::findOrFail($id);
         $this->dataId = $id;
-        $this->nama = $data->nama;
+        $this->nama = $data->nama_kategori;
     }
 
     public function update()
@@ -114,20 +119,22 @@ class KategoriBarang extends Component
 
                 $kategori = ModelsKategoriBarang::findOrFail($this->dataId);
                 $kategori->update([
-                    'nama' => $this->nama,
+                    'nama_kategori' => $this->nama,
                 ]);
 
-                // Sync to Google Sheets
-                try {
-                    $googleSheets = new GoogleSheetsService();
-                    $googleSheets->syncKategoriBarang($kategori);
-                } catch (\Exception $e) {
-                    // Google Sheets sync error shouldn't rollback DB transaction
-                    $this->dispatch('swal:modal', [
-                        'type' => 'warning',
-                        'message' => 'Berhasil diperbarui!',
-                        'text' => 'Data tersimpan tapi gagal sync ke Google Sheets: ' . $e->getMessage()
-                    ]);
+                // Sync to Google Sheets - DISABLED
+                if ($this->SYNC_TO_SHEETS) {
+                    try {
+                        $googleSheets = new GoogleSheetsService();
+                        $googleSheets->syncKategoriBarang($kategori);
+                    } catch (\Exception $e) {
+                        // Google Sheets sync error shouldn't rollback DB transaction
+                        $this->dispatch('swal:modal', [
+                            'type' => 'warning',
+                            'message' => 'Berhasil diperbarui!',
+                            'text' => 'Data tersimpan tapi gagal sync ke Google Sheets: ' . $e->getMessage()
+                        ]);
+                    }
                 }
 
                 DB::commit();
@@ -164,17 +171,18 @@ class KategoriBarang extends Component
             
             $kategori->delete();
 
-            // Delete from Google Sheets
-            try {
-                $googleSheets = new GoogleSheetsService();
-                $googleSheets->deleteKategoriBarang($kategoriId);
-            } catch (\Exception $e) {
-                // Google Sheets delete error shouldn't rollback DB transaction
-                $this->dispatch('swal:modal', [
-                    'type' => 'warning',
-                    'message' => 'Berhasil dihapus!',
-                    'text' => 'Data terhapus tapi gagal hapus di Google Sheets: ' . $e->getMessage()
-                ]);
+            // Delete from Google Sheets - DISABLED
+            if ($this->SYNC_TO_SHEETS) {
+                try {
+                    $googleSheets = new GoogleSheetsService();
+                    $googleSheets->deleteKategoriBarang($kategoriId);
+                } catch (\Exception $e) {
+                    // Google Sheets delete error shouldn't rollback DB transaction
+                    $this->dispatch('swal:modal', [
+                        'type' => 'warning',
+                        'message' => 'Berhasil dihapus!',
+                    ]);
+                }
             }
 
             DB::commit();

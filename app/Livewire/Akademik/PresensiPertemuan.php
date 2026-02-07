@@ -19,6 +19,7 @@ class PresensiPertemuan extends Component
     public $anggotaData = [];
     public $presensiData = []; // Data from database
     public $tempPresensiData = []; // Temporary changes (not saved yet)
+    public $activeTab = 'pengurus'; // Default tab
     public $statistik = [
         'total' => 0,
         'hadir' => 0,
@@ -30,13 +31,20 @@ class PresensiPertemuan extends Component
 
     public function mount()
     {
-        $pertemuansData = Pertemuan::select('pertemuan.id', 'pertemuan.judul_pertemuan', 'pertemuan.pertemuan_ke', 'program_pembelajaran.nama_program')
+        $pertemuansData = DB::table('pertemuan')
+                            ->select(
+                                'pertemuan.id',
+                                'pertemuan.judul_pertemuan',
+                                'pertemuan.pertemuan_ke',
+                                'program_pembelajaran.nama_program'
+                            )
                             ->leftJoin('program_pembelajaran', 'pertemuan.id_program', '=', 'program_pembelajaran.id')
                             ->leftJoin('tahun_kepengurusan', 'program_pembelajaran.id_tahun', '=', 'tahun_kepengurusan.id')
-                            ->where('tahun_kepengurusan.status', 'aktif')
+                            ->where('tahun_kepengurusan.status', '=', 'aktif')
                             ->orderBy('program_pembelajaran.nama_program', 'ASC')
                             ->orderBy('pertemuan.pertemuan_ke', 'ASC')
-                            ->get();
+                            ->get()
+                            ->map(fn($item) => (array) $item);
         
         $this->pertemuans = $pertemuansData->groupBy('nama_program')->toArray();
     }
@@ -70,22 +78,64 @@ class PresensiPertemuan extends Component
         $this->presensiData = [];
         $this->anggotaData = [];
 
+        // Get jenis_presensi from selected pertemuan
+        $pertemuan = DB::table('pertemuan')
+                        ->select('id', 'jenis_presensi')
+                        ->where('id', '=', $this->selectedPertemuan)
+                        ->first();
+        
+        if (!$pertemuan) {
+            return;
+        }
+
+        $jenisPresensi = $pertemuan->jenis_presensi ? explode(',', $pertemuan->jenis_presensi) : ['pengurus', 'anggota'];
+
         // Get all anggota and group by status_anggota
-        $anggota = Anggota::select('anggota.id', 'anggota.nama_lengkap', 'anggota.kelas', 'anggota.status_anggota', 'anggota.foto')
-                            ->leftJoin('tahun_kepengurusan', 'anggota.id_tahun', '=', 'tahun_kepengurusan.id')
-                            ->where('tahun_kepengurusan.status', 'aktif')
-                            ->where('anggota.status_aktif', 'aktif')
-                            ->where('anggota.nama_lengkap', 'LIKE', $search)
-                            ->orderBy('anggota.status_anggota', 'DESC') // pengurus first
+        $query = DB::table('anggota')
+                    ->select(
+                        'anggota.id',
+                        'anggota.nama_lengkap',
+                        'anggota.jurusan_prodi_kelas',
+                        'anggota.status_anggota',
+                        'anggota.foto',
+                        'anggota.id_department',
+                        'departments.nama_department'
+                    )
+                    ->leftJoin('tahun_kepengurusan', 'anggota.id_tahun', '=', 'tahun_kepengurusan.id')
+                    ->leftJoin('departments', 'anggota.id_department', '=', 'departments.id')
+                    ->where('tahun_kepengurusan.status', '=', 'aktif')
+                    ->where('anggota.status_aktif', '=', 'aktif')
+                    ->where('anggota.nama_lengkap', 'LIKE', $search);
+
+        // Filter berdasarkan jenis_presensi
+        if (!in_array('pengurus', $jenisPresensi) || !in_array('anggota', $jenisPresensi)) {
+            // Jika tidak keduanya, filter berdasarkan status_anggota
+            $query->whereIn('anggota.status_anggota', $jenisPresensi);
+        }
+
+        $anggota = $query->orderBy('anggota.status_anggota', 'DESC') // pengurus first
+                            ->orderBy('departments.nama_department', 'ASC')
                             ->orderBy('anggota.nama_lengkap', 'ASC')
                             ->get()
-                            ->groupBy('status_anggota');
+                            ->map(fn($item) => (array) $item);
 
-        $this->anggotaData = $anggota->toArray();
+        // Group by status_anggota, then for pengurus, group by department
+        $grouped = $anggota->groupBy('status_anggota');
+        
+        foreach ($grouped as $status => $members) {
+            if ($status === 'pengurus') {
+                $grouped[$status] = collect($members)->groupBy('nama_department')->toArray();
+            }
+        }
+
+        $this->anggotaData = $grouped->toArray();
 
         // Only load presensi for the selected pertemuan
         if ($this->selectedPertemuan) {
-            $existingPresensi = ModelsPresensiPertemuan::where('id_pertemuan', $this->selectedPertemuan)->get();
+            $existingPresensi = DB::table('presensi_pertemuan')
+                                    ->select('id_anggota', 'status', 'waktu', 'metode')
+                                    ->where('id_pertemuan', '=', $this->selectedPertemuan)
+                                    ->get();
             
             foreach ($existingPresensi as $presensi) {
                 $this->presensiData[$presensi->id_anggota] = [
@@ -112,9 +162,17 @@ class PresensiPertemuan extends Component
             'tanpa_keterangan' => 0
         ];
         
-        // Count total anggota from anggotaData
-        foreach ($this->anggotaData as $group) {
-            $this->statistik['total'] += count($group);
+        // Count total anggota from anggotaData with proper nested structure handling
+        foreach ($this->anggotaData as $statusAnggota => $group) {
+            if ($statusAnggota === 'pengurus') {
+                // Pengurus has nested structure: department -> members
+                foreach ($group as $departmentMembers) {
+                    $this->statistik['total'] += count($departmentMembers);
+                }
+            } else {
+                // Anggota has flat structure: directly members
+                $this->statistik['total'] += count($group);
+            }
         }
         
         // Count each status from presensiData
@@ -138,6 +196,11 @@ class PresensiPertemuan extends Component
             - $this->statistik['izin'] 
             - $this->statistik['sakit'] 
             - $this->statistik['alfa'];
+    }
+
+    public function switchTab($tab)
+    {
+        $this->activeTab = $tab;
     }
 
     public function render()
@@ -182,7 +245,9 @@ class PresensiPertemuan extends Component
             $createData = [];
             
             // Get all existing records in one query
-            $existingRecords = ModelsPresensiPertemuan::where('id_pertemuan', $this->selectedPertemuan)
+            $existingRecords = DB::table('presensi_pertemuan')
+                ->select('id', 'id_anggota', 'status')
+                ->where('id_pertemuan', '=', $this->selectedPertemuan)
                 ->whereIn('id_anggota', array_keys($this->tempPresensiData))
                 ->get()
                 ->keyBy('id_anggota');
@@ -227,23 +292,27 @@ class PresensiPertemuan extends Component
             
             // Bulk delete
             if (!empty($deleteIds)) {
-                ModelsPresensiPertemuan::where('id_pertemuan', $this->selectedPertemuan)
+                DB::table('presensi_pertemuan')
+                    ->where('id_pertemuan', '=', $this->selectedPertemuan)
                     ->whereIn('id_anggota', $deleteIds)
                     ->delete();
             }
             
             // Bulk update
             foreach ($updateData as $update) {
-                ModelsPresensiPertemuan::where('id', $update['id'])->update([
-                    'status' => $update['status'],
-                    'waktu' => $update['waktu'],
-                    'metode' => $update['metode']
-                ]);
+                DB::table('presensi_pertemuan')
+                    ->where('id', '=', $update['id'])
+                    ->update([
+                        'status' => $update['status'],
+                        'waktu' => $update['waktu'],
+                        'metode' => $update['metode'],
+                        'updated_at' => now()
+                    ]);
             }
             
             // Bulk insert
             if (!empty($createData)) {
-                ModelsPresensiPertemuan::insert($createData);
+                DB::table('presensi_pertemuan')->insert($createData);
             }
 
             DB::commit();

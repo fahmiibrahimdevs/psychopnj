@@ -50,9 +50,13 @@
                                         </td>
                                         <td class="text-left">{{ $user->email }}</td>
                                         <td class="text-left">
-                                            @foreach ($user->roles as $role)
-                                                <span class="badge badge-primary tw-mr-1">{{ $role->name }}</span>
-                                            @endforeach
+                                            @if ($user->roles_names)
+                                                @foreach (explode(", ", $user->roles_names) as $roleName)
+                                                    <span class="badge badge-primary tw-mr-1">{{ $roleName }}</span>
+                                                @endforeach
+                                            @else
+                                                <span class="tw-text-gray-400 tw-italic">No roles</span>
+                                            @endif
                                         </td>
                                         <td>
                                             @if ($user->active === "1")
@@ -68,7 +72,7 @@
                                             @endif
                                         </td>
                                         <td class="tw-whitespace-nowrap">
-                                            {{ $user->created_at->format("d M Y") }}
+                                            {{ \Carbon\Carbon::parse($user->created_at)->format("d M Y") }}
                                         </td>
                                         <td class="tw-whitespace-nowrap">
                                             <button wire:click="toggleActive({{ $user->id }})" class="btn {{ $user->active === "1" ? "btn-warning" : "btn-success" }}" title="{{ $user->active === "1" ? "Deactivate" : "Activate" }}">

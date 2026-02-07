@@ -20,4 +20,9 @@ class Project extends Model
     {
         return $this->belongsTo(TahunKepengurusan::class, 'id_tahun');
     }
+
+    public function teams()
+    {
+        return $this->hasMany(ProjectTeam::class, 'id_project');
+    }
 }

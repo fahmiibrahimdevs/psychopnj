@@ -23,24 +23,10 @@ class OpenRecruitment extends Component
         'id_tahun'            => '',
         'jenis_oprec'         => 'required',
         'nama_lengkap'        => 'required',
-        'kelas'               => 'required',
-        'jurusan'             => 'required',
+        'jurusan_prodi_kelas' => 'required',
         'id_department'       => '',
         'nama_jabatan'        => '',
-        'motivasi'            => '',
-        'pengalaman'          => '',
         'status_seleksi'      => '',
-    ];
-
-    // Mapping jurusan ke kode email
-    private $jurusanEmailMap = [
-        'Teknik Sipil' => 'ts',
-        'Teknik Mesin' => 'tm',
-        'Teknik Elektro' => 'te',
-        'Akuntansi' => 'ak',
-        'Administrasi Niaga' => 'an',
-        'Teknik Grafika Penerbitan' => 'tgp',
-        'Teknik Informatika dan Komputer' => 'tik',
     ];
 
     public $lengthData = 25;
@@ -51,22 +37,30 @@ class OpenRecruitment extends Component
     public $dataId;
     public $activeTab = 'pengurus';
     public $viewData = [];
+    public $perPagePengurus = 25;
+    public $perPageAnggota = 25;
 
-    public $id_tahun, $jenis_oprec, $nama_lengkap, $kelas, $jurusan, $id_department, $nama_jabatan, $motivasi, $pengalaman, $status_seleksi;
+    public $id_tahun, $jenis_oprec, $nama_lengkap, $jurusan_prodi_kelas, $id_department, $nama_jabatan, $status_seleksi;
     public $departments;
 
     public function mount()
     {
-        $this->departments         = DB::table('departments')->select('id', 'nama_department')->get();
-        $this->id_tahun            = TahunKepengurusan::where('status', 'aktif')->first()->id ?? '';
+        $yearAktif = DB::table('tahun_kepengurusan')->where('status', 'aktif')->first();
+        $this->id_tahun            = $yearAktif ? $yearAktif->id : '';
+        
+        // Load departments berdasarkan tahun aktif
+        $this->departments = DB::table('departments')
+            ->select('id', 'nama_department')
+            ->where('id_tahun', $this->id_tahun)
+            ->where('status', 'aktif')
+            ->orderBy('urutan', 'ASC')
+            ->get();
+            
         $this->jenis_oprec         = '';
         $this->nama_lengkap        = '';
-        $this->kelas               = '';
-        $this->jurusan             = '';
+        $this->jurusan_prodi_kelas = '';
         $this->id_department       = '';
         $this->nama_jabatan        = '';
-        $this->motivasi            = '';
-        $this->pengalaman          = '';
         $this->status_seleksi      = 'pending';
     }
 
@@ -89,61 +83,135 @@ class OpenRecruitment extends Component
         $this->resetPage();
     }
 
+    public function loadMorePengurus()
+    {
+        $this->perPagePengurus += 25;
+    }
+
+    public function loadMoreAnggota()
+    {
+        $this->perPageAnggota += 25;
+    }
+
     public function render()
     {
-        $this->searchResetPage();
         $search = '%'.$this->searchTerm.'%';
 
-        $dataPengurus = ModelsOpenRecruitment::select(
-                    'open_recruitment.id', 
-                    'open_recruitment.nama_lengkap', 
-                    'open_recruitment.jurusan',
-                    'departments.nama_department',
+        // Get data pengurus with load more
+        $dataPengurus = DB::table('open_recruitment')
+                ->select(
+                    'open_recruitment.id',
+                    'open_recruitment.id_tahun',
+                    'open_recruitment.jenis_oprec',
+                    'open_recruitment.nama_lengkap',
+                    'open_recruitment.jurusan_prodi_kelas',
+                    'open_recruitment.id_department',
                     'open_recruitment.nama_jabatan',
                     'open_recruitment.status_seleksi',
+                    'departments.nama_department'
                 )
                 ->join('tahun_kepengurusan', 'open_recruitment.id_tahun', '=', 'tahun_kepengurusan.id')
                 ->join('departments', 'open_recruitment.id_department', '=', 'departments.id')
                 ->where(function ($query) use ($search) {
-                    $query->orWhere('nama_lengkap', 'LIKE', $search);
-                    $query->orWhere('kelas', 'LIKE', $search);
-                    $query->orWhere('nama_department', 'LIKE', $search);
-                    $query->orWhere('nama_jabatan', 'LIKE', $search);
+                    $query->where('open_recruitment.nama_lengkap', 'LIKE', $search)
+                          ->orWhere('open_recruitment.jurusan_prodi_kelas', 'LIKE', $search)
+                          ->orWhere('departments.nama_department', 'LIKE', $search)
+                          ->orWhere('open_recruitment.nama_jabatan', 'LIKE', $search);
                 })
                 ->where('tahun_kepengurusan.status', 'aktif')
                 ->where('open_recruitment.jenis_oprec', 'pengurus')
-                ->orderBy('id', 'ASC')
-                ->paginate($this->lengthData);
+                ->orderBy('open_recruitment.id_department', 'ASC')
+                ->orderBy('open_recruitment.id', 'ASC')
+                ->limit($this->perPagePengurus)
+                ->get()
+                ->groupBy('nama_department');
 
-        $dataAnggota = ModelsOpenRecruitment::select(
-                    'open_recruitment.id', 
-                    'open_recruitment.nama_lengkap', 
-                    'open_recruitment.kelas',
-                    'open_recruitment.jurusan',
-                    'open_recruitment.status_seleksi',
+        $countPengurus = DB::table('open_recruitment')
+                ->join('tahun_kepengurusan', 'open_recruitment.id_tahun', '=', 'tahun_kepengurusan.id')
+                ->where('tahun_kepengurusan.status', 'aktif')
+                ->where('open_recruitment.jenis_oprec', 'pengurus')
+                ->count();
+
+        // Get data anggota with load more
+        $dataAnggota = DB::table('open_recruitment')
+                ->select(
+                    'open_recruitment.id',
+                    'open_recruitment.id_tahun',
+                    'open_recruitment.jenis_oprec',
+                    'open_recruitment.nama_lengkap',
+                    'open_recruitment.jurusan_prodi_kelas',
+                    'open_recruitment.status_seleksi'
                 )
                 ->join('tahun_kepengurusan', 'open_recruitment.id_tahun', '=', 'tahun_kepengurusan.id')
                 ->where(function ($query) use ($search) {
-                    $query->orWhere('nama_lengkap', 'LIKE', $search);
-                    $query->orWhere('kelas', 'LIKE', $search);
+                    $query->where('open_recruitment.nama_lengkap', 'LIKE', $search)
+                          ->orWhere('open_recruitment.jurusan_prodi_kelas', 'LIKE', $search);
                 })
                 ->where('tahun_kepengurusan.status', 'aktif')
                 ->where('open_recruitment.jenis_oprec', 'anggota')
-                ->orderBy('id', 'ASC')
-                ->paginate($this->lengthData);
+                ->orderBy('open_recruitment.id', 'ASC')
+                ->limit($this->perPageAnggota)
+                ->get();
 
-        return view('livewire.organisasi.open-recruitment', compact('dataPengurus', 'dataAnggota'));
+        $countAnggota = DB::table('open_recruitment')
+                ->join('tahun_kepengurusan', 'open_recruitment.id_tahun', '=', 'tahun_kepengurusan.id')
+                ->where('tahun_kepengurusan.status', 'aktif')
+                ->where('open_recruitment.jenis_oprec', 'anggota')
+                ->count();
+
+        // Statistik berdasarkan Jurusan/Prodi/Kelas untuk Pengurus
+        $statistikPengurus = DB::table('open_recruitment')
+                ->join('tahun_kepengurusan', 'open_recruitment.id_tahun', '=', 'tahun_kepengurusan.id')
+                ->where('tahun_kepengurusan.status', 'aktif')
+                ->where('open_recruitment.jenis_oprec', 'pengurus')
+                ->select('jurusan_prodi_kelas', DB::raw('count(*) as total'))
+                ->groupBy('jurusan_prodi_kelas')
+                ->orderByDesc('total')
+                ->get()
+                ->map(function ($item) use ($countPengurus) {
+                    return [
+                        'jurusan_prodi_kelas' => $item->jurusan_prodi_kelas,
+                        'total' => $item->total,
+                        'persentase' => $countPengurus > 0 ? round(($item->total / $countPengurus) * 100, 1) : 0
+                    ];
+                });
+
+        // Statistik berdasarkan Jurusan/Prodi/Kelas untuk Anggota
+        $statistikAnggota = DB::table('open_recruitment')
+                ->join('tahun_kepengurusan', 'open_recruitment.id_tahun', '=', 'tahun_kepengurusan.id')
+                ->where('tahun_kepengurusan.status', 'aktif')
+                ->where('open_recruitment.jenis_oprec', 'anggota')
+                ->select('jurusan_prodi_kelas', DB::raw('count(*) as total'))
+                ->groupBy('jurusan_prodi_kelas')
+                ->orderByDesc('total')
+                ->get()
+                ->map(function ($item) use ($countAnggota) {
+                    return [
+                        'jurusan_prodi_kelas' => $item->jurusan_prodi_kelas,
+                        'total' => $item->total,
+                        'persentase' => $countAnggota > 0 ? round(($item->total / $countAnggota) * 100, 1) : 0
+                    ];
+                });
+
+        return view('livewire.organisasi.open-recruitment', compact('dataPengurus', 'dataAnggota', 'countPengurus', 'countAnggota', 'statistikPengurus', 'statistikAnggota'));
     }
 
     public function view($id)
     {
-        $data = ModelsOpenRecruitment::select(
-                    'open_recruitment.*', 
-                    'users.email', 
-                    'departments.nama_department', 
+        $this->viewData = DB::table('open_recruitment')
+                ->select(
+                    'open_recruitment.id',
+                    'open_recruitment.id_tahun',
+                    'open_recruitment.jenis_oprec',
+                    'open_recruitment.nama_lengkap',
+                    'open_recruitment.jurusan_prodi_kelas',
+                    'open_recruitment.id_department',
+                    'open_recruitment.nama_jabatan',
+                    'open_recruitment.status_seleksi',
+                    'departments.nama_department',
                     'tahun_kepengurusan.nama_tahun'
                 )
-                ->join('departments', 'departments.id', '=', 'open_recruitment.id_department')
+                ->leftJoin('departments', 'departments.id', '=', 'open_recruitment.id_department')
                 ->join('tahun_kepengurusan', 'open_recruitment.id_tahun', '=', 'tahun_kepengurusan.id')
                 ->where('open_recruitment.id', $id)
                 ->first();
@@ -155,8 +223,7 @@ class OpenRecruitment extends Component
         $rules = [
             'jenis_oprec' => 'required',
             'nama_lengkap' => 'required',
-            'kelas' => 'required',
-            'jurusan' => 'required',
+            'jurusan_prodi_kelas' => 'required',
         ];
 
         // Tambah validation untuk pengurus
@@ -171,16 +238,13 @@ class OpenRecruitment extends Component
 
         $this->validate($rules);
 
-        ModelsOpenRecruitment::create([
+        DB::table('open_recruitment')->insert([
             'id_tahun'            => $this->id_tahun,
             'jenis_oprec'         => $this->jenis_oprec,
             'nama_lengkap'        => $this->nama_lengkap,
-            'kelas'               => $this->kelas,
-            'jurusan'             => $this->jurusan,
-            'id_department'       => $this->id_department,
+            'jurusan_prodi_kelas' => $this->jurusan_prodi_kelas,
+            'id_department'       => $this->id_department ?: 0,
             'nama_jabatan'        => $this->nama_jabatan,
-            'motivasi'            => $this->motivasi,
-            'pengalaman'          => $this->pengalaman,
             'status_seleksi'      => $this->status_seleksi,
         ]);
 
@@ -189,18 +253,19 @@ class OpenRecruitment extends Component
 
     public function edit($id)
     {
-        $this->isEditing        = true;
-        $data = ModelsOpenRecruitment::where('id', $id)->first();
+        $this->isEditing = true;
+        $data = DB::table('open_recruitment')
+            ->select('id', 'id_tahun', 'jenis_oprec', 'nama_lengkap', 'jurusan_prodi_kelas', 'id_department', 'nama_jabatan', 'status_seleksi')
+            ->where('id', $id)
+            ->first();
+            
         $this->dataId           = $id;
         $this->id_tahun         = $data->id_tahun;
         $this->jenis_oprec      = $data->jenis_oprec;
         $this->nama_lengkap     = $data->nama_lengkap;
-        $this->kelas            = $data->kelas;
-        $this->jurusan          = $data->jurusan;
+        $this->jurusan_prodi_kelas = $data->jurusan_prodi_kelas;
         $this->id_department    = $data->id_department;
         $this->nama_jabatan     = $data->nama_jabatan;
-        $this->motivasi         = $data->motivasi;
-        $this->pengalaman       = $data->pengalaman;
         $this->status_seleksi   = $data->status_seleksi;
     }
 
@@ -210,8 +275,7 @@ class OpenRecruitment extends Component
         $rules = [
             'jenis_oprec' => 'required',
             'nama_lengkap' => 'required',
-            'kelas' => 'required',
-            'jurusan' => 'required',
+            'jurusan_prodi_kelas' => 'required',
         ];
 
         // Tambah validation untuk pengurus
@@ -228,18 +292,17 @@ class OpenRecruitment extends Component
 
         if( $this->dataId )
         {
-            ModelsOpenRecruitment::findOrFail($this->dataId)->update([
-                'id_tahun'            => $this->id_tahun,
-                'jenis_oprec'         => $this->jenis_oprec,
-                'nama_lengkap'        => $this->nama_lengkap,
-                'kelas'               => $this->kelas,
-                'jurusan'             => $this->jurusan,
-                'id_department'       => $this->id_department,
-                'nama_jabatan'        => $this->nama_jabatan,
-                'motivasi'            => $this->motivasi,
-                'pengalaman'          => $this->pengalaman,
-                'status_seleksi'      => $this->status_seleksi,
-            ]);
+            DB::table('open_recruitment')
+                ->where('id', $this->dataId)
+                ->update([
+                    'id_tahun'            => $this->id_tahun,
+                    'jenis_oprec'         => $this->jenis_oprec,
+                    'nama_lengkap'        => $this->nama_lengkap,
+                    'jurusan_prodi_kelas' => $this->jurusan_prodi_kelas,
+                    'id_department'       => $this->id_department ?: 0,
+                    'nama_jabatan'        => $this->nama_jabatan,
+                    'status_seleksi'      => $this->status_seleksi,
+                ]);
 
             $this->dispatchAlert('success', 'Success!', 'Data updated successfully.');
             $this->dataId = null;
@@ -289,8 +352,8 @@ class OpenRecruitment extends Component
         
         // Jika status diubah menjadi lulus
         if ($status === 'lulus' && $oldStatus !== 'lulus') {
-            // Generate email
-            $email = $this->generateEmail($openRecruitment->nama_lengkap, $openRecruitment->jurusan);
+            // Generate email from jurusan_prodi_kelas
+            $email = $this->generateEmailFromJurusanProdiKelas($openRecruitment->nama_lengkap, $openRecruitment->jurusan_prodi_kelas);
             
             // Check duplicate email atau nama
             $existingUser = \App\Models\User::where('email', $email)->first();
@@ -325,15 +388,15 @@ class OpenRecruitment extends Component
                 'id_department' => $openRecruitment->id_department,
                 'nama_lengkap' => $openRecruitment->nama_lengkap,
                 'nama_jabatan' => $openRecruitment->nama_jabatan,
-                'kelas' => $openRecruitment->kelas,
-                'jurusan' => $openRecruitment->jurusan,
+                'jurusan_prodi_kelas' => $openRecruitment->jurusan_prodi_kelas,
                 'nim' => '',
-                'no_hp' => '62',
+                'ttl' => '',
+                'alamat' => '',
+                'email' => $email,
+                'no_hp' => '08',
                 'status_anggota' => $openRecruitment->jenis_oprec,
                 'status_aktif' => 'aktif',
                 'foto' => '',
-                'motivasi' => $openRecruitment->motivasi,
-                'pengalaman' => $openRecruitment->pengalaman,
                 'id_open_recruitment' => $openRecruitment->id,
             ]);
             
@@ -394,7 +457,7 @@ class OpenRecruitment extends Component
         }
     }
     
-    private function generateEmail($namaLengkap, $jurusan)
+    private function generateEmailFromJurusanProdiKelas($namaLengkap, $jurusanProdiKelas)
     {
         // Pecah nama berdasarkan spasi dan convert ke lowercase
         $namaParts = explode(' ', strtolower(trim($namaLengkap)));
@@ -402,8 +465,9 @@ class OpenRecruitment extends Component
         // Gabungkan dengan titik
         $emailPrefix = implode('.', $namaParts);
         
-        // Get kode jurusan
-        $kodeJurusan = $this->jurusanEmailMap[$jurusan] ?? 'te';
+        // Extract kode jurusan dari jurusan_prodi_kelas (contoh: TE/EC/4D -> te)
+        $parts = explode('/', $jurusanProdiKelas);
+        $kodeJurusan = isset($parts[0]) ? strtolower(trim($parts[0])) : 'te';
         
         // Format final: nama.lengkap.jurusan@stu.pnj.ac.id
         return $emailPrefix . '.' . $kodeJurusan . '@stu.pnj.ac.id';

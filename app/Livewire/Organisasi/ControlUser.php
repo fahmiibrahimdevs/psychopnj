@@ -6,6 +6,7 @@ use App\Models\User;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\Attributes\Title;
+use Illuminate\Support\Facades\DB;
 
 class ControlUser extends Component
 {
@@ -27,11 +28,20 @@ class ControlUser extends Component
 
     public function toggleActive($userId)
     {
-        $user = User::findOrFail($userId);
+        $user = DB::table('users')
+            ->select('active')
+            ->where('id', $userId)
+            ->first();
         
         // Toggle active status
         $newStatus = $user->active === '1' ? '0' : '1';
-        $user->update(['active' => $newStatus]);
+        
+        DB::table('users')
+            ->where('id', $userId)
+            ->update([
+                'active' => $newStatus,
+                'updated_at' => now()
+            ]);
         
         $statusText = $newStatus === '1' ? 'active' : 'inactive';
         $this->dispatch('alert', [
@@ -46,13 +56,42 @@ class ControlUser extends Component
         $this->searchResetPage();
         $search = '%'.$this->searchTerm.'%';
 
-        $users = User::select('users.id', 'users.name', 'users.email', 'users.active', 'users.created_at')
+        $query = DB::table('users')
+            ->select(
+                'users.id', 
+                'users.name', 
+                'users.email', 
+                'users.active', 
+                'users.created_at',
+                DB::raw('GROUP_CONCAT(roles.display_name SEPARATOR ", ") as roles_names')
+            )
+            ->leftJoin('role_user', 'users.id', '=', 'role_user.user_id')
+            ->leftJoin('roles', 'role_user.role_id', '=', 'roles.id')
             ->where(function ($query) use ($search) {
                 $query->where('users.name', 'LIKE', $search)
-                    ->orWhere('users.email', 'LIKE', $search);
+                      ->orWhere('users.email', 'LIKE', $search);
             })
-            ->orderBy('users.id', 'DESC')
-            ->paginate($this->lengthData);
+            ->groupBy('users.id', 'users.name', 'users.email', 'users.active', 'users.created_at')
+            ->orderBy('users.id', 'DESC');
+
+        $total = DB::table('users')
+            ->where(function ($query) use ($search) {
+                $query->where('name', 'LIKE', $search)
+                      ->orWhere('email', 'LIKE', $search);
+            })
+            ->count();
+            
+        $usersData = $query->skip(($this->getPage() - 1) * $this->lengthData)
+            ->take($this->lengthData)
+            ->get();
+
+        $users = new \Illuminate\Pagination\LengthAwarePaginator(
+            $usersData,
+            $total,
+            $this->lengthData,
+            $this->getPage(),
+            ['path' => request()->url()]
+        );
 
         return view('livewire.organisasi.control-user', [
             'users' => $users

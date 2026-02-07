@@ -50,4 +50,9 @@ class Keuangan extends Model
     {
         return $this->hasMany(IuranKas::class, 'id_keuangan');
     }
+
+    public function files()
+    {
+        return $this->hasMany(TransaksiFile::class, 'id_transaksi');
+    }
 }

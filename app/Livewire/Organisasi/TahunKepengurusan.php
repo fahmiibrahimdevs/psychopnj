@@ -6,6 +6,7 @@ use App\Models\TahunKepengurusan as ModelsTahunKepengurusan;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\Attributes\Title;
+use Illuminate\Support\Facades\DB;
 
 class TahunKepengurusan extends Component
 {
@@ -18,8 +19,6 @@ class TahunKepengurusan extends Component
 
     protected $rules = [
         'nama_tahun'          => 'required',
-        'mulai'               => 'required',
-        'akhir'               => 'required',
         'status'              => 'required',
         'deskripsi'           => '',
     ];
@@ -31,13 +30,11 @@ class TahunKepengurusan extends Component
 
     public $dataId;
 
-    public $nama_tahun, $mulai, $akhir, $status, $deskripsi;
+    public $nama_tahun, $status, $deskripsi;
 
     public function mount()
     {
         $this->nama_tahun          = '';
-        $this->mulai               = date('Y')+1;
-        $this->akhir               = date('Y')+2;
         $this->status              = 'nonaktif';
         $this->deskripsi           = '';
     }
@@ -47,7 +44,8 @@ class TahunKepengurusan extends Component
         $this->searchResetPage();
         $search = '%'.$this->searchTerm.'%';
 
-        $data = ModelsTahunKepengurusan::select(
+        $query = DB::table('tahun_kepengurusan')
+            ->select(
                 'tahun_kepengurusan.id', 
                 'tahun_kepengurusan.nama_tahun', 
                 'tahun_kepengurusan.status',
@@ -65,12 +63,24 @@ class TahunKepengurusan extends Component
                      ->where('wakil.status_aktif', '=', 'aktif');
             })
             ->where(function ($query) use ($search) {
-                $query->where('tahun_kepengurusan.nama_tahun', 'LIKE', $search);
-                $query->orWhere('ketua.nama_lengkap', 'LIKE', $search);
-                $query->orWhere('wakil.nama_lengkap', 'LIKE', $search);
+                $query->where('tahun_kepengurusan.nama_tahun', 'LIKE', $search)
+                      ->orWhere('ketua.nama_lengkap', 'LIKE', $search)
+                      ->orWhere('wakil.nama_lengkap', 'LIKE', $search);
             })
-            ->orderBy('tahun_kepengurusan.id', 'DESC')
-            ->paginate($this->lengthData);
+            ->orderBy('tahun_kepengurusan.id', 'DESC');
+
+        $total = $query->count();
+        $tahuns = $query->skip(($this->getPage() - 1) * $this->lengthData)
+            ->take($this->lengthData)
+            ->get();
+
+        $data = new \Illuminate\Pagination\LengthAwarePaginator(
+            $tahuns,
+            $total,
+            $this->lengthData,
+            $this->getPage(),
+            ['path' => request()->url()]
+        );
 
         return view('livewire.organisasi.tahun-kepengurusan', compact('data'));
     }
@@ -81,13 +91,13 @@ class TahunKepengurusan extends Component
 
         // Jika status aktif, nonaktifkan semua tahun kepengurusan lain
         if ($this->status == 'aktif') {
-            ModelsTahunKepengurusan::where('status', 'aktif')->update(['status' => 'nonaktif']);
+            DB::table('tahun_kepengurusan')
+                ->where('status', 'aktif')
+                ->update(['status' => 'nonaktif']);
         }
 
-        ModelsTahunKepengurusan::create([
+        DB::table('tahun_kepengurusan')->insert([
             'nama_tahun'          => $this->nama_tahun,
-            'mulai'               => $this->mulai,
-            'akhir'               => $this->akhir,
             'status'              => $this->status,
             'deskripsi'           => $this->deskripsi,
         ]);
@@ -97,12 +107,14 @@ class TahunKepengurusan extends Component
 
     public function edit($id)
     {
-        $this->isEditing        = true;
-        $data = ModelsTahunKepengurusan::where('id', $id)->first();
+        $this->isEditing = true;
+        $data = DB::table('tahun_kepengurusan')
+            ->select('id', 'nama_tahun', 'status', 'deskripsi')
+            ->where('id', $id)
+            ->first();
+            
         $this->dataId           = $id;
         $this->nama_tahun       = $data->nama_tahun;
-        $this->mulai            = $data->mulai;
-        $this->akhir            = $data->akhir;
         $this->status           = $data->status;
         $this->deskripsi        = $data->deskripsi;
     }
@@ -115,18 +127,19 @@ class TahunKepengurusan extends Component
         {
             // Jika status aktif, nonaktifkan semua tahun kepengurusan lain
             if ($this->status == 'aktif') {
-                ModelsTahunKepengurusan::where('id', '!=', $this->dataId)
+                DB::table('tahun_kepengurusan')
+                    ->where('id', '!=', $this->dataId)
                     ->where('status', 'aktif')
                     ->update(['status' => 'nonaktif']);
             }
 
-            ModelsTahunKepengurusan::findOrFail($this->dataId)->update([
-                'nama_tahun'          => $this->nama_tahun,
-                'mulai'               => $this->mulai,
-                'akhir'               => $this->akhir,
-                'status'              => $this->status,
-                'deskripsi'           => $this->deskripsi,
-            ]);
+            DB::table('tahun_kepengurusan')
+                ->where('id', $this->dataId)
+                ->update([
+                    'nama_tahun'          => $this->nama_tahun,
+                    'status'              => $this->status,
+                    'deskripsi'           => $this->deskripsi,
+                ]);
 
             $this->dispatchAlert('success', 'Success!', 'Data updated successfully.');
             $this->dataId = null;
@@ -145,17 +158,24 @@ class TahunKepengurusan extends Component
 
     public function delete()
     {
-        ModelsTahunKepengurusan::findOrFail($this->dataId)->delete();
+        DB::table('tahun_kepengurusan')
+            ->where('id', $this->dataId)
+            ->delete();
+            
         $this->dispatchAlert('success', 'Success!', 'Data deleted successfully.');
     }
 
     public function activate($id)
     {
         // Nonaktifkan semua tahun kepengurusan
-        ModelsTahunKepengurusan::where('status', 'aktif')->update(['status' => 'nonaktif']);
+        DB::table('tahun_kepengurusan')
+            ->where('status', 'aktif')
+            ->update(['status' => 'nonaktif']);
         
         // Aktifkan tahun kepengurusan yang dipilih
-        ModelsTahunKepengurusan::findOrFail($id)->update(['status' => 'aktif']);
+        DB::table('tahun_kepengurusan')
+            ->where('id', $id)
+            ->update(['status' => 'aktif']);
         
         $this->dispatchAlert('success', 'Success!', 'Tahun kepengurusan berhasil diaktifkan.');
     }
@@ -193,8 +213,6 @@ class TahunKepengurusan extends Component
     private function resetInputFields()
     {
         $this->nama_tahun          = '';
-        $this->mulai               = date('Y')+1;
-        $this->akhir               = date('Y')+2;
         $this->status              = 'nonaktif';
         $this->deskripsi           = '';
     }

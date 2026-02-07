@@ -5,6 +5,7 @@ namespace App\Livewire\Organisasi;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\Attributes\Title;
+use Illuminate\Support\Facades\DB;
 use App\Models\TahunKepengurusan;
 use App\Models\Department as ModelsDepartment;
 
@@ -40,7 +41,11 @@ class Department extends Component
 
     public function mount()
     {
-        $this->tahuns = TahunKepengurusan::select('id', 'nama_tahun')->orderBy('id', 'ASC')->get();
+        $this->tahuns = DB::table('tahun_kepengurusan')
+            ->select('id', 'nama_tahun')
+            ->orderBy('id', 'ASC')
+            ->get();
+            
         $this->id_tahun            = '';
         $this->nama_department     = '';
         $this->kategori            = '';
@@ -56,15 +61,39 @@ class Department extends Component
         $this->searchResetPage();
         $search = '%'.$this->searchTerm.'%';
 
-        $data = ModelsDepartment::select('departments.*', 'tahun_kepengurusan.nama_tahun')
-                ->leftJoin('tahun_kepengurusan', 'departments.id_tahun', '=', 'tahun_kepengurusan.id')
-                ->where(function ($query) use ($search) {
-                    $query->where('nama_tahun', 'LIKE', $search);
-                    $query->orWhere('nama_department', 'LIKE', $search);
-                })
-                ->where('tahun_kepengurusan.status', 'aktif')
-                ->orderBy('id', 'ASC')
-                ->paginate($this->lengthData);
+        $query = DB::table('departments')
+            ->select(
+                'departments.id',
+                'departments.id_tahun',
+                'departments.nama_department',
+                'departments.kategori',
+                'departments.deskripsi',
+                'departments.ikon',
+                'departments.urutan',
+                'departments.status',
+                'departments.max_members',
+                'tahun_kepengurusan.nama_tahun'
+            )
+            ->leftJoin('tahun_kepengurusan', 'departments.id_tahun', '=', 'tahun_kepengurusan.id')
+            ->where('tahun_kepengurusan.status', 'aktif')
+            ->where(function ($query) use ($search) {
+                $query->where('tahun_kepengurusan.nama_tahun', 'LIKE', $search)
+                      ->orWhere('departments.nama_department', 'LIKE', $search);
+            })
+            ->orderBy('departments.id', 'ASC');
+
+        $total = $query->count();
+        $departments = $query->skip(($this->getPage() - 1) * $this->lengthData)
+            ->take($this->lengthData)
+            ->get();
+
+        $data = new \Illuminate\Pagination\LengthAwarePaginator(
+            $departments,
+            $total,
+            $this->lengthData,
+            $this->getPage(),
+            ['path' => request()->url()]
+        );
 
         return view('livewire.organisasi.department', compact('data'));
     }
@@ -73,7 +102,7 @@ class Department extends Component
     {
         $this->validate();
 
-        ModelsDepartment::create([
+        DB::table('departments')->insert([
             'id_tahun'            => $this->id_tahun,
             'nama_department'     => $this->nama_department,
             'kategori'            => $this->kategori,
@@ -81,7 +110,7 @@ class Department extends Component
             'ikon'                => $this->ikon,
             'urutan'              => $this->urutan,
             'status'              => $this->status,
-            'max_members'         => $this->max_members,
+            'max_members'         => $this->max_members ?: null,
         ]);
 
         $this->dispatchAlert('success', 'Success!', 'Data created successfully.');
@@ -89,8 +118,22 @@ class Department extends Component
 
     public function edit($id)
     {
-        $this->isEditing        = true;
-        $data = ModelsDepartment::where('id', $id)->first();
+        $this->isEditing = true;
+        $data = DB::table('departments')
+            ->select(
+                'id',
+                'id_tahun',
+                'nama_department',
+                'kategori',
+                'deskripsi',
+                'ikon',
+                'urutan',
+                'status',
+                'max_members'
+            )
+            ->where('id', $id)
+            ->first();
+            
         $this->dataId           = $id;
         $this->id_tahun         = $data->id_tahun;
         $this->nama_department  = $data->nama_department;
@@ -108,16 +151,18 @@ class Department extends Component
 
         if( $this->dataId )
         {
-            ModelsDepartment::findOrFail($this->dataId)->update([
-                'id_tahun'            => $this->id_tahun,
-                'nama_department'     => $this->nama_department,
-                'kategori'            => $this->kategori,
-                'deskripsi'           => $this->deskripsi,
-                'ikon'                => $this->ikon,
-                'urutan'              => $this->urutan,
-                'status'              => $this->status,
-                'max_members'         => $this->max_members,
-            ]);
+            DB::table('departments')
+                ->where('id', $this->dataId)
+                ->update([
+                    'id_tahun'            => $this->id_tahun,
+                    'nama_department'     => $this->nama_department,
+                    'kategori'            => $this->kategori,
+                    'deskripsi'           => $this->deskripsi,
+                    'ikon'                => $this->ikon,
+                    'urutan'              => $this->urutan,
+                    'status'              => $this->status,
+                    'max_members'         => $this->max_members ?: null,
+                ]);
 
             $this->dispatchAlert('success', 'Success!', 'Data updated successfully.');
             $this->dataId = null;
@@ -136,7 +181,10 @@ class Department extends Component
 
     public function delete()
     {
-        ModelsDepartment::findOrFail($this->dataId)->delete();
+        DB::table('departments')
+            ->where('id', $this->dataId)
+            ->delete();
+            
         $this->dispatchAlert('success', 'Success!', 'Data deleted successfully.');
     }
 
