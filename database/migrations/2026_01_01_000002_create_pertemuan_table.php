@@ -20,6 +20,7 @@ return new class extends Migration
             $table->integer('minggu_ke')->default(1);
             $table->text('thumbnail')->nullable();
             $table->string('jenis_presensi')->nullable(); // comma separated: pengurus,anggota
+            $table->boolean('has_bank_soal')->default(false);
             $table->enum('status', ['hidden', 'visible'])->default('visible');
             $table->timestamps();
             

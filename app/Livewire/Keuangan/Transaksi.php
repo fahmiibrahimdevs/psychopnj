@@ -62,12 +62,14 @@ class Transaksi extends Component
     public $filesFoto = [];
     public $existingFiles = [];
     
-    // Image compression settings
-    protected $imageTargetSizeKB = 500;
-    protected $imageMaxWidth = 1920;
+    // Image compression settings (loaded from .env)
+    protected $imageTargetSizeKB;
 
     public function mount()
     {
+        // Load compression setting from .env
+        $this->imageTargetSizeKB = env('IMAGE_COMPRESS_SIZE_KB', 100);
+        
         $activeTahun = TahunKepengurusan::where('status', 'aktif')->first();
         $this->activeTahunId = $activeTahun ? $activeTahun->id : null;
 
@@ -147,17 +149,23 @@ class Transaksi extends Component
         ));
     }
 
+    public function updated()
+    {
+        $this->dispatch('initSelect2');
+    }
+
+    public function updatedKategori()
+    {
+        $this->id_department = "";
+        $this->id_project = "";
+    }
+
     public function updatedJenis()
     {
         // Reset kategori, department, dan project ketika jenis berubah
         $this->kategori = '';
         $this->id_department = null;
         $this->id_project = null;
-    }
-
-    public function updated($propertyName)
-    {
-        $this->dispatch('initSelect2');
     }
 
     public function store()
@@ -205,8 +213,6 @@ class Transaksi extends Component
             ->orderBy('created_at', 'desc')
             ->get()
             ->toArray();
-        
-        $this->dispatch('initSelect2');
     }
 
     public function update()
@@ -445,7 +451,11 @@ class Transaksi extends Component
             
             // Compress images (not videos or PDFs)
             if (in_array($mimeType, ['image/jpeg', 'image/jpg', 'image/png'])) {
-                $this->compressImageToSize($fullPath, $this->imageTargetSizeKB, $this->imageMaxWidth);
+                $currentSizeKB = filesize($fullPath) / 1024;
+                
+                if ($currentSizeKB > $this->imageTargetSizeKB) {
+                    $this->compressImageToSize($fullPath, $this->imageTargetSizeKB);
+                }
                 
                 // Update file size after compression
                 if (file_exists($fullPath)) {

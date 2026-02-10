@@ -76,7 +76,7 @@
                     <div class="modal-body tw-px-4 lg:tw-px-6">
                         <div class="form-group">
                             <label for="nama_kategori">Kategori</label>
-                            <select wire:model="nama_kategori" id="nama_kategori" class="form-control">
+                            <select wire:model="nama_kategori" id="nama_kategori" class="form-control select2">
                                 <option value="" disabled>-- Pilih Kategori --</option>
                                 <option value="pemasukan">Pemasukan</option>
                                 <option value="pengeluaran">Pengeluaran</option>
@@ -111,3 +111,41 @@
         </div>
     </div>
 </div>
+
+@push("general-css")
+    <link href="{{ asset("assets/midragon/select2/select2.min.css") }}" rel="stylesheet" />
+@endpush
+
+@push("js-libraries")
+    <script src="{{ asset("assets/midragon/select2/select2.full.min.js") }}"></script>
+@endpush
+
+@push("scripts")
+    <script>
+        $('#formDataModal').on('shown.bs.modal', function () {
+            $('.select2').select2({
+                dropdownParent: $('#formDataModal')
+            });
+
+            $('.select2').on('change', function(e) {
+                var id = $(this).attr('id');
+                var data = $(this).select2("val");
+                @this.set(id, data);
+            });
+        });
+
+        window.addEventListener('initSelect2', event => {
+            $(document).ready(function() {
+                $('.select2').select2({
+                    dropdownParent: $('#formDataModal')
+                });
+
+                $('.select2').on('change', function(e) {
+                    var id = $(this).attr('id');
+                    var data = $(this).select2("val");
+                    @this.set(id, data);
+                });
+            });
+        })
+    </script>
+@endpush

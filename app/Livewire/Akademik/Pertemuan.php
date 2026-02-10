@@ -10,6 +10,7 @@ use App\Models\ProgramKegiatan;
 use App\Models\Pertemuan as ModelsPertemuan;
 use App\Models\PertemuanFile;
 use App\Models\PertemuanGaleri;
+use App\Models\BankSoalPertemuan;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use App\Traits\ImageCompressor;
@@ -37,6 +38,18 @@ class Pertemuan extends Component
         'status'            => 'required',
         'jenis_presensi'    => 'required|array',
         'files.*'           => 'nullable|file|mimes:ppt,pptx,pdf,zip,jpg,jpeg,png|max:102400',
+        'has_bank_soal'     => 'boolean',
+        'jml_pg'            => 'required_if:has_bank_soal,true|integer|min:0',
+        'jml_esai'          => 'required_if:has_bank_soal,true|integer|min:0',
+        'jml_kompleks'      => 'required_if:has_bank_soal,true|integer|min:0',
+        'jml_jodohkan'      => 'required_if:has_bank_soal,true|integer|min:0',
+        'jml_isian'         => 'required_if:has_bank_soal,true|integer|min:0',
+        'bobot_pg'          => 'required_if:has_bank_soal,true|numeric|min:0',
+        'bobot_esai'        => 'required_if:has_bank_soal,true|numeric|min:0',
+        'bobot_kompleks'    => 'required_if:has_bank_soal,true|numeric|min:0',
+        'bobot_jodohkan'    => 'required_if:has_bank_soal,true|numeric|min:0',
+        'bobot_isian'       => 'required_if:has_bank_soal,true|numeric|min:0',
+        'opsi'              => 'required_if:has_bank_soal,true|in:3,4,5',
     ];
 
     public $lengthData = 25;
@@ -49,6 +62,12 @@ class Pertemuan extends Component
     public $id_program, $nama_pemateri, $pertemuan_ke, $judul_pertemuan, $deskripsi, $tanggal, $minggu_ke, $thumbnail, $status, $jenis_presensi = [];
     public $programs;
     public $oldThumbnail;
+    
+    // Bank Soal fields
+    public $has_bank_soal = false;
+    public $jml_pg = 0, $jml_esai = 0, $jml_kompleks = 0, $jml_jodohkan = 0, $jml_isian = 0;
+    public $bobot_pg = 0, $bobot_esai = 0, $bobot_kompleks = 0, $bobot_jodohkan = 0, $bobot_isian = 0;
+    public $opsi = '5';
     public $activeTab = 'info'; // Track active tab
     public $filterProgram = null; // Filter by program, null = show nothing
     
@@ -65,13 +84,14 @@ class Pertemuan extends Component
     public $hasMoreGallery = true;
     public $selectedGalleryId;
     
-    // Image compression settings
-    protected $imageTargetSizeKB = 500;  // Target size for gallery images in KB
-    protected $thumbnailTargetSizeKB = 200;  // Target size for thumbnails in KB
-    protected $imageMaxWidth = 1920;  // Max width for images in pixels
+    // Image compression settings (loaded from .env)
+    protected $imageTargetSizeKB;
 
     public function mount()
     {
+        // Load compression setting from .env
+        $this->imageTargetSizeKB = env('IMAGE_COMPRESS_SIZE_KB', 100);
+        
         $this->programs = ProgramKegiatan::select('program_pembelajaran.id', 'program_pembelajaran.nama_program')
                             ->leftJoin('tahun_kepengurusan', 'program_pembelajaran.id_tahun', '=', 'tahun_kepengurusan.id')
                             ->where('tahun_kepengurusan.status', 'aktif')
@@ -134,9 +154,13 @@ class Pertemuan extends Component
             $extension = $this->thumbnail->getClientOriginalExtension();
             $thumbnailPath = $this->thumbnail->storeAs("{$tahunFolder}/{$programFolder}/pertemuan-{$this->pertemuan_ke}/thumbnails", $fileName . '.' . $extension, 'public');
             
-            // Compress thumbnail
+            // Compress thumbnail only if larger than target
             $fullPath = storage_path('app/public/' . $thumbnailPath);
-            $this->compressImageToSize($fullPath, $this->thumbnailTargetSizeKB, 800);
+            $currentSizeKB = filesize($fullPath) / 1024;
+            
+            if ($currentSizeKB > $this->imageTargetSizeKB) {
+                $this->compressImageToSize($fullPath, $this->imageTargetSizeKB, 800);
+            }
             
             // Update path if PNG was converted to JPG
             if ($extension === 'png' && !file_exists($fullPath)) {
@@ -155,7 +179,32 @@ class Pertemuan extends Component
             'thumbnail'         => $thumbnailPath,
             'status'            => $this->status,
             'jenis_presensi'    => implode(',', $this->jenis_presensi),
+            'has_bank_soal'     => $this->has_bank_soal,
         ]);
+
+        // Create bank soal if enabled
+        if ($this->has_bank_soal) {
+            BankSoalPertemuan::create([
+                'id_pertemuan'      => $pertemuan->id,
+                'id_tahun'          => $program->id_tahun,
+                'jml_pg'            => $this->jml_pg,
+                'jml_kompleks'      => $this->jml_kompleks,
+                'jml_jodohkan'      => $this->jml_jodohkan,
+                'jml_isian'         => $this->jml_isian,
+                'jml_esai'          => $this->jml_esai,
+                'tampil_pg'         => 0,
+                'tampil_kompleks'   => 0,
+                'tampil_jodohkan'   => 0,
+                'tampil_isian'      => 0,
+                'tampil_esai'       => 0,
+                'bobot_pg'          => $this->bobot_pg,
+                'bobot_kompleks'    => $this->bobot_kompleks,
+                'bobot_jodohkan'    => $this->bobot_jodohkan,
+                'bobot_isian'       => $this->bobot_isian,
+                'bobot_esai'        => $this->bobot_esai,
+                'opsi'              => $this->opsi,
+            ]);
+        }
 
         // Upload multiple files
         if (!empty($this->files)) {
@@ -184,6 +233,23 @@ class Pertemuan extends Component
         
         // Load existing files
         $this->existingFiles = PertemuanFile::where('id_pertemuan', $id)->get()->toArray();
+        
+        // Load bank soal data if exists
+        $this->has_bank_soal = $data->has_bank_soal;
+        if ($this->has_bank_soal && $data->bankSoal) {
+            $bankSoal = $data->bankSoal;
+            $this->jml_pg = $bankSoal->jml_pg;
+            $this->jml_kompleks = $bankSoal->jml_kompleks;
+            $this->jml_jodohkan = $bankSoal->jml_jodohkan;
+            $this->jml_isian = $bankSoal->jml_isian;
+            $this->jml_esai = $bankSoal->jml_esai;
+            $this->bobot_pg = $bankSoal->bobot_pg;
+            $this->bobot_kompleks = $bankSoal->bobot_kompleks;
+            $this->bobot_jodohkan = $bankSoal->bobot_jodohkan;
+            $this->bobot_isian = $bankSoal->bobot_isian;
+            $this->bobot_esai = $bankSoal->bobot_esai;
+            $this->opsi = $bankSoal->opsi;
+        }
     }
 
     public function update()
@@ -212,9 +278,13 @@ class Pertemuan extends Component
                 $extension = $this->thumbnail->getClientOriginalExtension();
                 $thumbnailPath = $this->thumbnail->storeAs("{$tahunFolder}/{$programFolder}/pertemuan-{$this->pertemuan_ke}/thumbnails", $fileName . '.' . $extension, 'public');
                 
-                // Compress thumbnail
+                // Compress thumbnail only if larger than target
                 $fullPath = storage_path('app/public/' . $thumbnailPath);
-                $this->compressImageToSize($fullPath, $this->thumbnailTargetSizeKB, 800);
+                $currentSizeKB = filesize($fullPath) / 1024;
+                
+                if ($currentSizeKB > $this->imageTargetSizeKB) {
+                    $this->compressImageToSize($fullPath, $this->imageTargetSizeKB, 800);
+                }
                 
                 // Update path if PNG was converted to JPG
                 if ($extension === 'png' && !file_exists($fullPath)) {
@@ -233,7 +303,32 @@ class Pertemuan extends Component
                 'thumbnail'         => $thumbnailPath,
                 'status'            => $this->status,
                 'jenis_presensi'    => implode(',', $this->jenis_presensi),
+                'has_bank_soal'     => $this->has_bank_soal,
             ]);
+
+            // Update or create bank soal if enabled
+            if ($this->has_bank_soal) {
+                BankSoalPertemuan::updateOrCreate(
+                    ['id_pertemuan' => $this->dataId],
+                    [
+                        'id_tahun'          => $program->id_tahun,
+                        'jml_pg'            => $this->jml_pg,
+                        'jml_kompleks'      => $this->jml_kompleks,
+                        'jml_jodohkan'      => $this->jml_jodohkan,
+                        'jml_isian'         => $this->jml_isian,
+                        'jml_esai'          => $this->jml_esai,
+                        'bobot_pg'          => $this->bobot_pg,
+                        'bobot_kompleks'    => $this->bobot_kompleks,
+                        'bobot_jodohkan'    => $this->bobot_jodohkan,
+                        'bobot_isian'       => $this->bobot_isian,
+                        'bobot_esai'        => $this->bobot_esai,
+                        'opsi'              => $this->opsi,
+                    ]
+                );
+            } else {
+                // Delete bank soal if checkbox unchecked
+                BankSoalPertemuan::where('id_pertemuan', $this->dataId)->delete();
+            }
 
             // Upload additional files
             if (!empty($this->files)) {
@@ -519,10 +614,14 @@ class Pertemuan extends Component
                 $filename = sprintf('IMG_%03d.%s', $counter, $extension);
                 $path = $file->storeAs($basePath, $filename, 'public');
                 
-                // Compress image (skip if video)
+                // Compress image (skip if video or already small)
                 if ($tipe === 'image') {
                     $fullPath = storage_path('app/public/' . $path);
-                    $this->compressImageToSize($fullPath, $this->imageTargetSizeKB, $this->imageMaxWidth);
+                    $currentSizeKB = filesize($fullPath) / 1024;
+                    
+                    if ($currentSizeKB > $this->imageTargetSizeKB) {
+                        $this->compressImageToSize($fullPath, $this->imageTargetSizeKB);
+                    }
                     
                     // Update path if PNG was converted to JPG
                     if ($extension === 'png' && !file_exists($fullPath)) {
@@ -606,5 +705,10 @@ class Pertemuan extends Component
                 'text' => 'Failed to delete: ' . $e->getMessage()
             ]);
         }
+    }
+
+    public function redirectToSoal($pertemuanId)
+    {
+        return redirect()->route('pertemuan.soal', ['pertemuanId' => $pertemuanId]);
     }
 }

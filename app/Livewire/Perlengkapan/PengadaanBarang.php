@@ -30,9 +30,11 @@ class PengadaanBarang extends Component
     public $previousSearchTerm = '';
     public $isEditing = false;
     public $filterStatus = '';
+    public $activeTab = ''; // dept-{id}, proj-{id}, lainnya
 
     public $dataId;
-    public $nama_barang, $jumlah, $harga, $total, $link_pembelian, $status, $catatan;
+    public $nama_barang, $nama_toko, $jumlah, $harga, $total, $link_pembelian, $status, $catatan;
+    public $prioritas = 'Sedang', $biaya_lainnya = 0, $keterangan = '-';
     public $kategori_anggaran = 'lainnya'; // dept, project, lainnya
     public $department_id, $project_id;
 
@@ -42,6 +44,10 @@ class PengadaanBarang extends Component
             'nama_barang' => 'required|string|max:255',
             'jumlah' => 'required|integer|min:1',
             'harga' => 'required|integer|min:0',
+            'biaya_lainnya' => 'required|integer|min:0',
+            'prioritas' => 'required|in:Tinggi,Sedang,Rendah',
+            'keterangan' => 'nullable|string|max:255',
+            'nama_toko' => 'nullable|string|max:255',
             'link_pembelian' => 'nullable|url|max:500',
             'kategori_anggaran' => 'required|in:dept,project,lainnya',
             'department_id' => 'nullable|required_if:kategori_anggaran,dept|exists:departments,id',
@@ -69,9 +75,14 @@ class PengadaanBarang extends Component
         $this->calculateTotal();
     }
 
+    public function updatedBiayaLainnya()
+    {
+        $this->calculateTotal();
+    }
+
     private function calculateTotal()
     {
-        $this->total = (int)$this->jumlah * (int)$this->harga;
+        $this->total = ((int)$this->jumlah * (int)$this->harga) + (int)$this->biaya_lainnya;
     }
 
     public function render()
@@ -94,7 +105,19 @@ class PengadaanBarang extends Component
             ->when($this->filterStatus, function ($query) {
                 $query->where('pengadaan_barang.status', $this->filterStatus);
             })
-            ->orderByRaw("COALESCE(departments.nama_department, projects.nama_project, 'Lainnya') ASC")
+            ->when($this->activeTab, function ($query) {
+                if (str_starts_with($this->activeTab, 'dept-')) {
+                    $deptId = str_replace('dept-', '', $this->activeTab);
+                    $query->where('pengadaan_barang.department_id', $deptId);
+                } elseif (str_starts_with($this->activeTab, 'proj-')) {
+                    $projId = str_replace('proj-', '', $this->activeTab);
+                    $query->where('pengadaan_barang.project_id', $projId);
+                } elseif ($this->activeTab === 'lainnya') {
+                    $query->whereNull('pengadaan_barang.department_id')
+                          ->whereNull('pengadaan_barang.project_id');
+                }
+            })
+            ->orderByRaw("FIELD(pengadaan_barang.prioritas, 'Tinggi', 'Sedang', 'Rendah') ASC")
             ->orderBy('pengadaan_barang.created_at', 'DESC')
             ->paginate($this->lengthData);
 
@@ -105,6 +128,17 @@ class PengadaanBarang extends Component
         $projects = Project::when($tahunAktif, function ($q) use ($tahunAktif) {
             $q->where('id_tahun', $tahunAktif->id);
         })->orderBy('nama_project')->get();
+
+        // Set default active tab if empty
+        if (empty($this->activeTab)) {
+            if ($departments->isNotEmpty()) {
+                $this->activeTab = 'dept-' . $departments->first()->id;
+            } elseif ($projects->isNotEmpty()) {
+                $this->activeTab = 'proj-' . $projects->first()->id;
+            } else {
+                $this->activeTab = 'lainnya';
+            }
+        }
 
         return view('livewire.perlengkapan.pengadaan-barang', compact('data', 'departments', 'projects'));
     }
@@ -144,7 +178,11 @@ class PengadaanBarang extends Component
             'nama_barang' => $this->nama_barang,
             'jumlah' => $this->jumlah,
             'harga' => $this->harga,
-            'total' => $this->jumlah * $this->harga,
+            'biaya_lainnya' => $this->biaya_lainnya,
+            'total' => (($this->jumlah * $this->harga) + $this->biaya_lainnya),
+            'prioritas' => $this->prioritas,
+            'keterangan' => $this->keterangan ?? '-',
+            'nama_toko' => $this->nama_toko,
             'link_pembelian' => $this->link_pembelian,
             'status' => 'diusulkan',
             'id_user' => auth()->id(),
@@ -171,7 +209,11 @@ class PengadaanBarang extends Component
         $this->nama_barang = $data->nama_barang;
         $this->jumlah = $data->jumlah;
         $this->harga = $data->harga;
+        $this->biaya_lainnya = $data->biaya_lainnya;
         $this->total = $data->total;
+        $this->prioritas = $data->prioritas;
+        $this->keterangan = $data->keterangan;
+        $this->nama_toko = $data->nama_toko;
         $this->link_pembelian = $data->link_pembelian;
         
         if ($data->department_id) {
@@ -207,7 +249,11 @@ class PengadaanBarang extends Component
                 'nama_barang' => $this->nama_barang,
                 'jumlah' => $this->jumlah,
                 'harga' => $this->harga,
-                'total' => $this->jumlah * $this->harga,
+                'biaya_lainnya' => $this->biaya_lainnya,
+                'total' => (($this->jumlah * $this->harga) + $this->biaya_lainnya),
+                'prioritas' => $this->prioritas,
+                'keterangan' => $this->keterangan ?? '-',
+                'nama_toko' => $this->nama_toko,
                 'link_pembelian' => $this->link_pembelian,
             ]);
 
@@ -293,11 +339,11 @@ class PengadaanBarang extends Component
         if ($this->dataId) {
             $pengadaan = ModelsPengadaanBarang::findOrFail($this->dataId);
             
-            if ($pengadaan->status !== 'disetujui') {
+            if (!in_array($pengadaan->status, ['disetujui', 'ditolak'])) {
                 $this->dispatch('swal:modal', [
                     'type' => 'error',
                     'message' => 'Error!',
-                    'text' => 'Hanya pengadaan yang disetujui yang dapat dibatalkan.'
+                    'text' => 'Hanya pengadaan yang disetujui atau ditolak yang dapat dibatalkan.'
                 ]);
                 return;
             }
@@ -312,6 +358,7 @@ class PengadaanBarang extends Component
                 $pengadaan->update([
                     'status' => 'diusulkan',
                     'keuangan_id' => null,
+                    'catatan' => null,
                 ]);
             });
 
@@ -448,7 +495,11 @@ class PengadaanBarang extends Component
         $this->nama_barang = '';
         $this->jumlah = 1;
         $this->harga = 0;
+        $this->biaya_lainnya = 0;
         $this->total = 0;
+        $this->prioritas = 'Sedang';
+        $this->keterangan = '-';
+        $this->nama_toko = '';
         $this->link_pembelian = '';
         $this->status = 'diusulkan';
         $this->catatan = '';
@@ -456,5 +507,10 @@ class PengadaanBarang extends Component
         $this->department_id = '';
         $this->project_id = '';
         $this->isEditing = false;
+    }
+    public function switchTab($tab)
+    {
+        $this->activeTab = $tab;
+        $this->resetPage();
     }
 }

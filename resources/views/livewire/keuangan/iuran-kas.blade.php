@@ -7,11 +7,11 @@
                     <div>
                         <button wire:click="downloadPdf" class="btn btn-danger btn-icon icon-left">
                             <i class="fas fa-file-pdf"></i>
-                            PDF
+                            Export PDF
                         </button>
                         <button wire:click="downloadExcel" class="btn btn-success btn-icon icon-left">
                             <i class="fas fa-file-excel"></i>
-                            Excel
+                            Export Excel
                         </button>
                     </div>
                 </div>
@@ -67,13 +67,13 @@
                             </thead>
                             <tbody>
                                 <!-- Group: PENGURUS -->
-                                <tr class="tw-bg-white">
-                                    <td colspan="{{ count($periodeList) + 3 }}" class="tw-font-bold tw-py-2 tw-px-3 tw-text-gray-700">Pengurus</td>
+                                <tr class="tw-bg-gray-100">
+                                    <td colspan="{{ count($periodeList) + 3 }}" class="tw-font-bold tw-py-2 tw-px-3 tw-text-gray-700 tw-text-base tw-tracking-wider">ROLE: PENGURUS</td>
                                 </tr>
                                 @forelse ($matrix["pengurus"] as $index => $row)
                                     <tr class="text-center">
-                                        <td>{{ $index + 1 }}</td>
-                                        <td class="text-left">{{ $row["nama"] }}</td>
+                                        <td class="tw-text-base">{{ $index + 1 }}</td>
+                                        <td class="text-left tw-text-base">{{ $row["nama"] }}</td>
 
                                         @foreach ($periodeList as $periode)
                                             @php
@@ -88,7 +88,7 @@
                                                     </div>
 
                                                     @if ($payment && $payment["status"] === "lunas")
-                                                        <small class="text-success font-weight-bold cursor-pointer hover:text-primary" style="font-size: 10px; line-height: 1; cursor: pointer" wire:click="openEditDateModal({{ $payment["id"] }})" title="Klik untuk ubah tanggal">
+                                                        <small class="text-success font-weight-bold cursor-pointer hover:text-primary tw-text-xs tw-cursor-pointer" wire:click="openEditDateModal({{ $payment["id"] }})" title="Klik untuk ubah tanggal">
                                                             {{ \Carbon\Carbon::parse($payment["tanggal_bayar"])->locale("id")->translatedFormat("d M") }}
                                                         </small>
                                                     @else
@@ -100,25 +100,25 @@
 
                                         <td class="font-weight-bold text-success">
                                             <div class="d-flex justify-content-between">
-                                                <span>Rp</span>
-                                                <span>{{ number_format($row["total_bayar"], 0, ",", ".") }}</span>
+                                                <span class="tw-text-base">Rp</span>
+                                                <span class="tw-text-base">{{ number_format($row["total_bayar"], 0, ",", ".") }}</span>
                                             </div>
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="{{ count($periodeList) + 3 }}" class="text-center text-muted">Tidak ada pengurus aktif</td>
+                                        <td colspan="{{ count($periodeList) + 3 }}" class="text-center text-muted tw-text-base">Tidak ada pengurus aktif</td>
                                     </tr>
                                 @endforelse
 
                                 <!-- Group: ANGGOTA -->
-                                <tr class="tw-bg-white">
-                                    <td colspan="{{ count($periodeList) + 3 }}" class="tw-font-bold tw-py-2 tw-px-3 tw-text-gray-700">Anggota</td>
+                                <tr class="tw-bg-gray-100">
+                                    <td colspan="{{ count($periodeList) + 3 }}" class="tw-font-bold tw-py-2 tw-px-3 tw-text-gray-700 tw-text-base tw-tracking-wider">ROLE: ANGGOTA</td>
                                 </tr>
                                 @forelse ($matrix["anggota"] as $index => $row)
                                     <tr class="text-center">
-                                        <td>{{ $index + 1 }}</td>
-                                        <td class="text-left">{{ $row["nama"] }}</td>
+                                        <td class="tw-text-base">{{ $index + 1 }}</td>
+                                        <td class="text-left tw-text-base">{{ $row["nama"] }}</td>
 
                                         @foreach ($periodeList as $periode)
                                             @php
@@ -133,7 +133,7 @@
                                                     </div>
 
                                                     @if ($payment && $payment["status"] === "lunas")
-                                                        <small class="text-success font-weight-bold cursor-pointer hover:text-primary" style="font-size: 10px; line-height: 1; cursor: pointer" wire:click="openEditDateModal({{ $payment["id"] }})" title="Klik untuk ubah tanggal">
+                                                        <small class="text-success font-weight-bold hover:text-primary tw-text-xs tw-cursor-pointer" wire:click="openEditDateModal({{ $payment["id"] }})" title="Klik untuk ubah tanggal">
                                                             {{ \Carbon\Carbon::parse($payment["tanggal_bayar"])->locale("id")->translatedFormat("d M") }}
                                                         </small>
                                                     @else
@@ -145,8 +145,8 @@
 
                                         <td class="font-weight-bold text-success tw-whitespace-nowrap">
                                             <div class="d-flex justify-content-between">
-                                                <span>Rp</span>
-                                                <span>{{ number_format($row["total_bayar"], 0, ",", ".") }}</span>
+                                                <span class="tw-text-base">Rp</span>
+                                                <span class="tw-text-base">{{ number_format($row["total_bayar"], 0, ",", ".") }}</span>
                                             </div>
                                         </td>
                                     </tr>
@@ -200,7 +200,7 @@
                     </div>
                     <div class="form-group">
                         <label for="nominalDefault">Nominal per Orang (Rp)</label>
-                        <input type="number" wire:model="nominalDefault" id="nominalDefault" class="form-control" />
+                        <input type="number" wire:model="nominalDefault" id="nominalDefault" class="form-control" min="0" />
                     </div>
                 </div>
                 <div class="modal-footer">

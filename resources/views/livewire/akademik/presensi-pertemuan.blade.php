@@ -83,9 +83,9 @@
                     <div class="card">
                         <div class="card-body">
                             <div class="tw-mb-6 tw-grid tw-grid-cols-1 lg:tw-grid-cols-2 tw-gap-4 tw-px-6">
-                                <div>
+                                <div wire:ignore>
                                     <label for="selectedPertemuan" class="tw-block tw-text-sm tw-font-semibold tw-text-gray-700 tw-mb-2">Pilih Pertemuan</label>
-                                    <select wire:model.live="selectedPertemuan" id="selectedPertemuan" class="form-control tw-w-full">
+                                    <select wire:model="selectedPertemuan" id="selectedPertemuan" class="form-control select2 tw-w-full">
                                         <option value="">-- Pilih Pertemuan --</option>
                                         @foreach ($pertemuans as $programName => $pertemuanGroup)
                                             <optgroup label="{{ $programName }}">
@@ -384,10 +384,29 @@
     </section>
 </div>
 
+@push("general-css")
+    <link href="{{ asset("assets/midragon/select2/select2.min.css") }}" rel="stylesheet" />
+@endpush
+
+@push("js-libraries")
+    <script src="{{ asset("/assets/midragon/select2/select2.full.min.js") }}"></script>
+@endpush
+
 @push("scripts")
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <script>
+        $(document).ready(function() {
+            // Init Select2
+            $('#selectedPertemuan').select2();
+
+            // Handle Change
+            $('#selectedPertemuan').on('change', function(e) {
+                var data = $(this).val();
+                @this.set('selectedPertemuan', data);
+            });
+        });
+
         function collectAndSubmit() {
             // Data sudah otomatis tersinkron via Alpine.js $watch
             // Langsung panggil updatePresensi

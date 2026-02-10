@@ -10,6 +10,7 @@
         <link rel="stylesheet" href="{{ asset("/assets/stisla/css/bootstrap.min.css") }}" />
         <link rel="stylesheet" href="{{ asset("assets/fontawesome/all.css") }}" />
         <link rel="stylesheet" href="{{ asset("assets/midragon/css/custom.css") }}" />
+        <link rel="stylesheet" href="{{ asset("assets/midragon/css/card-style.css") }}" />
 
         @stack("general-css")
 
@@ -96,7 +97,7 @@
                                         </li>
                                     </ul>
                                 </li>
-                                <li class="nav-item dropdown {{ request()->is("program-pembelajaran") || request()->is("pertemuan") || request()->is("projects") || request()->is("presensi-kehadiran") ? "active" : "" }}">
+                                <li class="nav-item dropdown {{ request()->is("program-pembelajaran") || request()->is("pertemuan") || request()->is("projects") || request()->is("presensi-kehadiran") || request()->is("statistik-kehadiran") || request()->is("status-anggota-ujian") || request()->is("hasil-ujian-pertemuan") ? "active" : "" }}">
                                     <a href="#" data-toggle="dropdown" class="nav-link has-dropdown">
                                         <i class="far fa-users-class"></i>
                                         <span>PRE</span>
@@ -113,6 +114,15 @@
                                         </li>
                                         <li class="nav-item {{ request()->is("presensi-kehadiran") ? "active" : "" }}">
                                             <a href="/presensi-kehadiran" class="nav-link">Presensi Kehadiran</a>
+                                        </li>
+                                        <li class="nav-item {{ request()->is("statistik-kehadiran") ? "active" : "" }}">
+                                            <a href="/statistik-kehadiran" class="nav-link">Statistik Kehadiran</a>
+                                        </li>
+                                        <li class="nav-item {{ request()->is("status-anggota-ujian") ? "active" : "" }}">
+                                            <a href="/status-anggota-ujian" class="nav-link">Status Anggota Ujian</a>
+                                        </li>
+                                        <li class="nav-item {{ request()->is("hasil-ujian-pertemuan") ? "active" : "" }}">
+                                            <a href="/hasil-ujian-pertemuan" class="nav-link">Hasil Ujian Pertemuan</a>
                                         </li>
                                     </ul>
                                 </li>
@@ -183,6 +193,41 @@
                                             <a href="/example" class="nav-link">Rekap Evaluasi</a>
                                         </li>
                                     </ul>
+                                </li>
+                            @endif
+
+                            @if (Auth::user()->hasRole("anggota"))
+                                <li class="nav-item dropdown {{ request()->is("anggota/daftar-pertemuan") || request()->is("anggota/hasil-soal") ? "active" : "" }}">
+                                    <a href="#" data-toggle="dropdown" class="nav-link has-dropdown">
+                                        <i class="far fa-book-open"></i>
+                                        <span>Akademik</span>
+                                    </a>
+                                    <ul class="dropdown-menu">
+                                        <li class="nav-item {{ request()->is("anggota/daftar-pertemuan") ? "active" : "" }}">
+                                            <a href="/anggota/daftar-pertemuan" class="nav-link">Daftar Pertemuan</a>
+                                        </li>
+                                        <li class="nav-item {{ request()->is("anggota/hasil-soal") ? "active" : "" }}">
+                                            <a href="/anggota/hasil-soal" class="nav-link">Hasil Ujian</a>
+                                        </li>
+                                    </ul>
+                                </li>
+                                <li class="nav-item {{ request()->is("anggota/riwayat-presensi") ? "active" : "" }}">
+                                    <a href="/anggota/riwayat-presensi" class="nav-link">
+                                        <i class="far fa-clipboard-list"></i>
+                                        <span>Riwayat Presensi</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item {{ request()->is("anggota/iuran-kas-saya") ? "active" : "" }}">
+                                    <a href="/anggota/iuran-kas-saya" class="nav-link">
+                                        <i class="far fa-money-bill-wave"></i>
+                                        <span>Iuran Kas</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item {{ request()->is("anggota/lihat-project") ? "active" : "" }}">
+                                    <a href="/anggota/lihat-project" class="nav-link">
+                                        <i class="far fa-project-diagram"></i>
+                                        <span>Project/Kegiatan</span>
+                                    </a>
                                 </li>
                             @endif
                         </ul>

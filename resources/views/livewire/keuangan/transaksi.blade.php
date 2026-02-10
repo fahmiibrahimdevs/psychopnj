@@ -7,39 +7,21 @@
                     <div>
                         <button wire:click="downloadPdf" class="btn btn-danger btn-icon icon-left">
                             <i class="fas fa-file-pdf"></i>
-                            PDF
+                            Export PDF
                         </button>
                         <button wire:click="downloadExcel" class="btn btn-success btn-icon icon-left">
                             <i class="fas fa-file-excel"></i>
-                            Excel
+                            Export Excel
                         </button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="section-body">
+        <div class="section-body tw-mt-6">
             <!-- Summary Cards -->
-            <div class="tw-grid tw-grid-cols-1 md:tw-grid-cols-3 tw-gap-4 tw-mb-4 tw-px-4 lg:tw-px-0">
-                <div class="tw-bg-white tw-rounded-lg tw-p-4 tw-shadow">
-                    <div class="tw-flex tw-items-center tw-justify-between">
-                        <div>
-                            <p class="tw-text-sm tw-text-gray-500">Total Pemasukan</p>
-                            <h4 class="tw-text-xl tw-font-bold tw-text-green-600">Rp {{ number_format($totalPemasukan, 0, ",", ".") }}</h4>
-                        </div>
-                        <i class="fas fa-arrow-down tw-text-green-500 tw-text-2xl"></i>
-                    </div>
-                </div>
-                <div class="tw-bg-white tw-rounded-lg tw-p-4 tw-shadow">
-                    <div class="tw-flex tw-items-center tw-justify-between">
-                        <div>
-                            <p class="tw-text-sm tw-text-gray-500">Total Pengeluaran</p>
-                            <h4 class="tw-text-xl tw-font-bold tw-text-red-600">Rp {{ number_format($totalPengeluaran, 0, ",", ".") }}</h4>
-                        </div>
-                        <i class="fas fa-arrow-up tw-text-red-500 tw-text-2xl"></i>
-                    </div>
-                </div>
-                <div class="tw-bg-white tw-rounded-lg tw-p-4 tw-shadow">
+            <div class="tw-flex tw-flex-nowrap lg:tw-grid lg:tw-grid-cols-3 tw-gap-4 tw-mb-4 tw-px-4 lg:tw-px-0 tw-overflow-x-auto tw-pb-2" style="-webkit-overflow-scrolling: touch; scrollbar-width: none">
+                <div class="tw-bg-white tw-rounded-lg tw-p-4 tw-shadow-md tw-min-w-[85vw] sm:tw-min-w-[60vw] lg:tw-min-w-0 tw-flex-shrink-0">
                     <div class="tw-flex tw-items-center tw-justify-between">
                         <div>
                             <p class="tw-text-sm tw-text-gray-500">Saldo Saat Ini</p>
@@ -48,7 +30,31 @@
                         <i class="fas fa-wallet tw-text-blue-500 tw-text-2xl"></i>
                     </div>
                 </div>
+                <div class="tw-bg-white tw-rounded-lg tw-p-4 tw-shadow-md tw-min-w-[85vw] sm:tw-min-w-[60vw] lg:tw-min-w-0 tw-flex-shrink-0">
+                    <div class="tw-flex tw-items-center tw-justify-between">
+                        <div>
+                            <p class="tw-text-sm tw-text-gray-500">Total Pemasukan</p>
+                            <h4 class="tw-text-xl tw-font-bold tw-text-green-600">Rp {{ number_format($totalPemasukan, 0, ",", ".") }}</h4>
+                        </div>
+                        <i class="fas fa-arrow-down tw-text-green-500 tw-text-2xl"></i>
+                    </div>
+                </div>
+                <div class="tw-bg-white tw-rounded-lg tw-p-4 tw-shadow-md tw-min-w-[85vw] sm:tw-min-w-[60vw] lg:tw-min-w-0 tw-flex-shrink-0">
+                    <div class="tw-flex tw-items-center tw-justify-between">
+                        <div>
+                            <p class="tw-text-sm tw-text-gray-500">Total Pengeluaran</p>
+                            <h4 class="tw-text-xl tw-font-bold tw-text-red-600">Rp {{ number_format($totalPengeluaran, 0, ",", ".") }}</h4>
+                        </div>
+                        <i class="fas fa-arrow-up tw-text-red-500 tw-text-2xl"></i>
+                    </div>
+                </div>
             </div>
+
+            <style>
+                .tw-overflow-x-auto::-webkit-scrollbar {
+                    display: none;
+                }
+            </style>
 
             <div class="card">
                 <h3>Buku Kas</h3>
@@ -270,7 +276,7 @@
                                         <div class="col-6">
                                             <div class="form-group">
                                                 <label for="jenis">Jenis Transaksi</label>
-                                                <select wire:model.live="jenis" id="jenis" class="form-control select2">
+                                                <select wire:model="jenis" id="jenis" class="form-control select2">
                                                     <option value="">-- Pilih Jenis --</option>
                                                     <option value="pemasukan">Pemasukan</option>
                                                     <option value="pengeluaran">Pengeluaran</option>
@@ -284,15 +290,15 @@
 
                                     <div class="form-group">
                                         <label for="kategori">Kategori</label>
-                                        <select wire:model.live="kategori" id="kategori" class="form-control select2">
+                                        <select wire:model="kategori" id="kategori" class="form-control select2">
                                             <option value="">-- Pilih Kategori --</option>
                                             @if ($jenis === "pemasukan")
                                                 @foreach ($jenisAnggaranPemasukan as $item)
-                                                    <option value="{{ $item->nama_jenis }}">{{ $item->nama_jenis }}</option>
+                                                    <option value="{{ $item->nama_jenis }}" {{ $item->nama_jenis == $kategori ? "selected" : "" }}>{{ $item->nama_jenis }}</option>
                                                 @endforeach
                                             @elseif ($jenis === "pengeluaran")
                                                 @foreach ($jenisAnggaranPengeluaran as $item)
-                                                    <option value="{{ $item->nama_jenis }}">{{ $item->nama_jenis }}</option>
+                                                    <option value="{{ $item->nama_jenis }}" {{ $item->nama_jenis == $kategori ? "selected" : "" }}>{{ $item->nama_jenis }}</option>
                                                 @endforeach
                                             @endif
                                         </select>
@@ -529,7 +535,43 @@
     </div>
 </div>
 
+@push("general-css")
+    <link href="{{ asset("assets/midragon/select2/select2.min.css") }}" rel="stylesheet" />
+@endpush
+
+@push("js-libraries")
+    <script src="{{ asset("assets/midragon/select2/select2.full.min.js") }}"></script>
+@endpush
+
 @push("scripts")
+    <script>
+        // Init setelah modal dibuka
+        $('#formDataModal').on('shown.bs.modal', function () {
+            $('.select2').select2({
+                dropdownParent: $('#formDataModal')
+            });
+
+            $('.select2').on('change', function(e) {
+                var id = $(this).attr('id');
+                var data = $(this).select2("val");
+                @this.set(id, data);
+            });
+        });
+
+        window.addEventListener('initSelect2', event => {
+            $(document).ready(function() {
+                $('.select2').select2({
+                    dropdownParent: $('#formDataModal')
+                });
+
+                $('.select2').on('change', function(e) {
+                    var id = $(this).attr('id');
+                    var data = $(this).select2("val");
+                    @this.set(id, data);
+                });
+            });
+        })
+    </script>
     <script>
         function previewFile(filePath, mimeType) {
             const content = document.getElementById('filePreviewContent');

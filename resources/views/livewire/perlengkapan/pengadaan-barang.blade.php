@@ -1,38 +1,61 @@
 <div>
     <section class="section custom-section">
         <div class="section-header">
-            <h1>Pengadaan Barang</h1>
+            <h1>Pengadaan Barang (RAB)</h1>
         </div>
 
-        <div class="section-body">
+        <div class="section-body tw-mt-4">
+            <!-- Nav Pills -->
+            <ul class="nav nav-pills tw-mb-6 tw-px-4 lg:tw-px-0" id="rabTabs" role="tablist" style="display: flex; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; -ms-overflow-style: none; scrollbar-width: none">
+                @foreach ($departments as $dept)
+                    <li class="nav-item">
+                        <a class="nav-link {{ $activeTab === "dept-" . $dept->id ? "active" : "" }} tw-whitespace-nowrap" wire:click.prevent="switchTab('dept-{{ $dept->id }}')" href="#" role="tab">
+                            <i class="fas fa-building tw-mr-2"></i>
+                            {{ $dept->nama_department }}
+                        </a>
+                    </li>
+                @endforeach
+
+                @foreach ($projects as $proj)
+                    <li class="nav-item">
+                        <a class="nav-link {{ $activeTab === "proj-" . $proj->id ? "active" : "" }} tw-whitespace-nowrap" wire:click.prevent="switchTab('proj-{{ $proj->id }}')" href="#" role="tab">
+                            <i class="fas fa-project-diagram tw-mr-2"></i>
+                            {{ $proj->nama_project }}
+                        </a>
+                    </li>
+                @endforeach
+
+                <li class="nav-item">
+                    <a class="nav-link {{ $activeTab === "lainnya" ? "active" : "" }} tw-whitespace-nowrap" wire:click.prevent="switchTab('lainnya')" href="#" role="tab">
+                        <i class="fas fa-cube tw-mr-2"></i>
+                        Lainnya
+                    </a>
+                </li>
+            </ul>
+
+            <style>
+                #rabTabs::-webkit-scrollbar {
+                    display: none;
+                }
+            </style>
+
             <div class="card">
                 <h3>Tabel Pengadaan Barang</h3>
                 <div class="card-body">
-                    <div class="tw-flex tw-flex-wrap tw-gap-3 tw-mb-4">
-                        <div class="show-entries">
-                            <p class="show-entries-show">Show</p>
-                            <select wire:model.live="lengthData" id="length-data">
-                                <option value="25">25</option>
-                                <option value="50">50</option>
-                                <option value="100">100</option>
-                            </select>
-                            <p class="show-entries-entries">Entries</p>
-                        </div>
-
-                        <div class="tw-flex tw-items-center tw-gap-2">
-                            <select wire:model.live="filterStatus" class="form-control form-control-sm">
-                                <option value="">Semua Status</option>
-                                <option value="diusulkan">Diusulkan</option>
-                                <option value="disetujui">Disetujui</option>
-                                <option value="ditolak">Ditolak</option>
-                                <option value="selesai">Selesai</option>
-                            </select>
-                        </div>
+                    <div class="show-entries">
+                        <p class="show-entries-show">Show</p>
+                        <select wire:model.live="lengthData" id="length-data">
+                            <option value="25">25</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                            <option value="250">250</option>
+                            <option value="500">500</option>
+                        </select>
+                        <p class="show-entries-entries">Entries</p>
                     </div>
-
                     <div class="search-column">
                         <p>Search:</p>
-                        <input type="search" wire:model.live.debounce.750ms="searchTerm" id="search-data" placeholder="Cari nama barang..." class="form-control" />
+                        <input type="search" wire:model.live.debounce.750ms="searchTerm" id="search-data" placeholder="Search here..." class="form-control" />
                     </div>
 
                     <div class="table-responsive">
@@ -40,120 +63,105 @@
                             <thead class="tw-sticky tw-top-0">
                                 <tr class="tw-text-gray-700">
                                     <th width="5%" class="text-center tw-whitespace-nowrap">No</th>
-                                    <th class="tw-whitespace-nowrap">Detail Barang</th>
+                                    <th class="tw-whitespace-nowrap">Nama Barang & Rincian</th>
+                                    <th class="tw-whitespace-nowrap text-center">Prioritas</th>
                                     <th class="tw-whitespace-nowrap text-right">Total</th>
-                                    <th class="tw-whitespace-nowrap">Pengusul</th>
+                                    <th class="tw-whitespace-nowrap text-center">Link</th>
                                     <th class="tw-whitespace-nowrap text-center">Status</th>
-                                    <th class="tw-whitespace-nowrap">Dibuat Oleh</th>
                                     <th class="text-center tw-whitespace-nowrap"><i class="fas fa-cog"></i></th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @php
-                                    $currentCategory = null;
-                                    $groupTotal = 0;
-                                    $groupedData = [];
-
-                                    // Group data by category
-                                    foreach ($data as $item) {
-                                        $categoryKey = "lainnya";
-                                        $categoryLabel = "Lainnya";
-
-                                        if ($item->department_id) {
-                                            $categoryKey = "dept_" . $item->department_id;
-                                            $categoryLabel = "Dept. " . $item->department->nama_department;
-                                        } elseif ($item->project_id) {
-                                            $categoryKey = "project_" . $item->project_id;
-                                            $categoryLabel = "Project/Kegiatan: " . $item->project->nama_project;
-                                        }
-
-                                        if (! isset($groupedData[$categoryKey])) {
-                                            $groupedData[$categoryKey] = [
-                                                "label" => $categoryLabel,
-                                                "items" => [],
-                                                "total" => 0,
-                                            ];
-                                        }
-
-                                        $groupedData[$categoryKey]["items"][] = $item;
-                                        $groupedData[$categoryKey]["total"] += $item->total;
-                                    }
-                                @endphp
-
-                                @forelse ($groupedData as $categoryKey => $group)
-                                    {{-- Category Header --}}
-                                    <tr>
-                                        <td colspan="7" class="tw-bg-gray-50 tw-font-semibold tw-tracking-wider tw-text-left tw-px-4 tw-py-2 tw-text-gray-700">
-                                            {{ $group["label"] }}
-                                        </td>
-                                    </tr>
-
-                                    {{-- Items in this category --}}
-                                    @foreach ($group["items"] as $row)
-                                        <tr class="text-center">
-                                            <td>{{ $loop->parent->index * count($group["items"]) + $loop->iteration }}</td>
-                                            <td class="text-left">
-                                                <div class="tw-font-normal tw-text-gray-800 tw-tracking-normal">
-                                                    {{ $row->nama_barang }}
-                                                    @if ($row->link_pembelian)
-                                                        <a href="{{ $row->link_pembelian }}" target="_blank" class="tw-ml-1 text-info" title="Lihat Link">
-                                                            <i class="fas fa-external-link-alt"></i>
-                                                        </a>
-                                                    @endif
+                                @forelse ($data as $index => $row)
+                                    <tr class="text-center">
+                                        <td>{{ $data->firstItem() + $index }}</td>
+                                        <td class="text-left">
+                                            <div class="tw-font-bold tw-text-gray-800">{{ $row->nama_barang }}</div>
+                                            <div class="tw-text-sm tw-text-gray-600 tw-mt-1">
+                                                {{ $row->jumlah }} x Rp {{ number_format($row->harga, 0, ",", ".") }}
+                                                @if ($row->biaya_lainnya > 0)
+                                                    + Rp {{ number_format($row->biaya_lainnya, 0, ",", ".") }} (Biaya Lain)
+                                                @endif
+                                            </div>
+                                            @if ($row->nama_toko)
+                                                <div class="tw-text-sm tw-text-gray-600 tw-mt-1">
+                                                    <i class="fas fa-store tw-mr-1"></i>
+                                                    {{ $row->nama_toko }}
                                                 </div>
-                                                <div class="tw-text-sm tw-text-gray-500 tw-mt-1">{{ $row->jumlah }} x Rp {{ number_format($row->harga, 0, ",", ".") }}</div>
-                                            </td>
-                                            <td class="text-right">Rp {{ number_format($row->total, 0, ",", ".") }}</td>
-                                            <td class="text-left">{{ $row->pengusul->nama_lengkap ?? "-" }}</td>
-                                            <td>
-                                                @if ($row->status === "diusulkan")
-                                                    <span class="badge tw-bg-yellow-100 tw-text-yellow-800">Diusulkan</span>
-                                                @elseif ($row->status === "disetujui")
-                                                    <span class="badge tw-bg-green-100 tw-text-green-800">Disetujui</span>
-                                                @elseif ($row->status === "ditolak")
-                                                    <span class="badge tw-bg-red-100 tw-text-red-800">Ditolak</span>
-                                                @elseif ($row->status === "selesai")
-                                                    <span class="badge tw-bg-blue-100 tw-text-blue-800">Selesai</span>
-                                                @endif
-                                            </td>
-                                            <td class="text-left tw-text-sm tw-whitespace-nowrap">
-                                                <span class="tw-text-gray-600">{{ $row->user->name ?? "-" }}</span>
-                                            </td>
-                                            <td class="tw-whitespace-nowrap">
-                                                @if ($row->status === "diusulkan")
-                                                    <button wire:click.prevent="approveConfirm({{ $row->id }})" class="btn btn-success" title="Setujui">
-                                                        <i class="fas fa-check"></i>
-                                                    </button>
-                                                    <button wire:click.prevent="rejectConfirm({{ $row->id }})" class="btn btn-warning" title="Tolak">
-                                                        <i class="fas fa-times"></i>
-                                                    </button>
-                                                    <button wire:click.prevent="edit({{ $row->id }})" class="btn btn-primary" data-toggle="modal" data-target="#formDataModal" title="Edit">
-                                                        <i class="fas fa-edit"></i>
-                                                    </button>
-                                                @elseif ($row->status === "disetujui")
-                                                    <button wire:click.prevent="markAsSelesai({{ $row->id }})" class="btn btn-info" title="Tandai Selesai">
-                                                        <i class="fas fa-flag-checkered"></i>
-                                                    </button>
-                                                    <button wire:click.prevent="rollbackConfirm({{ $row->id }})" class="btn btn-warning" title="Batalkan Persetujuan">
-                                                        <i class="fas fa-undo"></i>
-                                                    </button>
-                                                @endif
-                                                <button wire:click.prevent="deleteConfirm({{ $row->id }})" class="btn btn-danger" title="Hapus">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    @endforeach
+                                            @endif
 
-                                    {{-- Total Row for this category --}}
-                                    <tr class="tw-bg-gray-100 tw-font-semibold">
-                                        <td colspan="2" class="text-right tw-px-4 tw-py-2">Total {{ $group["label"] }}:</td>
-                                        <td class="text-right tw-px-4 tw-py-2">Rp {{ number_format($group["total"], 0, ",", ".") }}</td>
-                                        <td colspan="4"></td>
+                                            @if ($row->keterangan && $row->keterangan !== "-")
+                                                <div class="tw-text-sm tw-text-gray-500 tw-italic tw-mt-1">"{{ $row->keterangan }}"</div>
+                                            @endif
+                                        </td>
+                                        <td class="text-center">
+                                            @php
+                                                $prioColor = "tw-bg-gray-100 tw-text-gray-800";
+                                                if ($row->prioritas === "Tinggi") {
+                                                    $prioColor = "tw-bg-red-100 tw-text-red-800";
+                                                }
+                                                if ($row->prioritas === "Sedang") {
+                                                    $prioColor = "tw-bg-yellow-100 tw-text-yellow-800";
+                                                }
+                                                if ($row->prioritas === "Rendah") {
+                                                    $prioColor = "tw-bg-green-100 tw-text-green-800";
+                                                }
+                                            @endphp
+
+                                            <span class="badge {{ $prioColor }}">{{ $row->prioritas }}</span>
+                                        </td>
+                                        <td class="text-right font-weight-bold">Rp {{ number_format($row->total, 0, ",", ".") }}</td>
+                                        <td class="text-center">
+                                            @if ($row->link_pembelian)
+                                                <a href="{{ $row->link_pembelian }}" target="_blank" class="btn btn-info text-white" title="Buka Link">
+                                                    <i class="fas fa-link"></i>
+                                                </a>
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if ($row->status === "diusulkan")
+                                                <span class="badge tw-bg-gray-100 tw-text-gray-800">Diusulkan</span>
+                                            @elseif ($row->status === "disetujui")
+                                                <span class="badge tw-bg-green-100 tw-text-green-800">Disetujui</span>
+                                            @elseif ($row->status === "ditolak")
+                                                <span class="badge tw-bg-red-100 tw-text-red-800">Ditolak</span>
+                                            @elseif ($row->status === "selesai")
+                                                <span class="badge tw-bg-blue-100 tw-text-blue-800">Selesai</span>
+                                            @endif
+                                        </td>
+                                        <td class="tw-whitespace-nowrap">
+                                            @if ($row->status === "diusulkan")
+                                                <button wire:click.prevent="approveConfirm({{ $row->id }})" class="btn btn-success" title="Setujui">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                                <button wire:click.prevent="rejectConfirm({{ $row->id }})" class="btn btn-warning" title="Tolak">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                                <button wire:click.prevent="edit({{ $row->id }})" class="btn btn-primary" data-toggle="modal" data-target="#formDataModal" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                            @elseif ($row->status === "disetujui")
+                                                <button wire:click.prevent="markAsSelesai({{ $row->id }})" class="btn btn-info" title="Tandai Selesai">
+                                                    <i class="fas fa-flag-checkered"></i>
+                                                </button>
+                                                <button wire:click.prevent="rollbackConfirm({{ $row->id }})" class="btn btn-warning" title="Batalkan Persetujuan">
+                                                    <i class="fas fa-undo"></i>
+                                                </button>
+                                            @elseif ($row->status === "ditolak")
+                                                <button wire:click.prevent="rollbackConfirm({{ $row->id }})" class="btn btn-warning" title="Batalkan Penolakan">
+                                                    <i class="fas fa-undo"></i>
+                                                </button>
+                                            @endif
+                                            <button wire:click.prevent="deleteConfirm({{ $row->id }})" class="btn btn-danger" title="Hapus">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="7" class="text-center">Tidak ada data pengadaan barang</td>
+                                        <td colspan="11" class="text-center py-4">Tidak ada data RAB untuk kategori ini.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -248,6 +256,27 @@
                         </div>
 
                         <div class="tw-grid tw-grid-cols-2 tw-gap-4">
+                            <div class="form-group big-input">
+                                <label for="keterangan">Keterangan</label>
+                                <input type="text" wire:model="keterangan" id="keterangan" class="form-control" placeholder="-" />
+                                @error("keterangan")
+                                    <small class="text-danger">{{ $message }}</small>
+                                @enderror
+                            </div>
+                            <div class="form-group big-input">
+                                <label for="prioritas">Prioritas</label>
+                                <select wire:model="prioritas" id="prioritas" class="form-control">
+                                    <option value="Sedang">Sedang</option>
+                                    <option value="Tinggi">Tinggi</option>
+                                    <option value="Rendah">Rendah</option>
+                                </select>
+                                @error("prioritas")
+                                    <small class="text-danger">{{ $message }}</small>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <div class="tw-grid tw-grid-cols-2 tw-gap-4">
                             <div class="form-group">
                                 <label for="jumlah">
                                     Jumlah
@@ -275,28 +304,54 @@
                             </div>
                         </div>
 
-                        <div class="form-group">
-                            <label for="total">Total Estimasi</label>
-                            <div class="input-group">
-                                <div class="input-group-prepend">
-                                    <span class="input-group-text">Rp</span>
+                        <div class="tw-grid tw-grid-cols-2 tw-gap-4">
+                            <div class="form-group">
+                                <label for="biaya_lainnya">Biaya Lainnya</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text">Rp</span>
+                                    </div>
+                                    <input type="number" wire:model.lazy="biaya_lainnya" id="biaya_lainnya" class="form-control" min="0" />
                                 </div>
-                                <input type="number" wire:model.live="total" id="total" class="form-control" min="0" />
+                                @error("biaya_lainnya")
+                                    <small class="text-danger">{{ $message }}</small>
+                                @enderror
                             </div>
-                            @error("total")
-                                <small class="text-danger">{{ $message }}</small>
-                            @enderror
+                            <div class="form-group">
+                                <label for="total">Total Estimasi</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text">Rp</span>
+                                    </div>
+                                    <input type="number" wire:model.live="total" id="total" class="form-control" min="0" readonly />
+                                </div>
+                                @error("total")
+                                    <small class="text-danger">{{ $message }}</small>
+                                @enderror
+                            </div>
                         </div>
 
-                        <div class="form-group">
-                            <label for="link_pembelian">
-                                Link Pembelian
-                                <span class="text-muted tw-font-normal">(Opsional)</span>
-                            </label>
-                            <input type="url" wire:model="link_pembelian" id="link_pembelian" class="form-control" placeholder="https://..." />
-                            @error("link_pembelian")
-                                <small class="text-danger">{{ $message }}</small>
-                            @enderror
+                        <div class="tw-grid tw-grid-cols-2 tw-gap-4">
+                            <div class="form-group">
+                                <label for="nama_toko">
+                                    Nama Toko
+                                    <span class="text-muted tw-font-normal">(Opsional)</span>
+                                </label>
+                                <input type="text" wire:model="nama_toko" id="nama_toko" class="form-control" placeholder="Nama Toko" />
+                                @error("nama_toko")
+                                    <small class="text-danger">{{ $message }}</small>
+                                @enderror
+                            </div>
+                            <div class="form-group">
+                                <label for="link_pembelian">
+                                    Link Pembelian
+                                    <span class="text-muted tw-font-normal">(Opsional)</span>
+                                </label>
+                                <input type="url" wire:model="link_pembelian" id="link_pembelian" class="form-control" placeholder="https://..." />
+                                @error("link_pembelian")
+                                    <small class="text-danger">{{ $message }}</small>
+                                @enderror
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer tw-bg-gray-50 tw-px-6 tw-py-4 tw-rounded-b-lg">

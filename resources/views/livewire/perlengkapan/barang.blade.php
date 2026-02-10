@@ -15,14 +15,16 @@
             <div class="section-header-breadcrumb">
                 <div class="d-flex align-items-center">
                     <div>
-                        <button wire:click="downloadTemplate" class="btn btn-info btn-icon icon-left">
+                        {{--
+                            <button wire:click="downloadTemplate" class="btn btn-info btn-icon icon-left">
                             <i class="fas fa-file-download"></i>
                             Template
-                        </button>
-                        <button class="btn btn-warning btn-icon icon-left" data-toggle="modal" data-target="#importModal">
+                            </button>
+                            <button class="btn btn-warning btn-icon icon-left" data-toggle="modal" data-target="#importModal">
                             <i class="fas fa-file-upload"></i>
                             Import
-                        </button>
+                            </button>
+                        --}}
                         <button wire:click="downloadPdf" class="btn btn-danger btn-icon icon-left">
                             <i class="fas fa-file-pdf"></i>
                             PDF

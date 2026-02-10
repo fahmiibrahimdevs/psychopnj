@@ -96,39 +96,50 @@ class ProfilOrganisasi extends Component
     {
         $this->validate();
 
-        DB::table('profil_organisasi')->insert([
-            'id_tahun'            => $this->id_tahun,
-            'headline'            => $this->headline,
-            'deskripsi'           => $this->deskripsi,
-            'visi'                => $this->visi,
-            'misi'                => $this->misi,
-            'foto'                => $this->foto,
-            'tagline'             => $this->tagline,
-            'created_at'          => now(),
-            'updated_at'          => now(),
-        ]);
+        DB::beginTransaction();
+        try {
+            DB::table('profil_organisasi')->insert([
+                'id_tahun'            => $this->id_tahun,
+                'headline'            => $this->headline,
+                'deskripsi'           => $this->deskripsi,
+                'visi'                => $this->visi,
+                'misi'                => $this->misi,
+                'foto'                => $this->foto,
+                'tagline'             => $this->tagline,
+                'created_at'          => now(),
+                'updated_at'          => now(),
+            ]);
 
-        $this->dispatchAlert('success', 'Success!', 'Data created successfully.');
+            DB::commit();
+            $this->dispatchAlert('success', 'Success!', 'Data created successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+        }
     }
 
     public function edit($id)
     {
         $this->isEditing = true;
-        $data = DB::table('profil_organisasi')
-            ->select('id', 'id_tahun', 'headline', 'deskripsi', 'visi', 'misi', 'foto', 'tagline')
-            ->where('id', $id)
-            ->first();
-            
-        $this->dataId           = $id;
-        $this->id_tahun         = $data->id_tahun;
-        $this->headline         = $data->headline;
-        $this->deskripsi        = $data->deskripsi;
-        $this->visi             = $data->visi;
-        $this->misi             = $data->misi;
-        $this->foto             = $data->foto;
-        $this->tagline          = $data->tagline;
+        try {
+            $data = DB::table('profil_organisasi')
+                ->select('id', 'id_tahun', 'headline', 'deskripsi', 'visi', 'misi', 'foto', 'tagline')
+                ->where('id', $id)
+                ->first();
+                
+            $this->dataId           = $id;
+            $this->id_tahun         = $data->id_tahun;
+            $this->headline         = $data->headline;
+            $this->deskripsi        = $data->deskripsi;
+            $this->visi             = $data->visi;
+            $this->misi             = $data->misi;
+            $this->foto             = $data->foto;
+            $this->tagline          = $data->tagline;
 
-        $this->initSummernote();
+            $this->initSummernote();
+        } catch (\Exception $e) {
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+        }
     }
 
     public function update()
@@ -137,21 +148,28 @@ class ProfilOrganisasi extends Component
 
         if( $this->dataId )
         {
-            DB::table('profil_organisasi')
-                ->where('id', $this->dataId)
-                ->update([
-                    'id_tahun'            => $this->id_tahun,
-                    'headline'            => $this->headline,
-                    'deskripsi'           => $this->deskripsi,
-                    'visi'                => $this->visi,
-                    'misi'                => $this->misi,
-                    'foto'                => $this->foto,
-                    'tagline'             => $this->tagline,
-                    'updated_at'          => now(),
-                ]);
+            DB::beginTransaction();
+            try {
+                DB::table('profil_organisasi')
+                    ->where('id', $this->dataId)
+                    ->update([
+                        'id_tahun'            => $this->id_tahun,
+                        'headline'            => $this->headline,
+                        'deskripsi'           => $this->deskripsi,
+                        'visi'                => $this->visi,
+                        'misi'                => $this->misi,
+                        'foto'                => $this->foto,
+                        'tagline'             => $this->tagline,
+                        'updated_at'          => now(),
+                    ]);
 
-            $this->dispatchAlert('success', 'Success!', 'Data updated successfully.');
-            $this->dataId = null;
+                DB::commit();
+                $this->dispatchAlert('success', 'Success!', 'Data updated successfully.');
+                $this->dataId = null;
+            } catch (\Exception $e) {
+                DB::rollBack();
+                $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+            }
         }
     }
 
@@ -167,11 +185,18 @@ class ProfilOrganisasi extends Component
 
     public function delete()
     {
-        DB::table('profil_organisasi')
-            ->where('id', $this->dataId)
-            ->delete();
-            
-        $this->dispatchAlert('success', 'Success!', 'Data deleted successfully.');
+        DB::beginTransaction();
+        try {
+            DB::table('profil_organisasi')
+                ->where('id', $this->dataId)
+                ->delete();
+                
+            DB::commit();
+            $this->dispatchAlert('success', 'Success!', 'Data deleted successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+        }
     }
 
     public function updatingLengthData()

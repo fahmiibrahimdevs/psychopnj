@@ -60,6 +60,11 @@ class JenisAnggaran extends Component
         $this->dispatchAlert('success', 'Success!', 'Jenis anggaran berhasil ditambahkan.');
     }
 
+    public function updated()
+    {
+        $this->dispatch('initSelect2');
+    }
+
     public function edit($id)
     {
         $this->isEditing = true;

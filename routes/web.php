@@ -42,9 +42,14 @@ Route::group(['middleware' => ['auth', 'role:pengurus']], function () {
     // Akademik Routes
     Route::get('program-pembelajaran', ProgramKegiatan::class)->name('program-pembelajaran');
     Route::get('pertemuan', Pertemuan::class)->name('pertemuan');
+    Route::get('pertemuan/{pertemuanId}/soal', \App\Livewire\Akademik\BankSoal\SoalPertemuan::class)->name('pertemuan.soal');
     Route::get('projects', \App\Livewire\Akademik\Project::class)->name('projects');
     Route::get('project/{projectId}/teams', \App\Livewire\Akademik\ProjectTeams::class)->name('project.teams');
     Route::get('presensi-kehadiran', PresensiPertemuan::class)->name('presensi-kehadiran');
+    Route::get('statistik-kehadiran', \App\Livewire\Akademik\StatistikKehadiran::class)->name('statistik-kehadiran');
+    Route::get('status-anggota-ujian', \App\Livewire\Akademik\StatusAnggotaUjian::class)->name('status-anggota-ujian');
+    Route::get('hasil-ujian-pertemuan', \App\Livewire\Akademik\HasilUjianPertemuan::class)->name('hasil-ujian-pertemuan');
+    Route::get('hasil-ujian-pertemuan/koreksi/{id_pertemuan}/{id_anggota}', \App\Livewire\Akademik\HasilUjian\Koreksi::class)->name('koreksi-hasil-ujian');
     
     // Keuangan Routes
     Route::get('anggaran', \App\Livewire\Keuangan\Anggaran::class)->name('anggaran');
@@ -68,8 +73,14 @@ Route::group(['middleware' => ['auth', 'role:pengurus']], function () {
 });
 
 
-Route::group(['middleware' => ['auth', 'role:anggota']], function () {
-    // Routes untuk anggota biasa (jika ada)
+Route::group(['middleware' => ['auth', 'role:anggota'], 'prefix' => 'anggota'], function () {
+    Route::get('daftar-pertemuan', \App\Livewire\Anggota\DaftarPertemuan::class)->name('daftar-pertemuan');
+    Route::get('konfirmasi/{pertemuanId}', \App\Livewire\Anggota\KerjakanSoal\Konfirmasi::class)->name('konfirmasi-soal');
+    Route::get('mengerjakan/{pertemuanId}', \App\Livewire\Anggota\KerjakanSoal\Mengerjakan::class)->name('mengerjakan-soal');
+    Route::get('hasil-soal', \App\Livewire\Anggota\HasilSoal::class)->name('hasil-soal');
+    Route::get('riwayat-presensi', \App\Livewire\Anggota\RiwayatPresensi::class)->name('riwayat-presensi');
+    Route::get('iuran-kas-saya', \App\Livewire\Anggota\IuranKasSaya::class)->name('iuran-kas-saya');
+    Route::get('lihat-project', \App\Livewire\Anggota\LihatProject::class)->name('lihat-project');
 });
 
 // Route::middleware('auth')->group(function () {

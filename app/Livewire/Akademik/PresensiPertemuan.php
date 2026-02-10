@@ -161,36 +161,49 @@ class PresensiPertemuan extends Component
             'alfa' => 0,
             'tanpa_keterangan' => 0
         ];
+
+        // Flatten anggotaData to get all valid member IDs
+        $validMemberIds = [];
         
-        // Count total anggota from anggotaData with proper nested structure handling
         foreach ($this->anggotaData as $statusAnggota => $group) {
             if ($statusAnggota === 'pengurus') {
                 // Pengurus has nested structure: department -> members
                 foreach ($group as $departmentMembers) {
-                    $this->statistik['total'] += count($departmentMembers);
+                    foreach ($departmentMembers as $member) {
+                        $validMemberIds[] = $member['id'];
+                    }
                 }
             } else {
                 // Anggota has flat structure: directly members
-                $this->statistik['total'] += count($group);
+                foreach ($group as $member) {
+                    $validMemberIds[] = $member['id'];
+                }
+            }
+        }
+
+        $this->statistik['total'] = count($validMemberIds);
+        
+        // Count status only for valid members
+        foreach ($validMemberIds as $id) {
+            if (isset($this->presensiData[$id])) {
+                $data = $this->presensiData[$id];
+                $status = is_array($data) ? ($data['status'] ?? '') : $data;
+                
+                if ($status == 'hadir') {
+                    $this->statistik['hadir']++;
+                } elseif ($status == 'izin') {
+                    $this->statistik['izin']++;
+                } elseif ($status == 'sakit') {
+                    $this->statistik['sakit']++;
+                } elseif ($status == 'alfa') {
+                    $this->statistik['alfa']++;
+                }
             }
         }
         
-        // Count each status from presensiData
-        foreach ($this->presensiData as $presensi) {
-            $status = is_array($presensi) ? ($presensi['status'] ?? '') : $presensi;
-            
-            if ($status == 'hadir') {
-                $this->statistik['hadir']++;
-            } elseif ($status == 'izin') {
-                $this->statistik['izin']++;
-            } elseif ($status == 'sakit') {
-                $this->statistik['sakit']++;
-            } elseif ($status == 'alfa') {
-                $this->statistik['alfa']++;
-            }
-        }
-        
-        // Calculate tanpa keterangan (total - all status)
+        // Calculate tanpa keterangan directly from valid members who don't have a status counted above
+        // Note: Logic above only counts verified statuses. If status is empty string, it falls through.
+        // So we can just subtract.
         $this->statistik['tanpa_keterangan'] = $this->statistik['total'] 
             - $this->statistik['hadir'] 
             - $this->statistik['izin'] 

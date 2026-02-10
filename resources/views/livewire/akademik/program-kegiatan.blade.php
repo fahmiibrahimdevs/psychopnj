@@ -75,6 +75,10 @@
                                 <span class="badge program-badge-{{ $row->jenis_program }}">
                                     {{ ucfirst($row->jenis_program) }}
                                 </span>
+                                @if ($row->untuk_anggota)
+                                    <span class="badge badge-success ml-1">Member</span>
+                                @endif
+
                                 <div class="d-flex program-btn-container">
                                     <button wire:click.prevent="viewPertemuan({{ $row->id }})" class="btn program-btn-view" data-toggle="modal" data-target="#viewPertemuanModal">
                                         <i class="fas fa-eye"></i>
@@ -175,6 +179,15 @@
                                     @enderror
                                 </div>
                             </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" wire:model="untuk_anggota" class="custom-control-input" id="untuk_anggota_check" />
+                                <label class="custom-control-label" for="untuk_anggota_check">Tampilkan untuk Anggota?</label>
+                            </div>
+                            @error("untuk_anggota")
+                                <span class="text-danger">{{ $message }}</span>
+                            @enderror
                         </div>
                         <div class="form-group">
                             <label for="thumbnail">Thumbnail</label>

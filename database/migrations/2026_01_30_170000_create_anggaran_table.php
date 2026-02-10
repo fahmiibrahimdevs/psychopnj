@@ -18,7 +18,7 @@ return new class extends Migration
             $table->foreignId('id_department')->nullable()->constrained('departments')->onDelete('set null');
             $table->foreignId('id_project')->nullable()->constrained('projects')->onDelete('set null');
             $table->text('nama');
-            $table->decimal('nominal', 15, 2)->default(0);
+            $table->bigInteger('nominal')->default(0)->comment('Nominal dalam Rupiah (integer)');
             $table->timestamps();
             
             $table->index('id_tahun');

@@ -279,139 +279,154 @@ class Anggota extends Component
             return;
         }
 
-        // Create or update user
-        $userId = $this->id_user;
-        if ($this->email) {
-            if ($userId) {
-                // Update existing user
-                $user = \App\Models\User::find($userId);
-                if ($user) {
-                    $userData = [
-                        'email' => $this->email,
-                        'active' => $this->status_aktif == 'aktif' ? '1' : '0',
-                    ];
-                    if ($this->password) {
-                        $userData['password'] = bcrypt($this->password);
+        DB::beginTransaction();
+        try {
+            // Create or update user
+            $userId = $this->id_user;
+            if ($this->email) {
+                if ($userId) {
+                    // Update existing user
+                    $user = \App\Models\User::find($userId);
+                    if ($user) {
+                        $userData = [
+                            'email' => $this->email,
+                            'active' => $this->status_aktif == 'aktif' ? '1' : '0',
+                        ];
+                        if ($this->password) {
+                            $userData['password'] = bcrypt($this->password);
+                        }
+                        $user->update($userData);
                     }
-                    $user->update($userData);
+                } else {
+                    // Create new user
+                    $user = \App\Models\User::create([
+                        'name' => $this->nama_lengkap,
+                        'email' => $this->email,
+                        'password' => bcrypt($this->password ?: 'password123'),
+                        'active' => $this->status_aktif == 'aktif' ? '1' : '0',
+                    ]);
+                    
+                    // Assign role berdasarkan status_anggota
+                    $user->addRole($this->status_anggota);
+                    
+                    $userId = $user->id;
                 }
-            } else {
-                // Create new user
-                $user = \App\Models\User::create([
-                    'name' => $this->nama_lengkap,
-                    'email' => $this->email,
-                    'password' => bcrypt($this->password ?: 'password123'),
-                    'active' => $this->status_aktif == 'aktif' ? '1' : '0',
-                ]);
-                
-                // Assign role berdasarkan status_anggota
-                $user->addRole($this->status_anggota);
-                
-                $userId = $user->id;
             }
+
+            ModelsAnggota::create([
+                'id_user'             => $userId,
+                'id_tahun'            => $this->id_tahun,
+                'id_department'       => $this->id_department ?: 0,
+                'nama_lengkap'        => $this->nama_lengkap,
+                'nama_jabatan'        => $this->nama_jabatan,
+                'jurusan_prodi_kelas' => $this->jurusan_prodi_kelas,
+                'nim'                 => $this->nim,
+                'ttl'                 => $this->ttl,
+                'alamat'              => $this->alamat,
+                'email'               => $this->email,
+                'no_hp'               => $this->no_hp,
+                'status_anggota'      => $this->status_anggota,
+                'status_aktif'        => $this->status_aktif,
+                'foto'                => $this->foto,
+            ]);
+
+            DB::commit();
+            $this->dispatchAlert('success', 'Success!', 'Data created successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
         }
-
-        ModelsAnggota::create([
-            'id_user'             => $userId,
-            'id_tahun'            => $this->id_tahun,
-            'id_department'       => $this->id_department ?: 0,
-            'nama_lengkap'        => $this->nama_lengkap,
-            'nama_jabatan'        => $this->nama_jabatan,
-            'jurusan_prodi_kelas' => $this->jurusan_prodi_kelas,
-            'nim'                 => $this->nim,
-            'ttl'                 => $this->ttl,
-            'alamat'              => $this->alamat,
-            'email'               => $this->email,
-            'no_hp'               => $this->no_hp,
-            'status_anggota'      => $this->status_anggota,
-            'status_aktif'        => $this->status_aktif,
-            'foto'                => $this->foto,
-        ]);
-
-        $this->dispatchAlert('success', 'Success!', 'Data created successfully.');
     }
 
     public function edit($id)
     {
         $this->isEditing = true;
-        $data = DB::table('anggota')
-            ->select(
-                'id',
-                'id_user',
-                'id_tahun',
-                'id_department',
-                'nama_lengkap',
-                'nama_jabatan',
-                'jurusan_prodi_kelas',
-                'nim',
-                'ttl',
-                'alamat',
-                'email',
-                'no_hp',
-                'status_anggota',
-                'status_aktif',
-                'foto'
-            )
-            ->where('id', $id)
-            ->first();
+        try {
+            $data = DB::table('anggota')
+                ->select(
+                    'id',
+                    'id_user',
+                    'id_tahun',
+                    'id_department',
+                    'nama_lengkap',
+                    'nama_jabatan',
+                    'jurusan_prodi_kelas',
+                    'nim',
+                    'ttl',
+                    'alamat',
+                    'email',
+                    'no_hp',
+                    'status_anggota',
+                    'status_aktif',
+                    'foto'
+                )
+                ->where('id', $id)
+                ->first();
+                
+            $this->getTahunKepengurusan();
+            $this->dataId           = $id;
+            $this->id_user          = $data->id_user;
+            $this->id_tahun         = $data->id_tahun;
+            $this->getDepartment($data->id_tahun);
+            $this->id_department    = $data->id_department;
+            $this->nama_lengkap     = $data->nama_lengkap;
+            $this->nama_jabatan     = $data->nama_jabatan;
+            $this->jurusan_prodi_kelas = $data->jurusan_prodi_kelas;
+            $this->nim              = $data->nim;
+            $this->ttl              = $data->ttl;
+            $this->alamat           = $data->alamat;
+            $this->email            = $data->email;
+            $this->no_hp            = $data->no_hp;
+            $this->status_anggota   = $data->status_anggota;
+            $this->status_aktif     = $data->status_aktif;
+            $this->foto             = $data->foto;
             
-        $this->getTahunKepengurusan();
-        $this->dataId           = $id;
-        $this->id_user          = $data->id_user;
-        $this->id_tahun         = $data->id_tahun;
-        $this->getDepartment($data->id_tahun);
-        $this->id_department    = $data->id_department;
-        $this->nama_lengkap     = $data->nama_lengkap;
-        $this->nama_jabatan     = $data->nama_jabatan;
-        $this->jurusan_prodi_kelas = $data->jurusan_prodi_kelas;
-        $this->nim              = $data->nim;
-        $this->ttl              = $data->ttl;
-        $this->alamat           = $data->alamat;
-        $this->email            = $data->email;
-        $this->no_hp            = $data->no_hp;
-        $this->status_anggota   = $data->status_anggota;
-        $this->status_aktif     = $data->status_aktif;
-        $this->foto             = $data->foto;
-        
-        // Load email dari user jika berbeda
-        if ($data->id_user) {
-            $user = \App\Models\User::find($data->id_user);
-            if ($user && $user->email !== $data->email) {
-                $this->email = $user->email;
+            // Load email dari user jika berbeda
+            if ($data->id_user) {
+                $user = \App\Models\User::find($data->id_user);
+                if ($user && $user->email !== $data->email) {
+                    $this->email = $user->email;
+                }
             }
+            $this->password = '';
+            $this->password_confirmation = '';
+        } catch (\Exception $e) {
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
         }
-        $this->password = '';
-        $this->password_confirmation = '';
     }
 
     public function view($id)
     {
-        $this->viewData = DB::table('anggota')
-            ->select(
-                'anggota.id',
-                'anggota.id_user',
-                'anggota.id_tahun',
-                'anggota.id_department',
-                'anggota.nama_lengkap',
-                'anggota.nama_jabatan',
-                'anggota.jurusan_prodi_kelas',
-                'anggota.nim',
-                'anggota.ttl',
-                'anggota.alamat',
-                'anggota.email',
-                'anggota.no_hp',
-                'anggota.status_anggota',
-                'anggota.status_aktif',
-                'anggota.foto',
-                'departments.nama_department',
-                'tahun_kepengurusan.nama_tahun',
-                'users.email as user_email'
-            )
-            ->join('tahun_kepengurusan', 'tahun_kepengurusan.id', '=', 'anggota.id_tahun')
-            ->leftJoin('departments', 'departments.id', '=', 'anggota.id_department')
-            ->leftJoin('users', 'users.id', '=', 'anggota.id_user')
-            ->where('anggota.id', $id)
-            ->first();
+        try {
+            $this->viewData = DB::table('anggota')
+                ->select(
+                    'anggota.id',
+                    'anggota.id_user',
+                    'anggota.id_tahun',
+                    'anggota.id_department',
+                    'anggota.nama_lengkap',
+                    'anggota.nama_jabatan',
+                    'anggota.jurusan_prodi_kelas',
+                    'anggota.nim',
+                    'anggota.ttl',
+                    'anggota.alamat',
+                    'anggota.email',
+                    'anggota.no_hp',
+                    'anggota.status_anggota',
+                    'anggota.status_aktif',
+                    'anggota.foto',
+                    'departments.nama_department',
+                    'tahun_kepengurusan.nama_tahun',
+                    'users.email as user_email'
+                )
+                ->join('tahun_kepengurusan', 'tahun_kepengurusan.id', '=', 'anggota.id_tahun')
+                ->leftJoin('departments', 'departments.id', '=', 'anggota.id_department')
+                ->leftJoin('users', 'users.id', '=', 'anggota.id_user')
+                ->where('anggota.id', $id)
+                ->first();
+        } catch (\Exception $e) {
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+        }
     }
 
     public function update()
@@ -443,60 +458,67 @@ class Anggota extends Component
 
         if( $this->dataId )
         {
-            // Update or create user
-            $userId = $this->id_user;
-            if ($this->email) {
-                if ($userId) {
-                    // Update existing user
-                    $user = \App\Models\User::find($userId);
-                    if ($user) {
-                        $userData = [
-                            'email' => $this->email,
-                            'active' => $this->status_aktif == 'aktif' ? '1' : '0',
-                        ];
-                        if ($this->password) {
-                            $userData['password'] = bcrypt($this->password);
+            DB::beginTransaction();
+            try {
+                // Update or create user
+                $userId = $this->id_user;
+                if ($this->email) {
+                    if ($userId) {
+                        // Update existing user
+                        $user = \App\Models\User::find($userId);
+                        if ($user) {
+                            $userData = [
+                                'email' => $this->email,
+                                'active' => $this->status_aktif == 'aktif' ? '1' : '0',
+                            ];
+                            if ($this->password) {
+                                $userData['password'] = bcrypt($this->password);
+                            }
+                            $user->update($userData);
+                            
+                            // Sync role berdasarkan status_anggota
+                            $user->syncRoles([$this->status_anggota]);
                         }
-                        $user->update($userData);
+                    } else {
+                        // Create new user
+                        $user = \App\Models\User::create([
+                            'name' => $this->nama_lengkap,
+                            'email' => $this->email,
+                            'password' => bcrypt($this->password ?: 'password123'),
+                            'active' => $this->status_aktif == 'aktif' ? '1' : '0',
+                        ]);
                         
-                        // Sync role berdasarkan status_anggota
-                        $user->syncRoles([$this->status_anggota]);
+                        // Assign role
+                        $user->addRole($this->status_anggota);
+                        
+                        $userId = $user->id;
                     }
-                } else {
-                    // Create new user
-                    $user = \App\Models\User::create([
-                        'name' => $this->nama_lengkap,
-                        'email' => $this->email,
-                        'password' => bcrypt($this->password ?: 'password123'),
-                        'active' => $this->status_aktif == 'aktif' ? '1' : '0',
-                    ]);
-                    
-                    // Assign role
-                    $user->addRole($this->status_anggota);
-                    
-                    $userId = $user->id;
                 }
+
+                ModelsAnggota::findOrFail($this->dataId)->update([
+                    'id_user'             => $userId,
+                    'id_tahun'            => $this->id_tahun,
+                    'id_department'       => $this->id_department ?: 0,
+                    'nama_lengkap'        => $this->nama_lengkap,
+                    'nama_jabatan'        => $this->nama_jabatan,
+                    'jurusan_prodi_kelas' => $this->jurusan_prodi_kelas,
+                    'nim'                 => $this->nim,
+                    'ttl'                 => $this->ttl,
+                    'alamat'              => $this->alamat,
+                    'email'               => $this->email,
+                    'no_hp'               => $this->no_hp,
+                    'status_anggota'      => $this->status_anggota,
+                    'status_aktif'        => $this->status_aktif,
+                    'foto'                => $this->foto,
+                ]);
+
+                DB::commit();
+                $this->dispatchAlert('success', 'Success!', 'Data updated successfully.');
+                $this->dataId = null;
+            } catch (\Exception $e) {
+                DB::rollBack();
+                $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
             }
-
-            ModelsAnggota::findOrFail($this->dataId)->update([
-                'id_user'             => $userId,
-                'id_tahun'            => $this->id_tahun,
-                'id_department'       => $this->id_department ?: 0,
-                'nama_lengkap'        => $this->nama_lengkap,
-                'nama_jabatan'        => $this->nama_jabatan,
-                'jurusan_prodi_kelas' => $this->jurusan_prodi_kelas,
-                'nim'                 => $this->nim,
-                'ttl'                 => $this->ttl,
-                'alamat'              => $this->alamat,
-                'email'               => $this->email,
-                'no_hp'               => $this->no_hp,
-                'status_anggota'      => $this->status_anggota,
-                'status_aktif'        => $this->status_aktif,
-                'foto'                => $this->foto,
-            ]);
-
-            $this->dispatchAlert('success', 'Success!', 'Data updated successfully.');
-            $this->dataId = null;
         }
     }
 
@@ -512,31 +534,39 @@ class Anggota extends Component
 
     public function delete()
     {
-        $anggota = ModelsAnggota::findOrFail($this->dataId);
-        
-        // Hapus user jika ada
-        if ($anggota->id_user) {
-            $user = \App\Models\User::find($anggota->id_user);
-            if ($user) {
-                // Hapus role dari tabel role_user
-                DB::table('role_user')->where('user_id', $anggota->id_user)->delete();
-                $user->delete();
+        DB::beginTransaction();
+        try {
+            $anggota = ModelsAnggota::findOrFail($this->dataId);
+            
+            // Hapus user jika ada
+            if ($anggota->id_user) {
+                $user = \App\Models\User::find($anggota->id_user);
+                if ($user) {
+                    // Hapus role dari tabel role_user
+                    // Note: syncRoles([]) or detachRoles() might be cleaner but direct DB is used here
+                    DB::table('role_user')->where('user_id', $anggota->id_user)->delete();
+                    $user->delete();
+                }
             }
+            
+            // Update open_recruitment untuk unlink (jangan hapus)
+            if ($anggota->id_open_recruitment) {
+                ModelsOpenRecruitment::where('id', $anggota->id_open_recruitment)
+                    ->update([
+                        'id_anggota' => null,
+                        'id_user' => null
+                    ]);
+            }
+            
+            // Hapus anggota
+            $anggota->delete();
+            
+            DB::commit();
+            $this->dispatchAlert('success', 'Success!', 'Data deleted successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
         }
-        
-        // Update open_recruitment untuk unlink (jangan hapus)
-        if ($anggota->id_open_recruitment) {
-            ModelsOpenRecruitment::where('id', $anggota->id_open_recruitment)
-                ->update([
-                    'id_anggota' => null,
-                    'id_user' => null
-                ]);
-        }
-        
-        // Hapus anggota
-        $anggota->delete();
-        
-        $this->dispatchAlert('success', 'Success!', 'Data deleted successfully.');
     }
 
     public function updatingLengthData()

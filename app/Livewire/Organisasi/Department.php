@@ -102,47 +102,58 @@ class Department extends Component
     {
         $this->validate();
 
-        DB::table('departments')->insert([
-            'id_tahun'            => $this->id_tahun,
-            'nama_department'     => $this->nama_department,
-            'kategori'            => $this->kategori,
-            'deskripsi'           => $this->deskripsi,
-            'ikon'                => $this->ikon,
-            'urutan'              => $this->urutan,
-            'status'              => $this->status,
-            'max_members'         => $this->max_members ?: null,
-        ]);
+        DB::beginTransaction();
+        try {
+            DB::table('departments')->insert([
+                'id_tahun'            => $this->id_tahun,
+                'nama_department'     => $this->nama_department,
+                'kategori'            => $this->kategori,
+                'deskripsi'           => $this->deskripsi,
+                'ikon'                => $this->ikon,
+                'urutan'              => $this->urutan,
+                'status'              => $this->status,
+                'max_members'         => $this->max_members ?: null,
+            ]);
 
-        $this->dispatchAlert('success', 'Success!', 'Data created successfully.');
+            DB::commit();
+            $this->dispatchAlert('success', 'Success!', 'Data created successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+        }
     }
 
     public function edit($id)
     {
         $this->isEditing = true;
-        $data = DB::table('departments')
-            ->select(
-                'id',
-                'id_tahun',
-                'nama_department',
-                'kategori',
-                'deskripsi',
-                'ikon',
-                'urutan',
-                'status',
-                'max_members'
-            )
-            ->where('id', $id)
-            ->first();
-            
-        $this->dataId           = $id;
-        $this->id_tahun         = $data->id_tahun;
-        $this->nama_department  = $data->nama_department;
-        $this->kategori         = $data->kategori;
-        $this->deskripsi        = $data->deskripsi;
-        $this->ikon             = $data->ikon;
-        $this->urutan           = $data->urutan;
-        $this->status           = $data->status;
-        $this->max_members      = $data->max_members;
+        try {
+            $data = DB::table('departments')
+                ->select(
+                    'id',
+                    'id_tahun',
+                    'nama_department',
+                    'kategori',
+                    'deskripsi',
+                    'ikon',
+                    'urutan',
+                    'status',
+                    'max_members'
+                )
+                ->where('id', $id)
+                ->first();
+                
+            $this->dataId           = $id;
+            $this->id_tahun         = $data->id_tahun;
+            $this->nama_department  = $data->nama_department;
+            $this->kategori         = $data->kategori;
+            $this->deskripsi        = $data->deskripsi;
+            $this->ikon             = $data->ikon;
+            $this->urutan           = $data->urutan;
+            $this->status           = $data->status;
+            $this->max_members      = $data->max_members;
+        } catch (\Exception $e) {
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+        }
     }
 
     public function update()
@@ -151,21 +162,28 @@ class Department extends Component
 
         if( $this->dataId )
         {
-            DB::table('departments')
-                ->where('id', $this->dataId)
-                ->update([
-                    'id_tahun'            => $this->id_tahun,
-                    'nama_department'     => $this->nama_department,
-                    'kategori'            => $this->kategori,
-                    'deskripsi'           => $this->deskripsi,
-                    'ikon'                => $this->ikon,
-                    'urutan'              => $this->urutan,
-                    'status'              => $this->status,
-                    'max_members'         => $this->max_members ?: null,
-                ]);
+            DB::beginTransaction();
+            try {
+                DB::table('departments')
+                    ->where('id', $this->dataId)
+                    ->update([
+                        'id_tahun'            => $this->id_tahun,
+                        'nama_department'     => $this->nama_department,
+                        'kategori'            => $this->kategori,
+                        'deskripsi'           => $this->deskripsi,
+                        'ikon'                => $this->ikon,
+                        'urutan'              => $this->urutan,
+                        'status'              => $this->status,
+                        'max_members'         => $this->max_members ?: null,
+                    ]);
 
-            $this->dispatchAlert('success', 'Success!', 'Data updated successfully.');
-            $this->dataId = null;
+                DB::commit();
+                $this->dispatchAlert('success', 'Success!', 'Data updated successfully.');
+                $this->dataId = null;
+            } catch (\Exception $e) {
+                DB::rollBack();
+                $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+            }
         }
     }
 
@@ -181,11 +199,18 @@ class Department extends Component
 
     public function delete()
     {
-        DB::table('departments')
-            ->where('id', $this->dataId)
-            ->delete();
-            
-        $this->dispatchAlert('success', 'Success!', 'Data deleted successfully.');
+        DB::beginTransaction();
+        try {
+            DB::table('departments')
+                ->where('id', $this->dataId)
+                ->delete();
+                
+            DB::commit();
+            $this->dispatchAlert('success', 'Success!', 'Data deleted successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+        }
     }
 
     public function updatingLengthData()

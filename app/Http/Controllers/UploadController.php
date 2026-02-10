@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use App\Traits\ImageCompressor;
 
 class UploadController extends Controller
 {
+    use ImageCompressor;
+    
     public function uploadImageSummernote(Request $request)
     {
         $request->validate([
@@ -16,44 +19,51 @@ class UploadController extends Controller
         $file = $request->file('file');
         $ext = $file->getClientOriginalExtension();
 
-        $directory = 'public/';
-        switch ($ext) {
-            case 'jpg':
-            case 'jpeg':
-            case 'png':
-                $directory .= 'image/';
-                break;
-            default:
-                $directory .= 'misc/';
-                break;
-        }
-
-        if (!Storage::exists($directory)) {
-            Storage::makeDirectory($directory);
-        }
-
-        $originalName = str_replace(' ', '_', pathinfo($request->file->getClientOriginalName(), PATHINFO_FILENAME));
+        // Use year-based directory structure
+        $year = date('Y');
+        $directory = $year . '/image';
+        
+        // Generate filename
+        $originalName = str_replace(' ', '_', pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME));
         $filename = $originalName . '_' . time() . '.' . $ext;
 
         try {
-            $save = Storage::putFileAs($directory, $file, $filename);
-
-            if ($save) {
-                $relativePath = str_replace('public/', '', $directory);
-
-                return response()->json([
-                    "status" => "success",
-                    "path" => $relativePath,
-                    "image" => $filename,
-                    "image_url" => Storage::url($directory . $filename)
-                ]);
-            } else {
-                return response()->json([
-                    "status" => "fail",
-                    "message" => "The file failed to save."
-                ], 500);
+            // Store file directly using storeAs (native Laravel)
+            $path = $file->storeAs($directory, $filename, 'public');
+            
+            // Full path for compression
+            $fullPath = storage_path('app/public/' . $path);
+            
+            // Get compression setting from .env
+            $targetSizeKB = env('IMAGE_COMPRESS_SIZE_KB', 100);
+            
+            // Compress only if file is larger than target size
+            if (file_exists($fullPath)) {
+                $currentSizeKB = filesize($fullPath) / 1024;
+                
+                if ($currentSizeKB > $targetSizeKB) {
+                    $this->compressImageToSize($fullPath, $targetSizeKB);
+                }
+                
+                // Check if PNG was converted to JPG
+                if ($ext === 'png' && !file_exists($fullPath)) {
+                    $path = preg_replace('/\.png$/i', '.jpg', $path);
+                    $filename = preg_replace('/\.png$/i', '.jpg', $filename);
+                }
             }
+            
+            // Generate public URL
+            $imageUrl = Storage::url($path);
+
+            return response()->json([
+                "status" => "success",
+                "path" => dirname($path),
+                "image" => basename($path),
+                "image_url" => $imageUrl
+            ]);
+            
         } catch (\Exception $e) {
+            \Log::error('Upload exception: ' . $e->getMessage());
             return response()->json([
                 "status" => "fail",
                 "message" => "An error occurred: " . $e->getMessage()

@@ -89,34 +89,45 @@ class TahunKepengurusan extends Component
     {
         $this->validate();
 
-        // Jika status aktif, nonaktifkan semua tahun kepengurusan lain
-        if ($this->status == 'aktif') {
-            DB::table('tahun_kepengurusan')
-                ->where('status', 'aktif')
-                ->update(['status' => 'nonaktif']);
+        DB::beginTransaction();
+        try {
+            // Jika status aktif, nonaktifkan semua tahun kepengurusan lain
+            if ($this->status == 'aktif') {
+                DB::table('tahun_kepengurusan')
+                    ->where('status', 'aktif')
+                    ->update(['status' => 'nonaktif']);
+            }
+
+            DB::table('tahun_kepengurusan')->insert([
+                'nama_tahun'          => $this->nama_tahun,
+                'status'              => $this->status,
+                'deskripsi'           => $this->deskripsi,
+            ]);
+
+            DB::commit();
+            $this->dispatchAlert('success', 'Success!', 'Data created successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
         }
-
-        DB::table('tahun_kepengurusan')->insert([
-            'nama_tahun'          => $this->nama_tahun,
-            'status'              => $this->status,
-            'deskripsi'           => $this->deskripsi,
-        ]);
-
-        $this->dispatchAlert('success', 'Success!', 'Data created successfully.');
     }
 
     public function edit($id)
     {
         $this->isEditing = true;
-        $data = DB::table('tahun_kepengurusan')
-            ->select('id', 'nama_tahun', 'status', 'deskripsi')
-            ->where('id', $id)
-            ->first();
-            
-        $this->dataId           = $id;
-        $this->nama_tahun       = $data->nama_tahun;
-        $this->status           = $data->status;
-        $this->deskripsi        = $data->deskripsi;
+        try {
+            $data = DB::table('tahun_kepengurusan')
+                ->select('id', 'nama_tahun', 'status', 'deskripsi')
+                ->where('id', $id)
+                ->first();
+                
+            $this->dataId           = $id;
+            $this->nama_tahun       = $data->nama_tahun;
+            $this->status           = $data->status;
+            $this->deskripsi        = $data->deskripsi;
+        } catch (\Exception $e) {
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+        }
     }
 
     public function update()
@@ -125,24 +136,31 @@ class TahunKepengurusan extends Component
 
         if( $this->dataId )
         {
-            // Jika status aktif, nonaktifkan semua tahun kepengurusan lain
-            if ($this->status == 'aktif') {
+            DB::beginTransaction();
+            try {
+                // Jika status aktif, nonaktifkan semua tahun kepengurusan lain
+                if ($this->status == 'aktif') {
+                    DB::table('tahun_kepengurusan')
+                        ->where('id', '!=', $this->dataId)
+                        ->where('status', 'aktif')
+                        ->update(['status' => 'nonaktif']);
+                }
+
                 DB::table('tahun_kepengurusan')
-                    ->where('id', '!=', $this->dataId)
-                    ->where('status', 'aktif')
-                    ->update(['status' => 'nonaktif']);
+                    ->where('id', $this->dataId)
+                    ->update([
+                        'nama_tahun'          => $this->nama_tahun,
+                        'status'              => $this->status,
+                        'deskripsi'           => $this->deskripsi,
+                    ]);
+
+                DB::commit();
+                $this->dispatchAlert('success', 'Success!', 'Data updated successfully.');
+                $this->dataId = null;
+            } catch (\Exception $e) {
+                DB::rollBack();
+                $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
             }
-
-            DB::table('tahun_kepengurusan')
-                ->where('id', $this->dataId)
-                ->update([
-                    'nama_tahun'          => $this->nama_tahun,
-                    'status'              => $this->status,
-                    'deskripsi'           => $this->deskripsi,
-                ]);
-
-            $this->dispatchAlert('success', 'Success!', 'Data updated successfully.');
-            $this->dataId = null;
         }
     }
 
@@ -158,26 +176,40 @@ class TahunKepengurusan extends Component
 
     public function delete()
     {
-        DB::table('tahun_kepengurusan')
-            ->where('id', $this->dataId)
-            ->delete();
-            
-        $this->dispatchAlert('success', 'Success!', 'Data deleted successfully.');
+        DB::beginTransaction();
+        try {
+            DB::table('tahun_kepengurusan')
+                ->where('id', $this->dataId)
+                ->delete();
+                
+            DB::commit();
+            $this->dispatchAlert('success', 'Success!', 'Data deleted successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+        }
     }
 
     public function activate($id)
     {
-        // Nonaktifkan semua tahun kepengurusan
-        DB::table('tahun_kepengurusan')
-            ->where('status', 'aktif')
-            ->update(['status' => 'nonaktif']);
-        
-        // Aktifkan tahun kepengurusan yang dipilih
-        DB::table('tahun_kepengurusan')
-            ->where('id', $id)
-            ->update(['status' => 'aktif']);
-        
-        $this->dispatchAlert('success', 'Success!', 'Tahun kepengurusan berhasil diaktifkan.');
+        DB::beginTransaction();
+        try {
+            // Nonaktifkan semua tahun kepengurusan
+            DB::table('tahun_kepengurusan')
+                ->where('status', 'aktif')
+                ->update(['status' => 'nonaktif']);
+            
+            // Aktifkan tahun kepengurusan yang dipilih
+            DB::table('tahun_kepengurusan')
+                ->where('id', $id)
+                ->update(['status' => 'aktif']);
+            
+            DB::commit();
+            $this->dispatchAlert('success', 'Success!', 'Tahun kepengurusan berhasil diaktifkan.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+        }
     }
 
     public function updatingLengthData()

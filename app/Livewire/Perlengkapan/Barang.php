@@ -193,9 +193,14 @@ class Barang extends Component
         $filename = 'barang_' . time() . '.' . $this->foto->getClientOriginalExtension();
         $path = $this->foto->storeAs('perlengkapan/barang', $filename, 'public');
         
-        // Compress image
+        // Compress image only if larger than target
         $fullPath = Storage::disk('public')->path($path);
-        $this->compressImageToSize($fullPath, 200, 800);
+        $targetSizeKB = env('IMAGE_COMPRESS_SIZE_KB', 100);
+        $currentSizeKB = filesize($fullPath) / 1024;
+        
+        if ($currentSizeKB > $targetSizeKB) {
+            $this->compressImageToSize($fullPath, $targetSizeKB, 800);
+        }
         
         return $path;
     }

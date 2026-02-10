@@ -20,9 +20,13 @@ return new class extends Migration
             $table->integer('jumlah')->default(1);
             $table->integer('harga')->default(0);
             $table->integer('total')->default(0);
+            $table->integer('biaya_lainnya')->default(0);
             $table->string('link_pembelian', 500)->nullable();
             $table->enum('status', ['diusulkan', 'disetujui', 'ditolak', 'selesai'])->default('diusulkan');
+            $table->enum('prioritas', ['Tinggi', 'Sedang', 'Rendah'])->default('Sedang');
             $table->text('catatan')->nullable();
+            $table->string('keterangan')->default('-');
+            $table->string('nama_toko')->nullable();
             $table->foreignId('id_user')->constrained('users')->onDelete('cascade');
             $table->timestamps();
             

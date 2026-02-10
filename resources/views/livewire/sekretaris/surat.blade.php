@@ -39,7 +39,7 @@
             <div class="tab-content" id="myTabContent2">
                 <div class="card tw-mt-5">
                     <div class="card-header tw-flex tw-justify-between tw-items-center">
-                        <h3>
+                        <h3 class="font-bagus">
                             @if ($activeTab === "surat-masuk")
                                 Tabel Surat Masuk
                             @elseif ($activeTab === "surat-keluar")

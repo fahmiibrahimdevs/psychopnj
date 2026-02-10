@@ -47,11 +47,14 @@ class ProgramPembelajaran extends Component
     public $tahuns;
     public $oldThumbnail;
     
-    // Image compression settings
-    protected $thumbnailTargetSizeKB = 200;  // Target size for thumbnails in KB
+    // Image compression settings (loaded from .env)
+    protected $thumbnailTargetSizeKB;
 
     public function mount()
     {
+        // Load compression setting from .env
+        $this->thumbnailTargetSizeKB = env('IMAGE_COMPRESS_SIZE_KB', 100);
+        
         // Get active tahun kepengurusan
         $activeTahun = TahunKepengurusan::where('status', 'aktif')->first();
         
@@ -98,9 +101,13 @@ class ProgramPembelajaran extends Component
             $extension = $this->thumbnail->getClientOriginalExtension();
             $thumbnailPath = $this->thumbnail->storeAs("{$tahunFolder}/{$programFolder}", $fileName . '.' . $extension, 'public');
             
-            // Compress thumbnail
+            // Compress thumbnail only if larger than target
             $fullPath = storage_path('app/public/' . $thumbnailPath);
-            $this->compressImageToSize($fullPath, $this->thumbnailTargetSizeKB, 800);
+            $currentSizeKB = filesize($fullPath) / 1024;
+            
+            if ($currentSizeKB > $this->thumbnailTargetSizeKB) {
+                $this->compressImageToSize($fullPath, $this->thumbnailTargetSizeKB, 800);
+            }
             
             // Update path if PNG was converted to JPG
             if ($extension === 'png' && !file_exists($fullPath)) {
@@ -159,9 +166,13 @@ class ProgramPembelajaran extends Component
                 $extension = $this->thumbnail->getClientOriginalExtension();
                 $thumbnailPath = $this->thumbnail->storeAs("{$tahunFolder}/{$programFolder}", $fileName . '.' . $extension, 'public');
                 
-                // Compress thumbnail
+                // Compress thumbnail only if larger than target
                 $fullPath = storage_path('app/public/' . $thumbnailPath);
-                $this->compressImageToSize($fullPath, $this->thumbnailTargetSizeKB, 800);
+                $currentSizeKB = filesize($fullPath) / 1024;
+                
+                if ($currentSizeKB > $this->thumbnailTargetSizeKB) {
+                    $this->compressImageToSize($fullPath, $this->thumbnailTargetSizeKB, 800);
+                }
                 
                 // Update path if PNG was converted to JPG
                 if ($extension === 'png' && !file_exists($fullPath)) {

@@ -17,7 +17,11 @@ class PengadaanBarang extends Model
         'nama_barang',
         'jumlah',
         'harga',
+        'biaya_lainnya',
         'total',
+        'prioritas',
+        'keterangan',
+        'nama_toko',
         'link_pembelian',
         'status',
         'catatan',
@@ -60,7 +64,7 @@ class PengadaanBarang extends Model
         parent::boot();
 
         static::saving(function ($model) {
-            $model->total = $model->jumlah * $model->harga;
+            $model->total = ($model->jumlah * $model->harga) + ($model->biaya_lainnya ?? 0);
         });
     }
 }

@@ -28,27 +28,43 @@ class ControlUser extends Component
 
     public function toggleActive($userId)
     {
-        $user = DB::table('users')
-            ->select('active')
-            ->where('id', $userId)
-            ->first();
-        
-        // Toggle active status
-        $newStatus = $user->active === '1' ? '0' : '1';
-        
-        DB::table('users')
-            ->where('id', $userId)
-            ->update([
-                'active' => $newStatus,
-                'updated_at' => now()
+        DB::beginTransaction();
+        try {
+            $user = DB::table('users')
+                ->select('active')
+                ->where('id', $userId)
+                ->first();
+            
+            if (!$user) {
+                throw new \Exception("User not found");
+            }
+            
+            // Toggle active status
+            $newStatus = $user->active == '1' ? '0' : '1';
+            
+            DB::table('users')
+                ->where('id', $userId)
+                ->update([
+                    'active' => $newStatus,
+                    'updated_at' => now()
+                ]);
+            
+            DB::commit();
+
+            $statusText = $newStatus === '1' ? 'active' : 'inactive';
+            $this->dispatch('swal:modal', [
+                'type' => 'success',
+                'message' => 'Success!',
+                'text' => "User status updated to {$statusText}."
             ]);
-        
-        $statusText = $newStatus === '1' ? 'active' : 'inactive';
-        $this->dispatch('alert', [
-            'type' => 'success',
-            'title' => 'Success!',
-            'message' => "User status updated to {$statusText}."
-        ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatch('swal:modal', [
+                'type' => 'error',
+                'message' => 'Error!',
+                'text' => 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593'
+            ]);
+        }
     }
 
     public function render()

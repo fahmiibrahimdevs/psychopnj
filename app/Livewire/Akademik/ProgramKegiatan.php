@@ -34,6 +34,7 @@ class ProgramKegiatan extends Component
         'jumlah_pertemuan'    => 'required',
         'penyelenggara'       => 'required',
         'thumbnail'           => 'nullable|image|max:102400',
+        'untuk_anggota'       => 'boolean',
     ];
 
     public $lengthData = 25;
@@ -43,15 +44,18 @@ class ProgramKegiatan extends Component
 
     public $dataId;
 
-    public $id_tahun, $nama_program, $jenis_program, $deskripsi, $jumlah_pertemuan, $penyelenggara, $thumbnail;
+    public $id_tahun, $nama_program, $jenis_program, $deskripsi, $jumlah_pertemuan, $penyelenggara, $thumbnail, $untuk_anggota;
     public $tahuns;
     public $oldThumbnail;
     
-    // Image compression settings
-    protected $thumbnailTargetSizeKB = 200;  // Target size for thumbnails in KB
+    // Image compression settings (loaded from .env)
+    protected $thumbnailTargetSizeKB;
 
     public function mount()
     {
+        // Load compression setting from .env
+        $this->thumbnailTargetSizeKB = env('IMAGE_COMPRESS_SIZE_KB', 100);
+        
         // Get active tahun kepengurusan
         $activeTahun = TahunKepengurusan::where('status', 'aktif')->first();
         
@@ -62,7 +66,9 @@ class ProgramKegiatan extends Component
         $this->deskripsi           = '';
         $this->jumlah_pertemuan    = '';
         $this->penyelenggara       = '';
+
         $this->thumbnail           = null;
+        $this->untuk_anggota       = false;
     }
 
     public function render()
@@ -80,6 +86,7 @@ class ProgramKegiatan extends Component
                     'program_pembelajaran.jumlah_pertemuan',
                     'program_pembelajaran.penyelenggara',
                     'program_pembelajaran.thumbnail',
+                    'program_pembelajaran.untuk_anggota',
                     'program_pembelajaran.status',
                     'program_pembelajaran.created_at',
                     'tahun_kepengurusan.nama_tahun'
@@ -112,9 +119,13 @@ class ProgramKegiatan extends Component
             $extension = $this->thumbnail->getClientOriginalExtension();
             $thumbnailPath = $this->thumbnail->storeAs("{$tahunFolder}/{$programFolder}", $fileName . '.' . $extension, 'public');
             
-            // Compress thumbnail
+            // Compress thumbnail only if larger than target
             $fullPath = storage_path('app/public/' . $thumbnailPath);
-            $this->compressImageToSize($fullPath, $this->thumbnailTargetSizeKB, 800);
+            $currentSizeKB = filesize($fullPath) / 1024;
+            
+            if ($currentSizeKB > $this->thumbnailTargetSizeKB) {
+                $this->compressImageToSize($fullPath, $this->thumbnailTargetSizeKB, 800);
+            }
             
             // Update path if PNG was converted to JPG
             if ($extension === 'png' && !file_exists($fullPath)) {
@@ -130,6 +141,8 @@ class ProgramKegiatan extends Component
             'jumlah_pertemuan'    => $this->jumlah_pertemuan,
             'penyelenggara'       => $this->penyelenggara,
             'thumbnail'           => $thumbnailPath,
+
+            'untuk_anggota'       => $this->untuk_anggota ? 1 : 0,
             'status'              => 'aktif',
             'created_at'          => now(),
             'updated_at'          => now(),
@@ -142,7 +155,7 @@ class ProgramKegiatan extends Component
     {
         $this->isEditing        = true;
         $data = DB::table('program_pembelajaran')
-            ->select('id', 'id_tahun', 'nama_program', 'jenis_program', 'deskripsi', 'jumlah_pertemuan', 'penyelenggara', 'thumbnail')
+            ->select('id', 'id_tahun', 'nama_program', 'jenis_program', 'deskripsi', 'jumlah_pertemuan', 'penyelenggara', 'thumbnail', 'untuk_anggota')
             ->where('id', $id)
             ->first();
         $this->dataId           = $id;
@@ -153,7 +166,9 @@ class ProgramKegiatan extends Component
         $this->jumlah_pertemuan = $data->jumlah_pertemuan;
         $this->penyelenggara    = $data->penyelenggara;
         $this->oldThumbnail     = $data->thumbnail;
+
         $this->thumbnail        = null;
+        $this->untuk_anggota    = (bool) $data->untuk_anggota;
     }
 
     public function update()
@@ -182,9 +197,13 @@ class ProgramKegiatan extends Component
                 $extension = $this->thumbnail->getClientOriginalExtension();
                 $thumbnailPath = $this->thumbnail->storeAs("{$tahunFolder}/{$programFolder}", $fileName . '.' . $extension, 'public');
                 
-                // Compress thumbnail
+                // Compress thumbnail only if larger than target
                 $fullPath = storage_path('app/public/' . $thumbnailPath);
-                $this->compressImageToSize($fullPath, $this->thumbnailTargetSizeKB, 800);
+                $currentSizeKB = filesize($fullPath) / 1024;
+                
+                if ($currentSizeKB > $this->thumbnailTargetSizeKB) {
+                    $this->compressImageToSize($fullPath, $this->thumbnailTargetSizeKB, 800);
+                }
                 
                 // Update path if PNG was converted to JPG
                 if ($extension === 'png' && !file_exists($fullPath)) {
@@ -201,8 +220,11 @@ class ProgramKegiatan extends Component
                     'deskripsi'           => $this->deskripsi,
                     'jumlah_pertemuan'    => $this->jumlah_pertemuan,
                     'penyelenggara'       => $this->penyelenggara,
+
                     'thumbnail'           => $thumbnailPath,
+                    'untuk_anggota'       => $this->untuk_anggota ? 1 : 0,
                     'updated_at'          => now(),
+
                 ]);
 
             $this->dispatchAlert('success', 'Success!', 'Data updated successfully.');
@@ -293,7 +315,9 @@ class ProgramKegiatan extends Component
         $this->jumlah_pertemuan    = '';
         $this->penyelenggara       = '';
         $this->thumbnail           = null;
+
         $this->oldThumbnail        = null;
+        $this->untuk_anggota       = false;
     }
 
     public function cancel()

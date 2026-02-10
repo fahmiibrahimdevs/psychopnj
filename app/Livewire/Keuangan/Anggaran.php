@@ -109,6 +109,24 @@ class Anggaran extends Component
         $this->dispatchAlert('success', 'Success!', 'Anggaran berhasil ditambahkan.');
     }
 
+    public function updated()
+    {
+        $this->dispatch('initSelect2');
+    }
+
+    public function updatedKategori()
+    {
+        $this->jenis = "";
+        $this->id_department = "";
+        $this->id_project = "";
+    }
+
+    public function updatedJenis()
+    {
+        $this->id_department = "";
+        $this->id_project = "";
+    }
+
     public function edit($id)
     {
         $this->isEditing = true;

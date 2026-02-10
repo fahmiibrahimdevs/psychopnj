@@ -20,4 +20,9 @@ class Pertemuan extends Model
     {
         return $this->belongsTo(ProgramKegiatan::class, 'id_program');
     }
+
+    public function bankSoal()
+    {
+        return $this->hasOne(BankSoalPertemuan::class, 'id_pertemuan');
+    }
 }

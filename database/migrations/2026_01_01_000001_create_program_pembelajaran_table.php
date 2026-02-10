@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('penyelenggara');
             $table->text('thumbnail')->nullable();
             $table->enum('status', ['aktif', 'nonaktif'])->default('aktif');
+            $table->boolean('untuk_anggota')->default(false);
             $table->timestamps();
             
             $table->index('id_tahun');

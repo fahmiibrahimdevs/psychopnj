@@ -24,7 +24,7 @@ return new class extends Migration
             $table->foreignId('id_tahun')->constrained('tahun_kepengurusan')->onDelete('cascade');
             $table->foreignId('id_anggota')->constrained('anggota')->onDelete('cascade');
             $table->string('periode'); // Just string name
-            $table->decimal('nominal', 15, 2);
+            $table->bigInteger('nominal')->comment('Nominal dalam Rupiah (integer)');
             $table->date('tanggal_bayar');
             $table->enum('status', ['lunas', 'belum lunas'])->default('lunas');
             $table->foreignId('id_user')->nullable()->constrained('users')->onDelete('set null');

@@ -83,6 +83,12 @@
                             <div class="d-flex justify-content-between align-items-center program-card-footer tw-px-3">
                                 <p class="font-bagus tw-text-sm tw-font-semibold">Pemateri: {{ $row->nama_pemateri }}</p>
                                 <div class="d-flex program-btn-container">
+                                    @if ($row->has_bank_soal)
+                                        <a href="{{ route("pertemuan.soal", ["pertemuanId" => $row->id]) }}" class="btn btn-warning text-white" title="Kelola Bank Soal">
+                                            <i class="fas fa-folders"></i>
+                                        </a>
+                                    @endif
+
                                     <button wire:click.prevent="openGalleryModal({{ $row->id }})" class="btn program-btn-view" data-toggle="modal" data-target="#galleryModal" title="Manage Gallery">
                                         <i class="fas fa-images"></i>
                                     </button>
@@ -143,6 +149,12 @@
                                 <a class="nav-link" id="files-tab" data-toggle="tab" href="#files" role="tab" aria-controls="files" aria-selected="false">
                                     <i class="fas fa-file-upload"></i>
                                     Thumbnail & Files
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" id="banksoal-tab" data-toggle="tab" href="#banksoal" role="tab" aria-controls="banksoal" aria-selected="false">
+                                    <i class="fas fa-folders"></i>
+                                    Bank Soal
                                 </a>
                             </li>
                         </ul>
@@ -313,6 +325,143 @@
                                             </div>
                                         @endif
                                     </div>
+                                </div>
+                            </div>
+
+                            <!-- Tab 3: Bank Soal -->
+                            <div class="tab-pane fade" id="banksoal" role="tabpanel" aria-labelledby="banksoal-tab" wire:ignore.self>
+                                <div class="pt-3">
+                                    <div class="form-group">
+                                        <div class="custom-control custom-checkbox">
+                                            <input type="checkbox" wire:model="has_bank_soal" class="custom-control-input" id="has_bank_soal" />
+                                            <label class="custom-control-label" for="has_bank_soal">
+                                                <strong>Aktifkan Bank Soal</strong>
+                                            </label>
+                                        </div>
+                                        <small class="text-muted">Centang untuk mengaktifkan fitur bank soal pada pertemuan ini</small>
+                                    </div>
+
+                                    @if ($has_bank_soal)
+                                        <hr class="tw-my-4" />
+
+                                        <h6 class="tw-mb-3 tw-font-semibold">Konfigurasi Jumlah Soal</h6>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="jml_pg">Pilihan Ganda</label>
+                                                    <input type="number" wire:model="jml_pg" id="jml_pg" class="form-control" min="0" />
+                                                    @error("jml_pg")
+                                                        <span class="text-danger">{{ $message }}</span>
+                                                    @enderror
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="bobot_pg">Bobot PG</label>
+                                                    <input type="number" wire:model="bobot_pg" id="bobot_pg" class="form-control" min="0" step="0.01" />
+                                                    @error("bobot_pg")
+                                                        <span class="text-danger">{{ $message }}</span>
+                                                    @enderror
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="jml_kompleks">PG Kompleks</label>
+                                                    <input type="number" wire:model="jml_kompleks" id="jml_kompleks" class="form-control" min="0" />
+                                                    @error("jml_kompleks")
+                                                        <span class="text-danger">{{ $message }}</span>
+                                                    @enderror
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="bobot_kompleks">Bobot PG Kompleks</label>
+                                                    <input type="number" wire:model="bobot_kompleks" id="bobot_kompleks" class="form-control" min="0" step="0.01" />
+                                                    @error("bobot_kompleks")
+                                                        <span class="text-danger">{{ $message }}</span>
+                                                    @enderror
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="jml_jodohkan">Menjodohkan</label>
+                                                    <input type="number" wire:model="jml_jodohkan" id="jml_jodohkan" class="form-control" min="0" />
+                                                    @error("jml_jodohkan")
+                                                        <span class="text-danger">{{ $message }}</span>
+                                                    @enderror
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="bobot_jodohkan">Bobot Jodohkan</label>
+                                                    <input type="number" wire:model="bobot_jodohkan" id="bobot_jodohkan" class="form-control" min="0" step="0.01" />
+                                                    @error("bobot_jodohkan")
+                                                        <span class="text-danger">{{ $message }}</span>
+                                                    @enderror
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="jml_isian">Isian</label>
+                                                    <input type="number" wire:model="jml_isian" id="jml_isian" class="form-control" min="0" />
+                                                    @error("jml_isian")
+                                                        <span class="text-danger">{{ $message }}</span>
+                                                    @enderror
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="bobot_isian">Bobot Isian</label>
+                                                    <input type="number" wire:model="bobot_isian" id="bobot_isian" class="form-control" min="0" step="0.01" />
+                                                    @error("bobot_isian")
+                                                        <span class="text-danger">{{ $message }}</span>
+                                                    @enderror
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="jml_esai">Esai</label>
+                                                    <input type="number" wire:model="jml_esai" id="jml_esai" class="form-control" min="0" />
+                                                    @error("jml_esai")
+                                                        <span class="text-danger">{{ $message }}</span>
+                                                    @enderror
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label for="bobot_esai">Bobot Esai</label>
+                                                    <input type="number" wire:model="bobot_esai" id="bobot_esai" class="form-control" min="0" step="0.01" />
+                                                    @error("bobot_esai")
+                                                        <span class="text-danger">{{ $message }}</span>
+                                                    @enderror
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label for="opsi">Jumlah Opsi Pilihan Ganda</label>
+                                            <select wire:model="opsi" id="opsi" class="form-control">
+                                                <option value="3">3 Opsi (A, B, C)</option>
+                                                <option value="4">4 Opsi (A, B, C, D)</option>
+                                                <option value="5">5 Opsi (A, B, C, D, E)</option>
+                                            </select>
+                                            @error("opsi")
+                                                <span class="text-danger">{{ $message }}</span>
+                                            @enderror
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
                         </div>

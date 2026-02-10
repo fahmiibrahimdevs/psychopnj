@@ -238,35 +238,46 @@ class OpenRecruitment extends Component
 
         $this->validate($rules);
 
-        DB::table('open_recruitment')->insert([
-            'id_tahun'            => $this->id_tahun,
-            'jenis_oprec'         => $this->jenis_oprec,
-            'nama_lengkap'        => $this->nama_lengkap,
-            'jurusan_prodi_kelas' => $this->jurusan_prodi_kelas,
-            'id_department'       => $this->id_department ?: 0,
-            'nama_jabatan'        => $this->nama_jabatan,
-            'status_seleksi'      => $this->status_seleksi,
-        ]);
+        DB::beginTransaction();
+        try {
+            DB::table('open_recruitment')->insert([
+                'id_tahun'            => $this->id_tahun,
+                'jenis_oprec'         => $this->jenis_oprec,
+                'nama_lengkap'        => $this->nama_lengkap,
+                'jurusan_prodi_kelas' => $this->jurusan_prodi_kelas,
+                'id_department'       => $this->id_department ?: 0,
+                'nama_jabatan'        => $this->nama_jabatan,
+                'status_seleksi'      => $this->status_seleksi,
+            ]);
 
-        $this->dispatchAlert('success', 'Success!', 'Data created successfully.');
+            DB::commit();
+            $this->dispatchAlert('success', 'Success!', 'Data created successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+        }
     }
 
     public function edit($id)
     {
         $this->isEditing = true;
-        $data = DB::table('open_recruitment')
-            ->select('id', 'id_tahun', 'jenis_oprec', 'nama_lengkap', 'jurusan_prodi_kelas', 'id_department', 'nama_jabatan', 'status_seleksi')
-            ->where('id', $id)
-            ->first();
-            
-        $this->dataId           = $id;
-        $this->id_tahun         = $data->id_tahun;
-        $this->jenis_oprec      = $data->jenis_oprec;
-        $this->nama_lengkap     = $data->nama_lengkap;
-        $this->jurusan_prodi_kelas = $data->jurusan_prodi_kelas;
-        $this->id_department    = $data->id_department;
-        $this->nama_jabatan     = $data->nama_jabatan;
-        $this->status_seleksi   = $data->status_seleksi;
+        try {
+            $data = DB::table('open_recruitment')
+                ->select('id', 'id_tahun', 'jenis_oprec', 'nama_lengkap', 'jurusan_prodi_kelas', 'id_department', 'nama_jabatan', 'status_seleksi')
+                ->where('id', $id)
+                ->first();
+                
+            $this->dataId           = $id;
+            $this->id_tahun         = $data->id_tahun;
+            $this->jenis_oprec      = $data->jenis_oprec;
+            $this->nama_lengkap     = $data->nama_lengkap;
+            $this->jurusan_prodi_kelas = $data->jurusan_prodi_kelas;
+            $this->id_department    = $data->id_department;
+            $this->nama_jabatan     = $data->nama_jabatan;
+            $this->status_seleksi   = $data->status_seleksi;
+        } catch (\Exception $e) {
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+        }
     }
 
     public function update()
@@ -292,20 +303,27 @@ class OpenRecruitment extends Component
 
         if( $this->dataId )
         {
-            DB::table('open_recruitment')
-                ->where('id', $this->dataId)
-                ->update([
-                    'id_tahun'            => $this->id_tahun,
-                    'jenis_oprec'         => $this->jenis_oprec,
-                    'nama_lengkap'        => $this->nama_lengkap,
-                    'jurusan_prodi_kelas' => $this->jurusan_prodi_kelas,
-                    'id_department'       => $this->id_department ?: 0,
-                    'nama_jabatan'        => $this->nama_jabatan,
-                    'status_seleksi'      => $this->status_seleksi,
-                ]);
+            DB::beginTransaction();
+            try {
+                DB::table('open_recruitment')
+                    ->where('id', $this->dataId)
+                    ->update([
+                        'id_tahun'            => $this->id_tahun,
+                        'jenis_oprec'         => $this->jenis_oprec,
+                        'nama_lengkap'        => $this->nama_lengkap,
+                        'jurusan_prodi_kelas' => $this->jurusan_prodi_kelas,
+                        'id_department'       => $this->id_department ?: 0,
+                        'nama_jabatan'        => $this->nama_jabatan,
+                        'status_seleksi'      => $this->status_seleksi,
+                    ]);
 
-            $this->dispatchAlert('success', 'Success!', 'Data updated successfully.');
-            $this->dataId = null;
+                DB::commit();
+                $this->dispatchAlert('success', 'Success!', 'Data updated successfully.');
+                $this->dataId = null;
+            } catch (\Exception $e) {
+                DB::rollBack();
+                $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+            }
         }
     }
 
@@ -321,139 +339,157 @@ class OpenRecruitment extends Component
 
     public function delete()
     {
-        $openRecruitment = ModelsOpenRecruitment::findOrFail($this->dataId);
-        
-        // Delete cascade: user, role, anggota jika status_seleksi = lulus
-        if ($openRecruitment->status_seleksi === 'lulus') {
-            if ($openRecruitment->id_user) {
-                $user = \App\Models\User::find($openRecruitment->id_user);
-                if ($user) {
-                    // Hapus role dari tabel role_user
-                    DB::table('role_user')->where('user_id', $openRecruitment->id_user)->delete();
-                    $user->delete();
+        DB::beginTransaction();
+        try {
+            $openRecruitment = ModelsOpenRecruitment::findOrFail($this->dataId);
+            
+            // Delete cascade: user, role, anggota jika status_seleksi = lulus
+            if ($openRecruitment->status_seleksi === 'lulus') {
+                if ($openRecruitment->id_user) {
+                    $user = \App\Models\User::find($openRecruitment->id_user);
+                    if ($user) {
+                        // Hapus role dari tabel role_user
+                        DB::table('role_user')->where('user_id', $openRecruitment->id_user)->delete();
+                        $user->delete();
+                    }
+                }
+                
+                if ($openRecruitment->id_anggota) {
+                    \App\Models\Anggota::find($openRecruitment->id_anggota)?->delete();
                 }
             }
             
-            if ($openRecruitment->id_anggota) {
-                \App\Models\Anggota::find($openRecruitment->id_anggota)?->delete();
-            }
+            // Delete open recruitment
+            $openRecruitment->delete();
+            
+            DB::commit();
+            $this->dispatchAlert('success', 'Success!', 'Data deleted successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
         }
-        
-        // Delete open recruitment
-        $openRecruitment->delete();
-        
-        $this->dispatchAlert('success', 'Success!', 'Data deleted successfully.');
     }
 
     public function updateStatus($id, $status)
     {
-        $openRecruitment = ModelsOpenRecruitment::findOrFail($id);
-        $oldStatus = $openRecruitment->status_seleksi;
-        
-        // Jika status diubah menjadi lulus
-        if ($status === 'lulus' && $oldStatus !== 'lulus') {
+        try {
+            $openRecruitment = ModelsOpenRecruitment::findOrFail($id);
+            $oldStatus = $openRecruitment->status_seleksi;
+            
             // Generate email from jurusan_prodi_kelas
             $email = $this->generateEmailFromJurusanProdiKelas($openRecruitment->nama_lengkap, $openRecruitment->jurusan_prodi_kelas);
-            
-            // Check duplicate email atau nama
-            $existingUser = \App\Models\User::where('email', $email)->first();
-            $existingAnggota = \App\Models\Anggota::where('nama_lengkap', $openRecruitment->nama_lengkap)
-                ->where('id_tahun', $openRecruitment->id_tahun)
-                ->first();
-            
-            if ($existingUser || $existingAnggota) {
-                $this->dispatch('swal:modal', [
-                    'type'      => 'error',  
-                    'message'   => 'Error!', 
-                    'text'      => 'Pendaftar sudah terdaftar sebagai anggota atau email sudah digunakan.'
-                ]);
-                return;
-            }
-            
-            // Create User
-            $user = \App\Models\User::create([
-                'name' => $openRecruitment->nama_lengkap,
-                'email' => $email,
-                'password' => bcrypt('psychopnj2026'),
-                'active' => $openRecruitment->jenis_oprec == 'pengurus' ? '1' : '0',
-            ]);
-            
-            // Assign role berdasarkan jenis_oprec
-            $user->addRole($openRecruitment->jenis_oprec);
-            
-            // Create Anggota
-            $anggota = \App\Models\Anggota::create([
-                'id_user' => $user->id,
-                'id_tahun' => $openRecruitment->id_tahun,
-                'id_department' => $openRecruitment->id_department,
-                'nama_lengkap' => $openRecruitment->nama_lengkap,
-                'nama_jabatan' => $openRecruitment->nama_jabatan,
-                'jurusan_prodi_kelas' => $openRecruitment->jurusan_prodi_kelas,
-                'nim' => '',
-                'ttl' => '',
-                'alamat' => '',
-                'email' => $email,
-                'no_hp' => '08',
-                'status_anggota' => $openRecruitment->jenis_oprec,
-                'status_aktif' => 'aktif',
-                'foto' => '',
-                'id_open_recruitment' => $openRecruitment->id,
-            ]);
-            
-            // Update open_recruitment dengan id_anggota dan id_user
-            $openRecruitment->update([
-                'status_seleksi' => $status,
-                'id_anggota' => $anggota->id,
-                'id_user' => $user->id,
-            ]);
-            
-            $this->dispatch('swal:modal', [
-                'type'      => 'success',  
-                'message'   => 'Success!', 
-                'text'      => "Status seleksi berhasil diubah menjadi Lulus. Anggota otomatis terdaftar dengan email: {$email}"
-            ]);
-        }
-        // Jika status diubah dari lulus ke gagal atau pending
-        elseif ($status !== 'lulus' && $oldStatus === 'lulus') {
-            // Delete cascade: user, role, anggota
-            if ($openRecruitment->id_user) {
-                $user = \App\Models\User::find($openRecruitment->id_user);
-                if ($user) {
-                    // Hapus role dari tabel role_user
-                    DB::table('role_user')->where('user_id', $openRecruitment->id_user)->delete();
-                    $user->delete();
+
+            // Jika status diubah menjadi lulus
+            if ($status === 'lulus' && $oldStatus !== 'lulus') {
+                // Check duplicate email atau nama
+                $existingUser = \App\Models\User::where('email', $email)->first();
+                $existingAnggota = \App\Models\Anggota::where('nama_lengkap', $openRecruitment->nama_lengkap)
+                    ->where('id_tahun', $openRecruitment->id_tahun)
+                    ->first();
+                
+                if ($existingUser || $existingAnggota) {
+                    $this->dispatch('swal:modal', [
+                        'type'      => 'error',  
+                        'message'   => 'Error!', 
+                        'text'      => 'Pendaftar sudah terdaftar sebagai anggota atau email sudah digunakan.'
+                    ]);
+                    return;
                 }
+                
+                DB::beginTransaction();
+                // Create User
+                $user = \App\Models\User::create([
+                    'name' => $openRecruitment->nama_lengkap,
+                    'email' => $email,
+                    'password' => bcrypt('psychopnj2026'),
+                    'active' => $openRecruitment->jenis_oprec == 'pengurus' ? '1' : '0',
+                ]);
+                
+                // Assign role berdasarkan jenis_oprec
+                $user->addRole($openRecruitment->jenis_oprec);
+                
+                // Create Anggota
+                $anggota = \App\Models\Anggota::create([
+                    'id_user' => $user->id,
+                    'id_tahun' => $openRecruitment->id_tahun,
+                    'id_department' => $openRecruitment->id_department,
+                    'nama_lengkap' => $openRecruitment->nama_lengkap,
+                    'nama_jabatan' => $openRecruitment->nama_jabatan,
+                    'jurusan_prodi_kelas' => $openRecruitment->jurusan_prodi_kelas,
+                    'nim' => '',
+                    'ttl' => '',
+                    'alamat' => '',
+                    'email' => $email,
+                    'no_hp' => '08',
+                    'status_anggota' => $openRecruitment->jenis_oprec,
+                    'status_aktif' => 'aktif',
+                    'foto' => '',
+                    'id_open_recruitment' => $openRecruitment->id,
+                ]);
+                
+                // Update open_recruitment dengan id_anggota dan id_user
+                $openRecruitment->update([
+                    'status_seleksi' => $status,
+                    'id_anggota' => $anggota->id,
+                    'id_user' => $user->id,
+                ]);
+                
+                DB::commit();
+                $this->dispatch('swal:modal', [
+                    'type'      => 'success',  
+                    'message'   => 'Success!', 
+                    'text'      => "Status seleksi berhasil diubah menjadi Lulus. Anggota otomatis terdaftar dengan email: {$email}"
+                ]);
             }
-            
-            if ($openRecruitment->id_anggota) {
-                \App\Models\Anggota::find($openRecruitment->id_anggota)?->delete();
+            // Jika status diubah dari lulus ke gagal atau pending
+            elseif ($status !== 'lulus' && $oldStatus === 'lulus') {
+                DB::beginTransaction();
+                // Delete cascade: user, role, anggota
+                if ($openRecruitment->id_user) {
+                    $user = \App\Models\User::find($openRecruitment->id_user);
+                    if ($user) {
+                        // Hapus role dari tabel role_user
+                        DB::table('role_user')->where('user_id', $openRecruitment->id_user)->delete();
+                        $user->delete();
+                    }
+                }
+                
+                if ($openRecruitment->id_anggota) {
+                    \App\Models\Anggota::find($openRecruitment->id_anggota)?->delete();
+                }
+                
+                $openRecruitment->update([
+                    'status_seleksi' => $status,
+                    'id_anggota' => null,
+                    'id_user' => null,
+                ]);
+                
+                DB::commit();
+                $statusText = $status === 'gagal' ? 'Gagal' : 'Pending';
+                $this->dispatch('swal:modal', [
+                    'type'      => 'success',  
+                    'message'   => 'Success!', 
+                    'text'      => "Status seleksi berhasil diubah menjadi {$statusText}. Data anggota dan user telah dihapus."
+                ]);
             }
-            
-            $openRecruitment->update([
-                'status_seleksi' => $status,
-                'id_anggota' => null,
-                'id_user' => null,
-            ]);
-            
-            $statusText = $status === 'gagal' ? 'Gagal' : 'Pending';
-            $this->dispatch('swal:modal', [
-                'type'      => 'success',  
-                'message'   => 'Success!', 
-                'text'      => "Status seleksi berhasil diubah menjadi {$statusText}. Data anggota dan user telah dihapus."
-            ]);
-        }
-        // Jika hanya update status biasa (pending ke gagal, dll)
-        else {
-            $openRecruitment->update([
-                'status_seleksi' => $status
-            ]);
-            
-            $statusText = $status === 'lulus' ? 'Lulus' : ($status === 'gagal' ? 'Gagal' : 'Pending');
-            $this->dispatch('swal:modal', [
-                'type'      => 'success',  
-                'message'   => 'Success!', 
-                'text'      => "Status seleksi berhasil diubah menjadi {$statusText}."
-            ]);
+            // Jika hanya update status biasa (pending ke gagal, dll)
+            else {
+                DB::beginTransaction();
+                $openRecruitment->update([
+                    'status_seleksi' => $status
+                ]);
+                
+                DB::commit();
+                $statusText = $status === 'lulus' ? 'Lulus' : ($status === 'gagal' ? 'Gagal' : 'Pending');
+                $this->dispatch('swal:modal', [
+                    'type'      => 'success',  
+                    'message'   => 'Success!', 
+                    'text'      => "Status seleksi berhasil diubah menjadi {$statusText}."
+                ]);
+            }
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
         }
     }
     
