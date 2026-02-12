@@ -263,7 +263,7 @@ class AnggotaSeeder extends Seeder
                 'nim' => '2403431043',
                 'ttl' => 'Jakarta, 05 Desember 1945',
                 'alamat' => 'Jl. Duren Baru, Rt04 Rw01, Bojongede, Bogor',
-                'email' => 'lisya.nur.abika.te24@stu.pnj.ac.id',
+                'email' => 'ilsya.nur.abika.te24@stu.pnj.ac.id',
                 'no_hp' => '',
                 'id_department' => '4',
             ],

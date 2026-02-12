@@ -71,7 +71,7 @@
                                 </a>
                             </li>
                             @if (Auth::user()->hasRole("pengurus"))
-                                <li class="nav-item dropdown {{ request()->is("tahun-kepengurusan") || request()->is("profil-organisasi") || request()->is("department") || request()->is("anggota") || request()->is("struktur-jabatan") || request()->is("open-recruitment") || request()->is("control-user") ? "active" : "" }}">
+                                <li class="nav-item dropdown {{ request()->is("tahun-kepengurusan") || request()->is("profil-organisasi") || request()->is("department") || request()->is("anggota") || request()->is("struktur-jabatan") || request()->is("open-recruitment") || request()->is("control-user") || request()->is("door-lock-history") ? "active" : "" }}">
                                     <a href="#" data-toggle="dropdown" class="nav-link has-dropdown">
                                         <i class="far fa-sitemap"></i>
                                         <span>Organisasi</span>
@@ -94,6 +94,9 @@
                                         </li>
                                         <li class="nav-item {{ request()->is("control-user") ? "active" : "" }}">
                                             <a href="/control-user" class="nav-link">Control User</a>
+                                        </li>
+                                        <li class="nav-item {{ request()->is("door-lock-history") ? "active" : "" }}">
+                                            <a href="/door-lock-history" class="nav-link">Riwayat Door Lock</a>
                                         </li>
                                     </ul>
                                 </li>

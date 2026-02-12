@@ -70,6 +70,9 @@ Route::group(['middleware' => ['auth', 'role:pengurus']], function () {
     // LPJ Export
     Route::get('lpj/export-pdf', [\App\Http\Controllers\LpjExportController::class, 'exportPdf'])->name('lpj.pdf');
     Route::get('lpj/export-excel', [\App\Http\Controllers\LpjExportController::class, 'exportExcel'])->name('lpj.excel');
+
+    // Security
+    Route::get('door-lock-history', \App\Livewire\DoorLockHistory::class)->name('door-lock-history');
 });
 
 

@@ -22,6 +22,7 @@ return new class extends Migration
             $table->text('alamat')->nullable();
             $table->string('email');
             $table->string('no_hp')->nullable();
+            $table->string('rfid_card')->nullable()->unique();
             $table->enum('status_anggota', ['pengurus', 'anggota'])->default('anggota');
             $table->enum('status_aktif', ['aktif', 'nonaktif'])->default('aktif');
             $table->text('foto')->nullable();
