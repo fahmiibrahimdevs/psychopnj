@@ -99,11 +99,11 @@ php artisan storage:link
 Ensure the web server user (usually `www-data` or `nginx`) has write access to storage directories:
 
 ```bash
-# Set ownership to web server user and current user
+# Set ownership to web server user (Critical for 755 permissions)
 sudo chown -R www-data:www-data storage bootstrap/cache
 
-# Set directory permissions
-sudo chmod -R 775 storage bootstrap/cache
+# Set directory permissions to 755 (Owner: rwx, Group: rx, Others: rx)
+sudo chmod -R 755 storage bootstrap/cache
 ```
 
 ---
