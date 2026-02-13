@@ -84,25 +84,30 @@
                                         <td class="text-left">{{ $this->getJenisLabel($row->jenis) }}</td>
                                         <td class="text-left">{{ $row->nama }}</td>
                                         <td class="text-left">
-                                            @if ($row->jenis === "Departemen" && $row->department)
-                                                {{ $row->department->nama_department }}
-                                            @elseif ($row->jenis === "Project" && $row->project)
-                                                {{ $row->project->nama_project }}
+                                            @if ($row->jenis === "Departemen" && $row->department_name)
+                                                {{ $row->department_name }}
+                                            @elseif ($row->jenis === "Project" && $row->project_name)
+                                                {{ $row->project_name }}
                                             @else
                                                 -
                                             @endif
                                         </td>
                                         <td class="text-right tw-font-semibold {{ $row->kategori === "pemasukan" ? "tw-text-green-600" : "tw-text-red-600" }} tw-whitespace-nowrap">Rp {{ number_format($row->nominal, 0, ",", ".") }}</td>
                                         <td class="text-left tw-text-sm tw-whitespace-nowrap">
-                                            <span class="tw-text-gray-600">{{ $row->user->name ?? "-" }}</span>
+                                            <span class="tw-text-gray-600">{{ $row->user_name ?? "-" }}</span>
                                         </td>
                                         <td class="tw-whitespace-nowrap">
-                                            <button wire:click.prevent="edit({{ $row->id }})" class="btn btn-primary" data-toggle="modal" data-target="#formDataModal">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button wire:click.prevent="deleteConfirm({{ $row->id }})" class="btn btn-danger">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
+                                            @if ($this->can("anggaran.edit"))
+                                                <button wire:click.prevent="edit({{ $row->id }})" class="btn btn-primary" data-toggle="modal" data-target="#formDataModal">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                            @endif
+
+                                            @if ($this->can("anggaran.delete"))
+                                                <button wire:click.prevent="deleteConfirm({{ $row->id }})" class="btn btn-danger">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            @endif
                                         </td>
                                     </tr>
                                 @empty
@@ -116,10 +121,11 @@
                 </div>
             </div>
         </div>
-
-        <button wire:click.prevent="isEditingMode(false)" class="btn-modal" data-toggle="modal" data-backdrop="static" data-keyboard="false" data-target="#formDataModal">
-            <i class="far fa-plus"></i>
-        </button>
+        @if ($this->can("anggaran.create"))
+            <button wire:click.prevent="isEditingMode(false)" class="btn-modal" data-toggle="modal" data-backdrop="static" data-keyboard="false" data-target="#formDataModal">
+                <i class="far fa-plus"></i>
+            </button>
+        @endif
     </section>
 
     <!-- Modal Form -->

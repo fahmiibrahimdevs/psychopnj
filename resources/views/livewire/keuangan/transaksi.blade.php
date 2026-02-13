@@ -5,47 +5,74 @@
             <div class="section-header-breadcrumb">
                 <div class="d-flex align-items-center">
                     <div>
-                        <button wire:click="downloadPdf" class="btn btn-danger btn-icon icon-left">
-                            <i class="fas fa-file-pdf"></i>
-                            Export PDF
-                        </button>
-                        <button wire:click="downloadExcel" class="btn btn-success btn-icon icon-left">
-                            <i class="fas fa-file-excel"></i>
-                            Export Excel
-                        </button>
+                        @if ($this->can("transaksi.export"))
+                            <button wire:click="downloadPdf" class="btn btn-danger btn-icon icon-left">
+                                <i class="fas fa-file-pdf"></i>
+                                Export PDF
+                            </button>
+                            <button wire:click="downloadExcel" class="btn btn-success btn-icon icon-left">
+                                <i class="fas fa-file-excel"></i>
+                                Export Excel
+                            </button>
+                        @endif
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="section-body tw-mt-6">
+        <div class="section-body">
             <!-- Summary Cards -->
-            <div class="tw-flex tw-flex-nowrap lg:tw-grid lg:tw-grid-cols-3 tw-gap-4 tw-mb-4 tw-px-4 lg:tw-px-0 tw-overflow-x-auto tw-pb-2" style="-webkit-overflow-scrolling: touch; scrollbar-width: none">
-                <div class="tw-bg-white tw-rounded-lg tw-p-4 tw-shadow-md tw-min-w-[85vw] sm:tw-min-w-[60vw] lg:tw-min-w-0 tw-flex-shrink-0">
-                    <div class="tw-flex tw-items-center tw-justify-between">
-                        <div>
-                            <p class="tw-text-sm tw-text-gray-500">Saldo Saat Ini</p>
-                            <h4 class="tw-text-xl tw-font-bold {{ $saldoAkhir >= 0 ? "tw-text-blue-600" : "tw-text-red-600" }}">Rp {{ number_format($saldoAkhir, 0, ",", ".") }}</h4>
+            <div class="tw-overflow-x-auto tw-pb-4 tw-px-4 lg:tw-px-0" style="-webkit-overflow-scrolling: touch; scrollbar-width: none">
+                <div class="tw-grid tw-grid-flow-col tw-auto-cols-max tw-gap-4">
+                    <!-- Saldo -->
+                    <div class="card tw-bg-white tw-shadow-md tw-border tw-border-gray-200 tw-rounded-lg tw-min-w-[280px] tw-mb-0">
+                        <div class="card-body tw-p-0">
+                            <div class="tw-flex tw-items-center tw-px-5 tw-py-6 tw-space-x-4">
+                                <div>
+                                    <div class="tw-px-4 tw-py-3 tw-border tw-border-gray-100 tw-rounded-lg tw-bg-gray-50">
+                                        <i class="fas fa-wallet tw-text-xl tw-text-blue-600"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 class="tw-text-gray-500 tw-text-sm tw-font-medium tw-uppercase tw-tracking-wider">Saldo Saat Ini</h3>
+                                    <p class="tw-text-2xl tw-font-bold {{ $saldoAkhir >= 0 ? "tw-text-blue-600" : "tw-text-red-600" }}">Rp {{ number_format($saldoAkhir, 0, ",", ".") }}</p>
+                                </div>
+                            </div>
                         </div>
-                        <i class="fas fa-wallet tw-text-blue-500 tw-text-2xl"></i>
                     </div>
-                </div>
-                <div class="tw-bg-white tw-rounded-lg tw-p-4 tw-shadow-md tw-min-w-[85vw] sm:tw-min-w-[60vw] lg:tw-min-w-0 tw-flex-shrink-0">
-                    <div class="tw-flex tw-items-center tw-justify-between">
-                        <div>
-                            <p class="tw-text-sm tw-text-gray-500">Total Pemasukan</p>
-                            <h4 class="tw-text-xl tw-font-bold tw-text-green-600">Rp {{ number_format($totalPemasukan, 0, ",", ".") }}</h4>
+
+                    <!-- Pemasukan -->
+                    <div class="card tw-bg-white tw-shadow-md tw-border tw-border-gray-200 tw-rounded-lg tw-min-w-[280px] tw-mb-0">
+                        <div class="card-body tw-p-0">
+                            <div class="tw-flex tw-items-center tw-px-5 tw-py-6 tw-space-x-4">
+                                <div>
+                                    <div class="tw-px-4 tw-py-3 tw-border tw-border-gray-100 tw-rounded-lg tw-bg-gray-50">
+                                        <i class="fas fa-arrow-down tw-text-xl tw-text-green-600"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 class="tw-text-gray-500 tw-text-sm tw-font-medium tw-uppercase tw-tracking-wider">Total Pemasukan</h3>
+                                    <p class="tw-text-2xl tw-font-bold tw-text-green-600">Rp {{ number_format($totalPemasukan, 0, ",", ".") }}</p>
+                                </div>
+                            </div>
                         </div>
-                        <i class="fas fa-arrow-down tw-text-green-500 tw-text-2xl"></i>
                     </div>
-                </div>
-                <div class="tw-bg-white tw-rounded-lg tw-p-4 tw-shadow-md tw-min-w-[85vw] sm:tw-min-w-[60vw] lg:tw-min-w-0 tw-flex-shrink-0">
-                    <div class="tw-flex tw-items-center tw-justify-between">
-                        <div>
-                            <p class="tw-text-sm tw-text-gray-500">Total Pengeluaran</p>
-                            <h4 class="tw-text-xl tw-font-bold tw-text-red-600">Rp {{ number_format($totalPengeluaran, 0, ",", ".") }}</h4>
+
+                    <!-- Pengeluaran -->
+                    <div class="card tw-bg-white tw-shadow-md tw-border tw-border-gray-200 tw-rounded-lg tw-min-w-[280px] tw-mb-0">
+                        <div class="card-body tw-p-0">
+                            <div class="tw-flex tw-items-center tw-px-5 tw-py-6 tw-space-x-4">
+                                <div>
+                                    <div class="tw-px-4 tw-py-3 tw-border tw-border-gray-100 tw-rounded-lg tw-bg-gray-50">
+                                        <i class="fas fa-arrow-up tw-text-xl tw-text-red-600"></i>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 class="tw-text-gray-500 tw-text-sm tw-font-medium tw-uppercase tw-tracking-wider">Total Pengeluaran</h3>
+                                    <p class="tw-text-2xl tw-font-bold tw-text-red-600">Rp {{ number_format($totalPengeluaran, 0, ",", ".") }}</p>
+                                </div>
+                            </div>
                         </div>
-                        <i class="fas fa-arrow-up tw-text-red-500 tw-text-2xl"></i>
                     </div>
                 </div>
             </div>
@@ -157,12 +184,12 @@
                                             @php
                                                 $prefix = "";
                                                 // Handle Departemen
-                                                if (($row->kategori === "Departemen" || $row->kategori === "dept") && $row->department) {
-                                                    $prefix = "Dept. " . $row->department->nama_department . ":";
+                                                if (($row->kategori === "Departemen" || $row->kategori === "dept") && $row->nama_department) {
+                                                    $prefix = "Dept. " . $row->nama_department . ":";
                                                 }
                                                 // Handle Project
-                                                elseif (($row->kategori === "Project" || $row->kategori === "project") && $row->project) {
-                                                    $prefix = "Project " . $row->project->nama_project . ":";
+                                                elseif (($row->kategori === "Project" || $row->kategori === "project") && $row->nama_project) {
+                                                    $prefix = "Project " . $row->nama_project . ":";
                                                 }
                                                 // Handle Other Categories
                                                 elseif (! in_array(strtolower($row->kategori), ["dept", "project", "departemen"])) {
@@ -184,15 +211,20 @@
                                         </td>
                                         <td class="text-right tw-font-semibold tw-whitespace-nowrap {{ ($runningTotals[$row->id] ?? 0) >= 0 ? "tw-text-blue-600" : "tw-text-red-600" }}">Rp {{ number_format($runningTotals[$row->id] ?? 0, 0, ",", ".") }}</td>
                                         <td class="text-left tw-text-sm tw-whitespace-nowrap">
-                                            <span class="tw-text-gray-600">{{ $row->user->name ?? "-" }}</span>
+                                            <span class="tw-text-gray-600">{{ $row->user_name ?? "-" }}</span>
                                         </td>
                                         <td class="tw-whitespace-nowrap">
-                                            <button wire:click="edit({{ $row->id }})" class="btn btn-warning btn-sm btn-icon" data-toggle="modal" data-target="#formDataModal">
-                                                <i class="fas fa-pen"></i>
-                                            </button>
-                                            <button wire:click="confirmDelete({{ $row->id }})" class="btn btn-danger btn-sm btn-icon">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
+                                            @if ($this->can("transaksi.edit"))
+                                                <button wire:click="edit({{ $row->id }})" class="btn btn-warning btn-icon" data-toggle="modal" data-target="#formDataModal">
+                                                    <i class="fas fa-pen"></i>
+                                                </button>
+                                            @endif
+
+                                            @if ($this->can("transaksi.delete"))
+                                                <button wire:click="confirmDelete({{ $row->id }})" class="btn btn-danger btn-icon">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            @endif
                                         </td>
                                     </tr>
 
@@ -225,9 +257,11 @@
             </div>
         </div>
 
-        <button wire:click.prevent="isEditingMode(false)" class="btn-modal" data-toggle="modal" data-backdrop="static" data-keyboard="false" data-target="#formDataModal">
-            <i class="far fa-plus"></i>
-        </button>
+        @if ($this->can("transaksi.create"))
+            <button wire:click.prevent="isEditingMode(false)" class="btn-modal" data-toggle="modal" data-backdrop="static" data-keyboard="false" data-target="#formDataModal">
+                <i class="far fa-plus"></i>
+            </button>
+        @endif
     </section>
 
     <!-- Modal Form -->
@@ -399,9 +433,11 @@
                                                     <div class="tw-text-sm tw-text-blue-600 tw-mt-2 tw-font-semibold">{{ count($filesNota) }} file(s) selected</div>
                                                 @endif
 
-                                                @error("filesNota.*")
-                                                    <span class="text-danger tw-block tw-mt-2">{{ $message }}</span>
-                                                @enderror
+                                                @foreach ($errors->get("filesNota.*") as $messages)
+                                                    @foreach ($messages as $message)
+                                                        <span class="text-danger tw-block tw-mt-2">{{ $message }}</span>
+                                                    @endforeach
+                                                @endforeach
 
                                                 <div wire:loading wire:target="filesNota" class="tw-text-sm tw-text-blue-600 tw-mt-2">
                                                     <i class="fas fa-spinner fa-spin"></i>
@@ -424,9 +460,11 @@
                                                     <div class="tw-text-sm tw-text-green-600 tw-mt-2 tw-font-semibold">{{ count($filesReimburse) }} file(s) selected</div>
                                                 @endif
 
-                                                @error("filesReimburse.*")
-                                                    <span class="text-danger tw-block tw-mt-2">{{ $message }}</span>
-                                                @enderror
+                                                @foreach ($errors->get("filesReimburse.*") as $messages)
+                                                    @foreach ($messages as $message)
+                                                        <span class="text-danger tw-block tw-mt-2">{{ $message }}</span>
+                                                    @endforeach
+                                                @endforeach
 
                                                 <div wire:loading wire:target="filesReimburse" class="tw-text-sm tw-text-green-600 tw-mt-2">
                                                     <i class="fas fa-spinner fa-spin"></i>
@@ -449,9 +487,11 @@
                                                     <div class="tw-text-sm tw-text-purple-600 tw-mt-2 tw-font-semibold">{{ count($filesFoto) }} file(s) selected</div>
                                                 @endif
 
-                                                @error("filesFoto.*")
-                                                    <span class="text-danger tw-block tw-mt-2">{{ $message }}</span>
-                                                @enderror
+                                                @foreach ($errors->get("filesFoto.*") as $messages)
+                                                    @foreach ($messages as $message)
+                                                        <span class="text-danger tw-block tw-mt-2">{{ $message }}</span>
+                                                    @endforeach
+                                                @endforeach
 
                                                 <div wire:loading wire:target="filesFoto" class="tw-text-sm tw-text-purple-600 tw-mt-2">
                                                     <i class="fas fa-spinner fa-spin"></i>

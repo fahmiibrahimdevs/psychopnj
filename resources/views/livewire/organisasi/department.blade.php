@@ -80,13 +80,17 @@
                                         Urutan: {{ $row->urutan }}
                                     </span>
                                     <div class="tw-flex tw-gap-2">
-                                        <button wire:click.prevent="edit({{ $row->id }})" class="btn btn-primary tw-px-3 tw-py-1.5 tw-rounded-lg tw-transition-colors tw-text-sm" data-toggle="modal" data-target="#formDataModal">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
+                                        @if($this->can("department.edit"))
+                                            <button wire:click.prevent="edit({{ $row->id }})" class="btn btn-primary tw-px-3 tw-py-1.5 tw-rounded-lg tw-transition-colors tw-text-sm" data-toggle="modal" data-target="#formDataModal">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                        @endif
 
-                                        <button wire:click.prevent="deleteConfirm({{ $row->id }})" class="btn btn-danger tw-px-3 tw-py-1.5 tw-rounded-lg tw-transition-colors tw-text-sm">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
+                                        @if($this->can("department.delete"))
+                                            <button wire:click.prevent="deleteConfirm({{ $row->id }})" class="btn btn-danger tw-px-3 tw-py-1.5 tw-rounded-lg tw-transition-colors tw-text-sm">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        @endif
                                     </div>
                                 </div>
                             </div>
@@ -115,9 +119,11 @@
                 </div>
             </div>
         </div>
-        <button wire:click.prevent="isEditingMode(false)" class="btn-modal" data-toggle="modal" data-backdrop="static" data-keyboard="false" data-target="#formDataModal">
-            <i class="far fa-plus"></i>
-        </button>
+        @if($this->can("department.create"))
+            <button wire:click.prevent="isEditingMode(false)" class="btn-modal" data-toggle="modal" data-backdrop="static" data-keyboard="false" data-target="#formDataModal">
+                <i class="far fa-plus"></i>
+            </button>
+        @endif
     </section>
 
     <div class="modal fade" wire:ignore.self id="formDataModal" aria-labelledby="formDataModalLabel" aria-hidden="true">

@@ -99,18 +99,23 @@
                                             <span class="tw-text-gray-600">{{ $row->user->name ?? "-" }}</span>
                                         </td>
                                         <td class="tw-whitespace-nowrap">
-                                            <button wire:click.prevent="showDetailModal({{ $row->id }})" class="btn btn-info" data-toggle="modal" data-target="#detailModal">
-                                                <i class="fas fa-eye"></i>
-                                            </button>
-                                            @if ($row->status === "dipinjam")
+                                            @if ($this->can("peminjaman_barang.view_detail"))
+                                                <button wire:click.prevent="showDetailModal({{ $row->id }})" class="btn btn-info" data-toggle="modal" data-target="#detailModal">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            @endif
+
+                                            @if ($row->status === "dipinjam" && $this->can("peminjaman_barang.return"))
                                                 <button wire:click.prevent="kembalikan({{ $row->id }})" class="btn btn-primary" title="Kembalikan">
                                                     <i class="fas fa-check"></i>
                                                 </button>
                                             @endif
 
-                                            <button wire:click.prevent="deleteConfirm({{ $row->id }})" class="btn btn-danger">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
+                                            @if ($this->can("peminjaman_barang.delete"))
+                                                <button wire:click.prevent="deleteConfirm({{ $row->id }})" class="btn btn-danger">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            @endif
                                         </td>
                                     </tr>
                                 @empty
@@ -133,9 +138,11 @@
                 </div>
             </div>
         </div>
-        <button wire:click.prevent="isEditingMode(false)" class="btn-modal" data-toggle="modal" data-backdrop="static" data-keyboard="false" data-target="#formDataModal">
-            <i class="far fa-plus"></i>
-        </button>
+        @if ($this->can("peminjaman_barang.create"))
+            <button wire:click.prevent="isEditingMode(false)" class="btn-modal" data-toggle="modal" data-backdrop="static" data-keyboard="false" data-target="#formDataModal">
+                <i class="far fa-plus"></i>
+            </button>
+        @endif
     </section>
 
     {{-- Modal Form Peminjaman --}}

@@ -10,11 +10,12 @@ use App\Models\TahunKepengurusan;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\Attributes\Title;
+use App\Traits\WithPermissionCache;
 use Illuminate\Support\Facades\DB;
 
 class PeminjamanBarang extends Component
 {
-    use WithPagination;
+    use WithPagination, WithPermissionCache;
     #[Title('Peminjaman Barang')]
 
     protected $listeners = [
@@ -58,6 +59,7 @@ class PeminjamanBarang extends Component
 
     public function mount()
     {
+        $this->cacheUserPermissions();
         $this->resetInputFields();
         $this->loadBarangList();
     }
@@ -164,29 +166,38 @@ class PeminjamanBarang extends Component
             }
         }
 
-        DB::transaction(function () use ($tahunAktif, $pencatat) {
-            $peminjaman = ModelsPeminjamanBarang::create([
-                'tahun_kepengurusan_id' => $tahunAktif->id,
-                'pencatat_id' => $pencatat->id,
-                'nama_peminjam' => $this->nama_peminjam,
-                'kontak_peminjam' => $this->kontak_peminjam,
-                'tanggal_pinjam' => $this->tanggal_pinjam,
-                'keperluan' => $this->keperluan,
-                'status' => 'dipinjam',
-                'id_user' => auth()->id(),
-            ]);
-
-            foreach ($this->selectedBarangs as $item) {
-                PeminjamanBarangDetail::create([
-                    'peminjaman_barang_id' => $peminjaman->id,
-                    'barang_id' => $item['barang_id'],
-                    'jumlah' => $item['jumlah'],
+        try {
+            DB::transaction(function () use ($tahunAktif, $pencatat) {
+                $peminjaman = ModelsPeminjamanBarang::create([
+                    'tahun_kepengurusan_id' => $tahunAktif->id,
+                    'pencatat_id' => $pencatat->id,
+                    'nama_peminjam' => $this->nama_peminjam,
+                    'kontak_peminjam' => $this->kontak_peminjam,
+                    'tanggal_pinjam' => $this->tanggal_pinjam,
+                    'keperluan' => $this->keperluan,
+                    'status' => 'dipinjam',
+                    'id_user' => auth()->id(),
                 ]);
-            }
-        });
 
-        $this->loadBarangList();
-        $this->dispatchAlert('success', 'Berhasil!', 'Peminjaman barang berhasil dicatat.');
+                foreach ($this->selectedBarangs as $item) {
+                    PeminjamanBarangDetail::create([
+                        'peminjaman_barang_id' => $peminjaman->id,
+                        'barang_id' => $item['barang_id'],
+                        'jumlah' => $item['jumlah'],
+                    ]);
+                }
+            });
+
+            $this->loadBarangList();
+            $this->dispatchAlert('success', 'Berhasil!', 'Peminjaman barang berhasil dicatat.');
+        } catch (\Exception $e) {
+            // DB::transaction automatically rolls back
+            $this->dispatch('swal:modal', [
+                'type' => 'error',
+                'message' => 'Error!',
+                'text' => 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage()
+            ]);
+        }
     }
 
     public function showDetailModal($id)
@@ -214,16 +225,23 @@ class PeminjamanBarang extends Component
     public function prosesKembalikan()
     {
         if ($this->dataId) {
-            ModelsPeminjamanBarang::findOrFail($this->dataId)->update([
-                'status' => 'dikembalikan',
-                'tanggal_kembali' => now(),
-                'catatan' => $this->catatan,
-            ]);
+            DB::beginTransaction();
+            try {
+                ModelsPeminjamanBarang::findOrFail($this->dataId)->update([
+                    'status' => 'dikembalikan',
+                    'tanggal_kembali' => now(),
+                    'catatan' => $this->catatan,
+                ]);
 
-            $this->loadBarangList();
-            $this->dispatchAlert('success', 'Berhasil!', 'Barang telah dikembalikan.');
-            $this->dataId = null;
-            $this->catatan = '';
+                DB::commit();
+                $this->loadBarangList();
+                $this->dispatchAlert('success', 'Berhasil!', 'Barang telah dikembalikan.');
+                $this->dataId = null;
+                $this->catatan = '';
+            } catch (\Exception $e) {
+                DB::rollBack();
+                $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
+            }
         }
     }
 
@@ -239,9 +257,16 @@ class PeminjamanBarang extends Component
 
     public function delete()
     {
-        ModelsPeminjamanBarang::findOrFail($this->dataId)->delete();
-        $this->loadBarangList();
-        $this->dispatchAlert('success', 'Berhasil!', 'Data peminjaman berhasil dihapus.');
+        DB::beginTransaction();
+        try {
+            ModelsPeminjamanBarang::findOrFail($this->dataId)->delete();
+            DB::commit();
+            $this->loadBarangList();
+            $this->dispatchAlert('success', 'Berhasil!', 'Data peminjaman berhasil dihapus.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
+        }
     }
 
     public function updatingLengthData()

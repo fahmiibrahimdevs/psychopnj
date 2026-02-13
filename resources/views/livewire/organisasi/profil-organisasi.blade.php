@@ -18,10 +18,12 @@
                                     <span>{{ $row->nama_tahun }}</span>
                                 </div>
                             </div>
-                            <button wire:click.prevent="edit({{ $row->id }})" class="btn tw-bg-white tw-text-gray-900 hover:tw-bg-gray-100 tw-border-0 tw-transition-colors" data-toggle="modal" data-target="#formDataModal">
-                                <i class="fas fa-edit tw-mr-2"></i>
-                                Edit Profil
-                            </button>
+                            @if($this->can("profil_organisasi.edit"))
+                                <button wire:click.prevent="edit({{ $row->id }})" class="btn tw-bg-white tw-text-gray-900 hover:tw-bg-gray-100 tw-border-0 tw-transition-colors" data-toggle="modal" data-target="#formDataModal">
+                                    <i class="fas fa-edit tw-mr-2"></i>
+                                    Edit Profil
+                                </button>
+                            @endif
                         </div>
                     </div>
 
@@ -101,10 +103,12 @@
                             <h3 class="tw-text-2xl tw-font-light tw-text-gray-900 tw-mb-3">Profil Organisasi Belum Tersedia</h3>
                             <p class="tw-text-gray-600 tw-mb-8 tw-max-w-md tw-mx-auto">Tambahkan profil organisasi untuk tahun kepengurusan yang sedang aktif</p>
 
-                            <button wire:click.prevent="isEditingMode(false)" class="btn tw-bg-gray-600 tw-text-white hover:tw-bg-gray-800 tw-border-0 tw-transition-colors" data-toggle="modal" data-backdrop="static" data-keyboard="false" data-target="#formDataModal">
-                                <i class="far fa-plus tw-mr-2"></i>
-                                Tambah Profil Organisasi
-                            </button>
+                            @if($this->can("profil_organisasi.edit"))
+                                <button wire:click.prevent="isEditingMode(false)" class="btn tw-bg-gray-600 tw-text-white hover:tw-bg-gray-800 tw-border-0 tw-transition-colors" data-toggle="modal" data-backdrop="static" data-keyboard="false" data-target="#formDataModal">
+                                    <i class="far fa-plus tw-mr-2"></i>
+                                    Tambah Profil Organisasi
+                                </button>
+                            @endif
                         </div>
                     </div>
                 </div>

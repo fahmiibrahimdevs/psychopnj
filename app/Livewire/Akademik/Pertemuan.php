@@ -14,10 +14,11 @@ use App\Models\BankSoalPertemuan;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use App\Traits\ImageCompressor;
+use App\Traits\WithPermissionCache;
 
 class Pertemuan extends Component
 {
-    use WithPagination, WithFileUploads, ImageCompressor;
+    use WithPagination, WithFileUploads, ImageCompressor, WithPermissionCache;
     #[Title('Pertemuan')]
 
     protected $listeners = [
@@ -89,10 +90,14 @@ class Pertemuan extends Component
 
     public function mount()
     {
+        // Cache user permissions to avoid N+1 queries
+        $this->cacheUserPermissions();
+        
         // Load compression setting from .env
         $this->imageTargetSizeKB = env('IMAGE_COMPRESS_SIZE_KB', 100);
         
-        $this->programs = ProgramKegiatan::select('program_pembelajaran.id', 'program_pembelajaran.nama_program')
+        $this->programs = DB::table('program_pembelajaran')
+                            ->select('program_pembelajaran.id', 'program_pembelajaran.nama_program')
                             ->leftJoin('tahun_kepengurusan', 'program_pembelajaran.id_tahun', '=', 'tahun_kepengurusan.id')
                             ->where('tahun_kepengurusan.status', 'aktif')
                             ->orderBy('program_pembelajaran.id', 'DESC')
@@ -119,7 +124,8 @@ class Pertemuan extends Component
             return view('livewire.akademik.pertemuan', compact('data'));
         }
 
-        $data = ModelsPertemuan::select('pertemuan.*', 'program_pembelajaran.nama_program')
+        $data = DB::table('pertemuan')
+                ->select('pertemuan.*', 'program_pembelajaran.nama_program')
                 ->leftJoin('program_pembelajaran', 'pertemuan.id_program', '=', 'program_pembelajaran.id')
                 ->leftJoin('tahun_kepengurusan', 'program_pembelajaran.id_tahun', '=', 'tahun_kepengurusan.id')
                 ->where('tahun_kepengurusan.status', 'aktif')
@@ -139,79 +145,86 @@ class Pertemuan extends Component
     {
         $this->validate();
 
-        // Get active tahun kepengurusan name
-        $activeTahun = \App\Models\TahunKepengurusan::where('status', 'aktif')->first();
-        $tahunFolder = $activeTahun ? $activeTahun->nama_tahun : 'default';
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            // Get active tahun kepengurusan name
+            $activeTahun = \App\Models\TahunKepengurusan::where('status', 'aktif')->first();
+            $tahunFolder = $activeTahun ? $activeTahun->nama_tahun : 'default';
 
-        // Get program name
-        $program = ProgramKegiatan::findOrFail($this->id_program);
-        $programFolder = strtoupper($program->nama_program);
+            // Get program name
+            $program = ProgramKegiatan::findOrFail($this->id_program);
+            $programFolder = strtoupper($program->nama_program);
 
-        $thumbnailPath = null;
-        if ($this->thumbnail) {
-            // Generate filename from judul_pertemuan
-            $fileName = 'thumbnail-' . strtolower(str_replace(' ', '-', $this->judul_pertemuan)) . '-' . rand(10, 99);
-            $extension = $this->thumbnail->getClientOriginalExtension();
-            $thumbnailPath = $this->thumbnail->storeAs("{$tahunFolder}/{$programFolder}/pertemuan-{$this->pertemuan_ke}/thumbnails", $fileName . '.' . $extension, 'public');
-            
-            // Compress thumbnail only if larger than target
-            $fullPath = storage_path('app/public/' . $thumbnailPath);
-            $currentSizeKB = filesize($fullPath) / 1024;
-            
-            if ($currentSizeKB > $this->imageTargetSizeKB) {
-                $this->compressImageToSize($fullPath, $this->imageTargetSizeKB, 800);
+            $thumbnailPath = null;
+            if ($this->thumbnail) {
+                // Generate filename from judul_pertemuan
+                $fileName = 'thumbnail-' . strtolower(str_replace(' ', '-', $this->judul_pertemuan)) . '-' . rand(10, 99);
+                $extension = $this->thumbnail->getClientOriginalExtension();
+                $thumbnailPath = $this->thumbnail->storeAs("{$tahunFolder}/{$programFolder}/pertemuan-{$this->pertemuan_ke}/thumbnails", $fileName . '.' . $extension, 'public');
+                
+                // Compress thumbnail only if larger than target
+                $fullPath = storage_path('app/public/' . $thumbnailPath);
+                $currentSizeKB = filesize($fullPath) / 1024;
+                
+                if ($currentSizeKB > $this->imageTargetSizeKB) {
+                    $this->compressImageToSize($fullPath, $this->imageTargetSizeKB, 800);
+                }
+                
+                // Update path if PNG was converted to JPG
+                if ($extension === 'png' && !file_exists($fullPath)) {
+                    $thumbnailPath = preg_replace('/\.png$/i', '.jpg', $thumbnailPath);
+                }
             }
-            
-            // Update path if PNG was converted to JPG
-            if ($extension === 'png' && !file_exists($fullPath)) {
-                $thumbnailPath = preg_replace('/\.png$/i', '.jpg', $thumbnailPath);
-            }
-        }
 
-        $pertemuan = ModelsPertemuan::create([
-            'id_program'        => $this->id_program,
-            'nama_pemateri'     => $this->nama_pemateri,
-            'pertemuan_ke'      => $this->pertemuan_ke,
-            'judul_pertemuan'   => $this->judul_pertemuan,
-            'deskripsi'         => $this->deskripsi,
-            'tanggal'           => $this->tanggal,
-            'minggu_ke'         => $this->minggu_ke,
-            'thumbnail'         => $thumbnailPath,
-            'status'            => $this->status,
-            'jenis_presensi'    => implode(',', $this->jenis_presensi),
-            'has_bank_soal'     => $this->has_bank_soal,
-        ]);
-
-        // Create bank soal if enabled
-        if ($this->has_bank_soal) {
-            BankSoalPertemuan::create([
-                'id_pertemuan'      => $pertemuan->id,
-                'id_tahun'          => $program->id_tahun,
-                'jml_pg'            => $this->jml_pg,
-                'jml_kompleks'      => $this->jml_kompleks,
-                'jml_jodohkan'      => $this->jml_jodohkan,
-                'jml_isian'         => $this->jml_isian,
-                'jml_esai'          => $this->jml_esai,
-                'tampil_pg'         => 0,
-                'tampil_kompleks'   => 0,
-                'tampil_jodohkan'   => 0,
-                'tampil_isian'      => 0,
-                'tampil_esai'       => 0,
-                'bobot_pg'          => $this->bobot_pg,
-                'bobot_kompleks'    => $this->bobot_kompleks,
-                'bobot_jodohkan'    => $this->bobot_jodohkan,
-                'bobot_isian'       => $this->bobot_isian,
-                'bobot_esai'        => $this->bobot_esai,
-                'opsi'              => $this->opsi,
+            $pertemuan = ModelsPertemuan::create([
+                'id_program'        => $this->id_program,
+                'nama_pemateri'     => $this->nama_pemateri,
+                'pertemuan_ke'      => $this->pertemuan_ke,
+                'judul_pertemuan'   => $this->judul_pertemuan,
+                'deskripsi'         => $this->deskripsi,
+                'tanggal'           => $this->tanggal,
+                'minggu_ke'         => $this->minggu_ke,
+                'thumbnail'         => $thumbnailPath,
+                'status'            => $this->status,
+                'jenis_presensi'    => implode(',', $this->jenis_presensi),
+                'has_bank_soal'     => $this->has_bank_soal,
             ]);
-        }
 
-        // Upload multiple files
-        if (!empty($this->files)) {
-            $this->uploadMultipleFiles($pertemuan->id);
-        }
+            // Create bank soal if enabled
+            if ($this->has_bank_soal) {
+                BankSoalPertemuan::create([
+                    'id_pertemuan'      => $pertemuan->id,
+                    'id_tahun'          => $program->id_tahun,
+                    'jml_pg'            => $this->jml_pg,
+                    'jml_kompleks'      => $this->jml_kompleks,
+                    'jml_jodohkan'      => $this->jml_jodohkan,
+                    'jml_isian'         => $this->jml_isian,
+                    'jml_esai'          => $this->jml_esai,
+                    'tampil_pg'         => 0,
+                    'tampil_kompleks'   => 0,
+                    'tampil_jodohkan'   => 0,
+                    'tampil_isian'      => 0,
+                    'tampil_esai'       => 0,
+                    'bobot_pg'          => $this->bobot_pg,
+                    'bobot_kompleks'    => $this->bobot_kompleks,
+                    'bobot_jodohkan'    => $this->bobot_jodohkan,
+                    'bobot_isian'       => $this->bobot_isian,
+                    'bobot_esai'        => $this->bobot_esai,
+                    'opsi'              => $this->opsi,
+                ]);
+            }
 
-        $this->dispatchAlert('success', 'Success!', 'Data created successfully.');
+            // Upload multiple files
+            if (!empty($this->files)) {
+                $this->uploadMultipleFiles($pertemuan->id);
+            }
+
+            \Illuminate\Support\Facades\DB::commit();
+            $this->dispatchAlert('success', 'Success!', 'Data created successfully.');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
+        }
     }
 
     public function edit($id)
@@ -258,85 +271,92 @@ class Pertemuan extends Component
 
         if( $this->dataId )
         {
-            // Get active tahun kepengurusan name
-            $activeTahun = \App\Models\TahunKepengurusan::where('status', 'aktif')->first();
-            $tahunFolder = $activeTahun ? $activeTahun->nama_tahun : 'default';
+            \Illuminate\Support\Facades\DB::beginTransaction();
+            try {
+                // Get active tahun kepengurusan name
+                $activeTahun = \App\Models\TahunKepengurusan::where('status', 'aktif')->first();
+                $tahunFolder = $activeTahun ? $activeTahun->nama_tahun : 'default';
 
-            // Get program name
-            $program = ProgramKegiatan::findOrFail($this->id_program);
-            $programFolder = strtoupper($program->nama_program);
+                // Get program name
+                $program = ProgramKegiatan::findOrFail($this->id_program);
+                $programFolder = strtoupper($program->nama_program);
 
-            $thumbnailPath = $this->oldThumbnail;
-            
-            if ($this->thumbnail) {
-                // Hapus thumbnail lama jika ada
-                if ($this->oldThumbnail && Storage::disk('public')->exists($this->oldThumbnail)) {
-                    Storage::disk('public')->delete($this->oldThumbnail);
-                }
-                // Generate filename from judul_pertemuan
-                $fileName = 'thumbnail-' . strtolower(str_replace(' ', '-', $this->judul_pertemuan)) . '-' . rand(10, 99);
-                $extension = $this->thumbnail->getClientOriginalExtension();
-                $thumbnailPath = $this->thumbnail->storeAs("{$tahunFolder}/{$programFolder}/pertemuan-{$this->pertemuan_ke}/thumbnails", $fileName . '.' . $extension, 'public');
+                $thumbnailPath = $this->oldThumbnail;
                 
-                // Compress thumbnail only if larger than target
-                $fullPath = storage_path('app/public/' . $thumbnailPath);
-                $currentSizeKB = filesize($fullPath) / 1024;
-                
-                if ($currentSizeKB > $this->imageTargetSizeKB) {
-                    $this->compressImageToSize($fullPath, $this->imageTargetSizeKB, 800);
+                if ($this->thumbnail) {
+                    // Hapus thumbnail lama jika ada
+                    if ($this->oldThumbnail && Storage::disk('public')->exists($this->oldThumbnail)) {
+                        Storage::disk('public')->delete($this->oldThumbnail);
+                    }
+                    // Generate filename from judul_pertemuan
+                    $fileName = 'thumbnail-' . strtolower(str_replace(' ', '-', $this->judul_pertemuan)) . '-' . rand(10, 99);
+                    $extension = $this->thumbnail->getClientOriginalExtension();
+                    $thumbnailPath = $this->thumbnail->storeAs("{$tahunFolder}/{$programFolder}/pertemuan-{$this->pertemuan_ke}/thumbnails", $fileName . '.' . $extension, 'public');
+                    
+                    // Compress thumbnail only if larger than target
+                    $fullPath = storage_path('app/public/' . $thumbnailPath);
+                    $currentSizeKB = filesize($fullPath) / 1024;
+                    
+                    if ($currentSizeKB > $this->imageTargetSizeKB) {
+                        $this->compressImageToSize($fullPath, $this->imageTargetSizeKB, 800);
+                    }
+                    
+                    // Update path if PNG was converted to JPG
+                    if ($extension === 'png' && !file_exists($fullPath)) {
+                        $thumbnailPath = preg_replace('/\.png$/i', '.jpg', $thumbnailPath);
+                    }
                 }
-                
-                // Update path if PNG was converted to JPG
-                if ($extension === 'png' && !file_exists($fullPath)) {
-                    $thumbnailPath = preg_replace('/\.png$/i', '.jpg', $thumbnailPath);
+
+                ModelsPertemuan::findOrFail($this->dataId)->update([
+                    'id_program'        => $this->id_program,
+                    'nama_pemateri'     => $this->nama_pemateri,
+                    'pertemuan_ke'      => $this->pertemuan_ke,
+                    'judul_pertemuan'   => $this->judul_pertemuan,
+                    'deskripsi'         => $this->deskripsi,
+                    'tanggal'           => $this->tanggal,
+                    'minggu_ke'         => $this->minggu_ke,
+                    'thumbnail'         => $thumbnailPath,
+                    'status'            => $this->status,
+                    'jenis_presensi'    => implode(',', $this->jenis_presensi),
+                    'has_bank_soal'     => $this->has_bank_soal,
+                ]);
+
+                // Update or create bank soal if enabled
+                if ($this->has_bank_soal) {
+                    BankSoalPertemuan::updateOrCreate(
+                        ['id_pertemuan' => $this->dataId],
+                        [
+                            'id_tahun'          => $program->id_tahun,
+                            'jml_pg'            => $this->jml_pg,
+                            'jml_kompleks'      => $this->jml_kompleks,
+                            'jml_jodohkan'      => $this->jml_jodohkan,
+                            'jml_isian'         => $this->jml_isian,
+                            'jml_esai'          => $this->jml_esai,
+                            'bobot_pg'          => $this->bobot_pg,
+                            'bobot_kompleks'    => $this->bobot_kompleks,
+                            'bobot_jodohkan'    => $this->bobot_jodohkan,
+                            'bobot_isian'       => $this->bobot_isian,
+                            'bobot_esai'        => $this->bobot_esai,
+                            'opsi'              => $this->opsi,
+                        ]
+                    );
+                } else {
+                    // Delete bank soal if checkbox unchecked
+                    BankSoalPertemuan::where('id_pertemuan', $this->dataId)->delete();
                 }
+
+                // Upload additional files
+                if (!empty($this->files)) {
+                    $this->uploadMultipleFiles($this->dataId);
+                }
+
+                \Illuminate\Support\Facades\DB::commit();
+                $this->dispatchAlert('success', 'Success!', 'Data updated successfully.');
+                $this->dataId = null;
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\DB::rollBack();
+                $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
             }
-
-            ModelsPertemuan::findOrFail($this->dataId)->update([
-                'id_program'        => $this->id_program,
-                'nama_pemateri'     => $this->nama_pemateri,
-                'pertemuan_ke'      => $this->pertemuan_ke,
-                'judul_pertemuan'   => $this->judul_pertemuan,
-                'deskripsi'         => $this->deskripsi,
-                'tanggal'           => $this->tanggal,
-                'minggu_ke'         => $this->minggu_ke,
-                'thumbnail'         => $thumbnailPath,
-                'status'            => $this->status,
-                'jenis_presensi'    => implode(',', $this->jenis_presensi),
-                'has_bank_soal'     => $this->has_bank_soal,
-            ]);
-
-            // Update or create bank soal if enabled
-            if ($this->has_bank_soal) {
-                BankSoalPertemuan::updateOrCreate(
-                    ['id_pertemuan' => $this->dataId],
-                    [
-                        'id_tahun'          => $program->id_tahun,
-                        'jml_pg'            => $this->jml_pg,
-                        'jml_kompleks'      => $this->jml_kompleks,
-                        'jml_jodohkan'      => $this->jml_jodohkan,
-                        'jml_isian'         => $this->jml_isian,
-                        'jml_esai'          => $this->jml_esai,
-                        'bobot_pg'          => $this->bobot_pg,
-                        'bobot_kompleks'    => $this->bobot_kompleks,
-                        'bobot_jodohkan'    => $this->bobot_jodohkan,
-                        'bobot_isian'       => $this->bobot_isian,
-                        'bobot_esai'        => $this->bobot_esai,
-                        'opsi'              => $this->opsi,
-                    ]
-                );
-            } else {
-                // Delete bank soal if checkbox unchecked
-                BankSoalPertemuan::where('id_pertemuan', $this->dataId)->delete();
-            }
-
-            // Upload additional files
-            if (!empty($this->files)) {
-                $this->uploadMultipleFiles($this->dataId);
-            }
-
-            $this->dispatchAlert('success', 'Success!', 'Data updated successfully.');
-            $this->dataId = null;
         }
     }
 
@@ -463,7 +483,7 @@ class Pertemuan extends Component
     public function deleteConfirm($id)
     {
         $this->dataId = $id;
-        $this->dispatch('swal:confirm', [
+        $this->dispatch('swal:confirmPertemuan', [
             'type'      => 'warning',  
             'message'   => 'Are you sure?', 
             'text'      => 'If you delete the data, it cannot be restored!'
@@ -472,30 +492,46 @@ class Pertemuan extends Component
 
     public function delete()
     {
-        $data = ModelsPertemuan::findOrFail($this->dataId);
-        
-        // Get active tahun kepengurusan name
-        $activeTahun = \App\Models\TahunKepengurusan::where('status', 'aktif')->first();
-        $tahunFolder = $activeTahun ? $activeTahun->mulai : 'default';
-        
-        // Hapus thumbnail jika ada
-        if ($data->thumbnail && Storage::disk('public')->exists($data->thumbnail)) {
-            Storage::disk('public')->delete($data->thumbnail);
-        }
-        
-        // Hapus semua file dari storage berdasarkan record di database
-        $files = PertemuanFile::where('id_pertemuan', $this->dataId)->get();
-        foreach ($files as $file) {
-            if (Storage::disk('public')->exists($file->file_path)) {
-                Storage::disk('public')->delete($file->file_path);
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            $data = ModelsPertemuan::findOrFail($this->dataId);
+            
+            // Get active tahun kepengurusan name
+            $activeTahun = \App\Models\TahunKepengurusan::where('status', 'aktif')->first();
+            $tahunFolder = $activeTahun ? $activeTahun->mulai : 'default';
+            
+            // Hapus thumbnail jika ada
+            if ($data->thumbnail && Storage::disk('public')->exists($data->thumbnail)) {
+                Storage::disk('public')->delete($data->thumbnail);
             }
+            
+            // Hapus semua file dari storage berdasarkan record di database
+            $files = PertemuanFile::where('id_pertemuan', $this->dataId)->get();
+            foreach ($files as $file) {
+                if (Storage::disk('public')->exists($file->file_path)) {
+                    Storage::disk('public')->delete($file->file_path);
+                }
+            }
+            
+            // Hapus semua record file dari database
+            PertemuanFile::where('id_pertemuan', $this->dataId)->delete();
+
+            // Hapus semua file galeri dari storage (DB record akan terhapus via cascade)
+            $galeriFiles = PertemuanGaleri::where('id_pertemuan', $this->dataId)->get();
+            foreach ($galeriFiles as $galeri) {
+                if ($galeri->file_path && Storage::disk('public')->exists($galeri->file_path)) {
+                    Storage::disk('public')->delete($galeri->file_path);
+                }
+            }
+            
+            $data->delete();
+
+            \Illuminate\Support\Facades\DB::commit();
+            $this->dispatchAlert('success', 'Success!', 'Data deleted successfully.');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
         }
-        
-        // Hapus semua record file dari database
-        PertemuanFile::where('id_pertemuan', $this->dataId)->delete();
-        
-        $data->delete();
-        $this->dispatchAlert('success', 'Success!', 'Data deleted successfully.');
     }
 
     public function updatingLengthData()
@@ -660,7 +696,7 @@ class Pertemuan extends Component
             $this->dispatch('swal:modal', [
                 'type' => 'error',
                 'message' => 'Error!',
-                'text' => 'Failed to upload files: ' . $e->getMessage()
+                'text' => 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. Failed to upload files: ' . $e->getMessage()
             ]);
         }
     }
@@ -668,7 +704,7 @@ class Pertemuan extends Component
     public function deleteGalleryConfirm($id)
     {
         $this->selectedGalleryId = $id;
-        $this->dispatch('swal:confirm', [
+        $this->dispatch('swal:confirmGallery', [
             'type' => 'warning',
             'message' => 'Are you sure?',
             'text' => 'You won\'t be able to revert this!'
@@ -678,14 +714,16 @@ class Pertemuan extends Component
     public function deleteGalleryItem()
     {
         try {
-            $item = PertemuanGaleri::findOrFail($this->selectedGalleryId);
+            $item = PertemuanGaleri::find($this->selectedGalleryId);
             
-            // Delete file from storage
-            if (Storage::disk('public')->exists($item->file_path)) {
-                Storage::disk('public')->delete($item->file_path);
+            if ($item) {
+                // Delete file from storage
+                if (Storage::disk('public')->exists($item->file_path)) {
+                    Storage::disk('public')->delete($item->file_path);
+                }
+                
+                $item->delete();
             }
-            
-            $item->delete();
 
             // Remove from array
             $this->galleryItems = array_filter($this->galleryItems, function($item) {
@@ -702,7 +740,7 @@ class Pertemuan extends Component
             $this->dispatch('swal:modal', [
                 'type' => 'error',
                 'message' => 'Error!',
-                'text' => 'Failed to delete: ' . $e->getMessage()
+                'text' => 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. Failed to delete: ' . $e->getMessage()
             ]);
         }
     }

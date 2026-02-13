@@ -19,8 +19,8 @@
         "laravel/tinker": "^2.9",
         "livewire/livewire": "^3.5",
         "maatwebsite/excel": "^3.1",
-        "santigarcor/laratrust": "^8.3",
-        "spatie/image-optimizer": "^1.8"
+        "spatie/image-optimizer": "^1.8",
+        "spatie/laravel-permission": "^6.24"
     },
     "require-dev": {
         "barryvdh/laravel-debugbar": "^3.14",

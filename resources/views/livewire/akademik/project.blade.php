@@ -81,18 +81,29 @@
 
                         <div class="tw-flex tw-items-center tw-justify-end tw-pt-3 tw-border-t tw-border-gray-100">
                             <div class="tw-flex tw-gap-1">
-                                <a href="{{ route("project.teams", ["projectId" => $row->id]) }}" class="btn btn-success" title="Kelola Kelompok">
-                                    <i class="fas fa-users"></i>
-                                </a>
-                                <button wire:click.prevent="view({{ $row->id }})" class="btn btn-info" data-toggle="modal" data-target="#viewModal">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <button wire:click.prevent="edit({{ $row->id }})" class="btn btn-primary" data-toggle="modal" data-target="#formDataModal">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button wire:click.prevent="deleteConfirm({{ $row->id }})" class="btn btn-danger">
-                                    <i class="fas fa-trash"></i>
-                                </button>
+                                @if ($this->can("project.kelola_kelompok"))
+                                    <a href="{{ route("project.teams", ["projectId" => $row->id]) }}" class="btn btn-success" title="Kelola Kelompok">
+                                        <i class="fas fa-users"></i>
+                                    </a>
+                                @endif
+
+                                @if ($this->can("project.view_team"))
+                                    <button wire:click.prevent="view({{ $row->id }})" class="btn btn-info" data-toggle="modal" data-target="#viewModal">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                @endif
+
+                                @if ($this->can("project.edit"))
+                                    <button wire:click.prevent="edit({{ $row->id }})" class="btn btn-primary" data-toggle="modal" data-target="#formDataModal">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                @endif
+
+                                @if ($this->can("project.delete"))
+                                    <button wire:click.prevent="deleteConfirm({{ $row->id }})" class="btn btn-danger">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -115,9 +126,11 @@
                 </div>
             </div>
         </div>
-        <button wire:click.prevent="isEditingMode(false)" class="btn-modal" data-toggle="modal" data-backdrop="static" data-keyboard="false" data-target="#formDataModal">
-            <i class="far fa-plus"></i>
-        </button>
+        @if ($this->can("project.create"))
+            <button wire:click.prevent="isEditingMode(false)" class="btn-modal" data-toggle="modal" data-backdrop="static" data-keyboard="false" data-target="#formDataModal">
+                <i class="far fa-plus"></i>
+            </button>
+        @endif
     </section>
 
     <div class="modal fade" wire:ignore.self id="formDataModal" aria-labelledby="formDataModalLabel" aria-hidden="true">

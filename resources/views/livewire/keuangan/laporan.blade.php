@@ -8,14 +8,16 @@
                 </span>
             </div>
             <div class="tw-flex tw-gap-2">
-                <button wire:click="downloadPdf" class="btn btn-danger">
-                    <i class="fas fa-file-pdf tw-mr-1"></i>
-                    Export PDF
-                </button>
-                <button wire:click="downloadExcel" class="btn btn-success">
-                    <i class="fas fa-file-excel tw-mr-1"></i>
-                    Export Excel
-                </button>
+                @if ($this->can("laporan_keuangan.export"))
+                    <button wire:click="downloadPdf" class="btn btn-danger">
+                        <i class="fas fa-file-pdf tw-mr-1"></i>
+                        Export PDF
+                    </button>
+                    <button wire:click="downloadExcel" class="btn btn-success">
+                        <i class="fas fa-file-excel tw-mr-1"></i>
+                        Export Excel
+                    </button>
+                @endif
             </div>
         </div>
 

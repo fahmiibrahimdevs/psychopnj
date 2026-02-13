@@ -5,9 +5,11 @@ namespace App\Livewire\Keuangan;
 use Livewire\Component;
 use Livewire\Attributes\Title;
 use App\Models\JenisAnggaran as ModelsJenisAnggaran;
+use App\Traits\WithPermissionCache;
 
 class JenisAnggaran extends Component
 {
+    use WithPermissionCache;
     #[Title('Jenis Anggaran')]
 
     protected $listeners = [
@@ -28,6 +30,7 @@ class JenisAnggaran extends Component
 
     public function mount()
     {
+        $this->cacheUserPermissions();
         $this->resetInputFields();
     }
 
@@ -36,10 +39,10 @@ class JenisAnggaran extends Component
         $this->searchResetPage();
         $search = '%'.$this->searchTerm.'%';
 
-        $data = ModelsJenisAnggaran::where(function($query) use ($search) {
-                    $query->where('nama_kategori', 'LIKE', $search)
-                          ->orWhere('nama_jenis', 'LIKE', $search);
-                })
+        $data = \Illuminate\Support\Facades\DB::table('jenis_anggaran')
+                ->select('id', 'nama_kategori', 'nama_jenis')
+                ->where('nama_kategori', 'LIKE', $search)
+                ->orWhere('nama_jenis', 'LIKE', $search)
                 ->orderBy('nama_kategori', 'ASC')
                 ->orderBy('nama_jenis', 'ASC')
                 ->get()
@@ -52,12 +55,19 @@ class JenisAnggaran extends Component
     {
         $this->validate();
 
-        ModelsJenisAnggaran::create([
-            'nama_kategori' => $this->nama_kategori,
-            'nama_jenis'    => $this->nama_jenis,
-        ]);
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            ModelsJenisAnggaran::create([
+                'nama_kategori' => $this->nama_kategori,
+                'nama_jenis'    => $this->nama_jenis,
+            ]);
 
-        $this->dispatchAlert('success', 'Success!', 'Jenis anggaran berhasil ditambahkan.');
+            \Illuminate\Support\Facades\DB::commit();
+            $this->dispatchAlert('success', 'Success!', 'Jenis anggaran berhasil ditambahkan.');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
+        }
     }
 
     public function updated()
@@ -79,13 +89,20 @@ class JenisAnggaran extends Component
         $this->validate();
 
         if ($this->dataId) {
-            ModelsJenisAnggaran::findOrFail($this->dataId)->update([
-                'nama_kategori' => $this->nama_kategori,
-                'nama_jenis'    => $this->nama_jenis,
-            ]);
+            \Illuminate\Support\Facades\DB::beginTransaction();
+            try {
+                ModelsJenisAnggaran::findOrFail($this->dataId)->update([
+                    'nama_kategori' => $this->nama_kategori,
+                    'nama_jenis'    => $this->nama_jenis,
+                ]);
 
-            $this->dispatchAlert('success', 'Success!', 'Jenis anggaran berhasil diperbarui.');
-            $this->dataId = null;
+                \Illuminate\Support\Facades\DB::commit();
+                $this->dispatchAlert('success', 'Success!', 'Jenis anggaran berhasil diperbarui.');
+                $this->dataId = null;
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\DB::rollBack();
+                $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
+            }
         }
     }
 
@@ -101,8 +118,15 @@ class JenisAnggaran extends Component
 
     public function delete()
     {
-        ModelsJenisAnggaran::findOrFail($this->dataId)->delete();
-        $this->dispatchAlert('success', 'Success!', 'Jenis anggaran berhasil dihapus.');
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            ModelsJenisAnggaran::findOrFail($this->dataId)->delete();
+            \Illuminate\Support\Facades\DB::commit();
+            $this->dispatchAlert('success', 'Success!', 'Jenis anggaran berhasil dihapus.');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
+        }
     }
 
     private function searchResetPage()

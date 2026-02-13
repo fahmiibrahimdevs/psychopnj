@@ -11,10 +11,11 @@ use App\Models\TahunKepengurusan;
 use App\Models\Anggota;
 use App\Models\Project as ModelsProject;
 use App\Models\ProjectTeamMember;
+use App\Traits\WithPermissionCache;
 
 class Project extends Component
 {
-    use WithPagination;
+    use WithPagination, WithPermissionCache;
     #[Title('Projects')]
 
     protected $listeners = [
@@ -43,6 +44,9 @@ class Project extends Component
 
     public function mount()
     {
+        // Cache user permissions to avoid N+1 queries
+        $this->cacheUserPermissions();
+        
         $this->tahuns = DB::table('tahun_kepengurusan')
             ->select('id', 'nama_tahun')
             ->orderBy('id', 'ASC')
@@ -177,18 +181,25 @@ class Project extends Component
     {
         $this->validate();
 
-        ModelsProject::create([
-            'id_tahun'        => $this->id_tahun,
-            'nama_project'    => $this->nama_project,
-            'deskripsi'       => $this->deskripsi,
-            'status'          => $this->status,
-            'tanggal_mulai'   => $this->tanggal_mulai,
-            'tanggal_selesai' => $this->tanggal_selesai,
-            'thumbnail'       => $this->thumbnail,
-            'link_gdrive'     => $this->link_gdrive,
-        ]);
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            ModelsProject::create([
+                'id_tahun'        => $this->id_tahun,
+                'nama_project'    => $this->nama_project,
+                'deskripsi'       => $this->deskripsi,
+                'status'          => $this->status,
+                'tanggal_mulai'   => $this->tanggal_mulai,
+                'tanggal_selesai' => $this->tanggal_selesai,
+                'thumbnail'       => $this->thumbnail,
+                'link_gdrive'     => $this->link_gdrive,
+            ]);
 
-        $this->dispatchAlert('success', 'Success!', 'Project created successfully.');
+            \Illuminate\Support\Facades\DB::commit();
+            $this->dispatchAlert('success', 'Success!', 'Project created successfully.');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
+        }
     }
 
     public function edit($id)
@@ -284,22 +295,29 @@ class Project extends Component
         $this->validate();
 
         if ($this->dataId) {
-            DB::table('projects')
-                ->where('id', $this->dataId)
-                ->update([
-                    'id_tahun'        => $this->id_tahun,
-                    'nama_project'    => $this->nama_project,
-                    'deskripsi'       => $this->deskripsi,
-                    'status'          => $this->status,
-                    'tanggal_mulai'   => $this->tanggal_mulai,
-                    'tanggal_selesai' => $this->tanggal_selesai,
-                    'thumbnail'       => $this->thumbnail,
-                    'link_gdrive'     => $this->link_gdrive,
-                    'updated_at'      => now(),
-                ]);
+            \Illuminate\Support\Facades\DB::beginTransaction();
+            try {
+                DB::table('projects')
+                    ->where('id', $this->dataId)
+                    ->update([
+                        'id_tahun'        => $this->id_tahun,
+                        'nama_project'    => $this->nama_project,
+                        'deskripsi'       => $this->deskripsi,
+                        'status'          => $this->status,
+                        'tanggal_mulai'   => $this->tanggal_mulai,
+                        'tanggal_selesai' => $this->tanggal_selesai,
+                        'thumbnail'       => $this->thumbnail,
+                        'link_gdrive'     => $this->link_gdrive,
+                        'updated_at'      => now(),
+                    ]);
 
-            $this->dispatchAlert('success', 'Success!', 'Project updated successfully.');
-            $this->dataId = null;
+                \Illuminate\Support\Facades\DB::commit();
+                $this->dispatchAlert('success', 'Success!', 'Project updated successfully.');
+                $this->dataId = null;
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\DB::rollBack();
+                $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
+            }
         }
     }
 
@@ -315,8 +333,15 @@ class Project extends Component
 
     public function delete()
     {
-        ModelsProject::findOrFail($this->dataId)->delete();
-        $this->dispatchAlert('success', 'Success!', 'Project deleted successfully.');
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            ModelsProject::findOrFail($this->dataId)->delete();
+            \Illuminate\Support\Facades\DB::commit();
+            $this->dispatchAlert('success', 'Success!', 'Project deleted successfully.');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
+        }
     }
 
     public function updatingLengthData()

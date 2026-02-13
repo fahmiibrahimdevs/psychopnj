@@ -7,15 +7,22 @@ use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\Attributes\Title;
 use Illuminate\Support\Facades\DB;
+use App\Traits\WithPermissionCache;
 
 class ControlUser extends Component
 {
-    use WithPagination;
+    use WithPagination, WithPermissionCache;
     #[Title('Control User')]
 
     public $lengthData = 25;
     public $searchTerm;
     public $previousSearchTerm = '';
+
+    public function mount()
+    {
+        // Cache user permissions to avoid N+1 queries
+        $this->cacheUserPermissions();
+    }
 
     public function searchResetPage()
     {
@@ -62,7 +69,7 @@ class ControlUser extends Component
             $this->dispatch('swal:modal', [
                 'type' => 'error',
                 'message' => 'Error!',
-                'text' => 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593'
+                'text' => 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage()
             ]);
         }
     }
@@ -79,10 +86,13 @@ class ControlUser extends Component
                 'users.email', 
                 'users.active', 
                 'users.created_at',
-                DB::raw('GROUP_CONCAT(roles.display_name SEPARATOR ", ") as roles_names')
+                DB::raw('GROUP_CONCAT(roles.name SEPARATOR ", ") as roles_names')
             )
-            ->leftJoin('role_user', 'users.id', '=', 'role_user.user_id')
-            ->leftJoin('roles', 'role_user.role_id', '=', 'roles.id')
+            ->leftJoin('model_has_roles', function($join) {
+                $join->on('users.id', '=', 'model_has_roles.model_id')
+                     ->where('model_has_roles.model_type', '=', 'App\\Models\\User');
+            })
+            ->leftJoin('roles', 'model_has_roles.role_id', '=', 'roles.id')
             ->where(function ($query) use ($search) {
                 $query->where('users.name', 'LIKE', $search)
                       ->orWhere('users.email', 'LIKE', $search);

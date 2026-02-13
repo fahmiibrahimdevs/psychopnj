@@ -14,10 +14,11 @@ use App\Imports\KategoriBarangImport;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use App\Traits\WithPermissionCache;
 
 class KategoriBarang extends Component
 {
-    use WithPagination, WithFileUploads;
+    use WithPagination, WithFileUploads, WithPermissionCache;
     #[Title('Kategori Barang')]
 
     protected $listeners = [
@@ -43,7 +44,8 @@ class KategoriBarang extends Component
 
     public function mount()
     {
-        $this->nama = '';
+        $this->cacheUserPermissions();
+        $this->resetInputFields();
     }
 
     public function render()
@@ -84,7 +86,7 @@ class KategoriBarang extends Component
                     $this->dispatch('swal:modal', [
                         'type' => 'warning',
                         'message' => 'Berhasil disimpan!',
-                        'text' => 'Data tersimpan tapi gagal sync ke Google Sheets: ' . $e->getMessage()
+                        'text' => 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. Data tersimpan tapi gagal sync ke Google Sheets: ' . $e->getMessage()
                     ]);
                 }
             }
@@ -96,7 +98,7 @@ class KategoriBarang extends Component
             $this->dispatch('swal:modal', [
                 'type' => 'error',
                 'message' => 'Gagal!',
-                'text' => 'Terjadi kesalahan: ' . $e->getMessage()
+                'text' => 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. Terjadi kesalahan: ' . $e->getMessage()
             ]);
         }
     }
@@ -132,7 +134,7 @@ class KategoriBarang extends Component
                         $this->dispatch('swal:modal', [
                             'type' => 'warning',
                             'message' => 'Berhasil diperbarui!',
-                            'text' => 'Data tersimpan tapi gagal sync ke Google Sheets: ' . $e->getMessage()
+                            'text' => 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. Data tersimpan tapi gagal sync ke Google Sheets: ' . $e->getMessage()
                         ]);
                     }
                 }
@@ -145,7 +147,7 @@ class KategoriBarang extends Component
                 $this->dispatch('swal:modal', [
                     'type' => 'error',
                     'message' => 'Gagal!',
-                    'text' => 'Terjadi kesalahan: ' . $e->getMessage()
+                    'text' => 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. Terjadi kesalahan: ' . $e->getMessage()
                 ]);
             }
         }
@@ -192,7 +194,7 @@ class KategoriBarang extends Component
             $this->dispatch('swal:modal', [
                 'type' => 'error',
                 'message' => 'Gagal!',
-                'text' => 'Terjadi kesalahan: ' . $e->getMessage()
+                'text' => 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. Terjadi kesalahan: ' . $e->getMessage()
             ]);
         }
     }
@@ -318,13 +320,13 @@ class KategoriBarang extends Component
             $this->dispatch('swal:modal', [
                 'type' => 'error',
                 'message' => 'Import Gagal!',
-                'text' => implode("\n", $errorMessages)
+                'text' => "Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593.\n" . implode("\n", $errorMessages)
             ]);
         } catch (\Exception $e) {
             $this->dispatch('swal:modal', [
                 'type' => 'error',
                 'message' => 'Error!',
-                'text' => 'Terjadi kesalahan saat import: ' . $e->getMessage()
+                'text' => 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. Terjadi kesalahan saat import: ' . $e->getMessage()
             ]);
         }
     }
@@ -342,7 +344,7 @@ class KategoriBarang extends Component
             $this->dispatch('swal:modal', [
                 'type' => 'warning',
                 'message' => 'Peringatan!',
-                'text' => 'Data berhasil diimport tapi gagal sync ke Google Sheets: ' . $e->getMessage()
+                'text' => 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. Data berhasil diimport tapi gagal sync ke Google Sheets: ' . $e->getMessage()
             ]);
         }
     }

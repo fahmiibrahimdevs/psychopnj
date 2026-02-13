@@ -294,6 +294,7 @@
                                         <button wire:click.prevent="edit({{ $row["id"] }})" class="btn btn-primary tw-mr-1" data-toggle="modal" data-target="#formDataModal">
                                             <i class="fas fa-edit"></i>
                                         </button>
+
                                         @if (stripos($row["soal"], "<img") !== false)
                                             <i class="tw-mt-1 tw-text-danger">Hapus gambar terlebih dahulu di mode edit!.</i>
                                         @else

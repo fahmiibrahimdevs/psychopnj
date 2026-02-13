@@ -17,11 +17,13 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\BarangExport;
 use App\Imports\BarangImport;
+use App\Traits\WithPermissionCache;
+use Illuminate\Support\Facades\DB;
 
 class Barang extends Component
 {
-    use WithPagination, WithFileUploads, ImageCompressor;
-    #[Title('Barang')]
+    use WithPagination, WithFileUploads, ImageCompressor, WithPermissionCache;
+    #[Title('Data Barang')]
 
     protected $listeners = [
         'delete'
@@ -40,6 +42,7 @@ class Barang extends Component
     public $dataId;
     public $kategori_barang_id, $kode, $nama, $jumlah, $satuan, $jenis, $kondisi, $lokasi, $foto, $keterangan;
     public $fotoPreview;
+    public $imageTargetSizeKB;
     
     // Import
     public $importFile;
@@ -61,7 +64,9 @@ class Barang extends Component
 
     public function mount()
     {
+        $this->cacheUserPermissions();
         $this->resetInputFields();
+        $this->imageTargetSizeKB = env('IMAGE_COMPRESS_SIZE_KB', 100);
     }
 
     public function render()
@@ -96,36 +101,43 @@ class Barang extends Component
     {
         $this->validate();
 
-        $fotoPath = null;
-        if ($this->foto) {
-            $fotoPath = $this->uploadFoto();
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            $fotoPath = null;
+            if ($this->foto) {
+                $fotoPath = $this->uploadFoto();
+            }
+
+            $barang = ModelsBarang::create([
+                'kategori_barang_id' => $this->kategori_barang_id ?: null,
+                'kode' => ModelsBarang::generateKode(),
+                'nama' => $this->nama,
+                'nama_barang' => $this->nama,
+                'jumlah' => $this->jumlah,
+                'satuan' => $this->satuan,
+                'jenis' => $this->jenis,
+                'kondisi' => $this->kondisi,
+                'lokasi' => $this->lokasi,
+                'foto' => $fotoPath,
+                'keterangan' => $this->keterangan,
+                'id_user' => Auth::id(),
+            ]);
+
+            // Sync to Google Sheets - DISABLED
+            // try {
+            //     $barang->load('kategori');
+            //     $googleSheets = new GoogleSheetsService();
+            //     $googleSheets->syncBarang($barang);
+            // } catch (\Exception $e) {
+            //     Log::error('Google Sheets Sync Error on Create: ' . $e->getMessage());
+            // }
+
+            \Illuminate\Support\Facades\DB::commit();
+            $this->dispatchAlert('success', 'Berhasil!', 'Barang berhasil ditambahkan.');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
         }
-
-        $barang = ModelsBarang::create([
-            'kategori_barang_id' => $this->kategori_barang_id ?: null,
-            'kode' => ModelsBarang::generateKode(),
-            'nama' => $this->nama,
-            'nama_barang' => $this->nama,
-            'jumlah' => $this->jumlah,
-            'satuan' => $this->satuan,
-            'jenis' => $this->jenis,
-            'kondisi' => $this->kondisi,
-            'lokasi' => $this->lokasi,
-            'foto' => $fotoPath,
-            'keterangan' => $this->keterangan,
-            'id_user' => Auth::id(),
-        ]);
-
-        // Sync to Google Sheets - DISABLED
-        // try {
-        //     $barang->load('kategori');
-        //     $googleSheets = new GoogleSheetsService();
-        //     $googleSheets->syncBarang($barang);
-        // } catch (\Exception $e) {
-        //     Log::error('Google Sheets Sync Error on Create: ' . $e->getMessage());
-        // }
-
-        $this->dispatchAlert('success', 'Berhasil!', 'Barang berhasil ditambahkan.');
     }
 
     public function edit($id)
@@ -150,41 +162,48 @@ class Barang extends Component
         $this->validate();
 
         if ($this->dataId) {
-            $barang = ModelsBarang::findOrFail($this->dataId);
-            
-            $fotoPath = $barang->foto;
-            if ($this->foto) {
-                // Hapus foto lama
-                if ($barang->foto) {
-                    Storage::disk('public')->delete($barang->foto);
+            \Illuminate\Support\Facades\DB::beginTransaction();
+            try {
+                $barang = ModelsBarang::findOrFail($this->dataId);
+                
+                $fotoPath = $barang->foto;
+                if ($this->foto) {
+                    // Hapus foto lama
+                    if ($barang->foto) {
+                        Storage::disk('public')->delete($barang->foto);
+                    }
+                    $fotoPath = $this->uploadFoto();
                 }
-                $fotoPath = $this->uploadFoto();
+
+                $barang->update([
+                    'kategori_barang_id' => $this->kategori_barang_id ?: null,
+                    'nama' => $this->nama,
+                    'nama_barang' => $this->nama,
+                    'jumlah' => $this->jumlah,
+                    'satuan' => $this->satuan,
+                    'jenis' => $this->jenis,
+                    'kondisi' => $this->kondisi,
+                    'lokasi' => $this->lokasi,
+                    'foto' => $fotoPath,
+                    'keterangan' => $this->keterangan,
+                ]);
+
+                // Sync to Google Sheets - DISABLED
+                // try {
+                //     $barang->load('kategori');
+                //     $googleSheets = new GoogleSheetsService();
+                //     $googleSheets->syncBarang($barang);
+                // } catch (\Exception $e) {
+                //     Log::error('Google Sheets Sync Error on Update: ' . $e->getMessage());
+                // }
+
+                \Illuminate\Support\Facades\DB::commit();
+                $this->dispatchAlert('success', 'Berhasil!', 'Barang berhasil diperbarui.');
+                $this->dataId = null;
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\DB::rollBack();
+                $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
             }
-
-            $barang->update([
-                'kategori_barang_id' => $this->kategori_barang_id ?: null,
-                'nama' => $this->nama,
-                'nama_barang' => $this->nama,
-                'jumlah' => $this->jumlah,
-                'satuan' => $this->satuan,
-                'jenis' => $this->jenis,
-                'kondisi' => $this->kondisi,
-                'lokasi' => $this->lokasi,
-                'foto' => $fotoPath,
-                'keterangan' => $this->keterangan,
-            ]);
-
-            // Sync to Google Sheets - DISABLED
-            // try {
-            //     $barang->load('kategori');
-            //     $googleSheets = new GoogleSheetsService();
-            //     $googleSheets->syncBarang($barang);
-            // } catch (\Exception $e) {
-            //     Log::error('Google Sheets Sync Error on Update: ' . $e->getMessage());
-            // }
-
-            $this->dispatchAlert('success', 'Berhasil!', 'Barang berhasil diperbarui.');
-            $this->dataId = null;
         }
     }
 
@@ -217,25 +236,32 @@ class Barang extends Component
 
     public function delete()
     {
-        $barang = ModelsBarang::findOrFail($this->dataId);
-        $kode = $barang->kode;
-        
-        // Hapus foto jika ada
-        if ($barang->foto) {
-            Storage::disk('public')->delete($barang->foto);
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            $barang = ModelsBarang::findOrFail($this->dataId);
+            $kode = $barang->kode;
+            
+            // Hapus foto jika ada
+            if ($barang->foto) {
+                Storage::disk('public')->delete($barang->foto);
+            }
+            
+            $barang->delete();
+
+            // Delete from Google Sheets - DISABLED
+            // try {
+            //     $googleSheets = new GoogleSheetsService();
+            //     $googleSheets->deleteBarang($kode);
+            // } catch (\Exception $e) {
+            //     Log::error('Google Sheets Delete Error: ' . $e->getMessage());
+            // }
+
+            \Illuminate\Support\Facades\DB::commit();
+            $this->dispatchAlert('success', 'Berhasil!', 'Barang berhasil dihapus.');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
         }
-        
-        $barang->delete();
-
-        // Delete from Google Sheets - DISABLED
-        // try {
-        //     $googleSheets = new GoogleSheetsService();
-        //     $googleSheets->deleteBarang($kode);
-        // } catch (\Exception $e) {
-        //     Log::error('Google Sheets Delete Error: ' . $e->getMessage());
-        // }
-
-        $this->dispatchAlert('success', 'Berhasil!', 'Barang berhasil dihapus.');
     }
 
     public function removeFoto()
@@ -411,7 +437,7 @@ class Barang extends Component
             $this->dispatch('swal:modal', [
                 'type' => 'error',
                 'message' => 'Import Gagal!',
-                'text' => implode("\n", $errorMessages)
+                'text' => "Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593.\n" . implode("\n", $errorMessages)
             ]);
         } catch (\Exception $e) {
             Log::error('Import Error: ' . $e->getMessage());
@@ -419,7 +445,7 @@ class Barang extends Component
             $this->dispatch('swal:modal', [
                 'type' => 'error',
                 'message' => 'Error!',
-                'text' => 'Terjadi kesalahan saat import: ' . $e->getMessage()
+                'text' => 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. Terjadi kesalahan saat import: ' . $e->getMessage()
             ]);
         }
     }

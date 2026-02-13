@@ -76,15 +76,23 @@
                                     {{ ucfirst($row->jenis_program) }}
                                 </span>
                                 <div class="d-flex program-btn-container">
-                                    <button wire:click.prevent="viewPertemuan({{ $row->id }})" class="btn program-btn-view" data-toggle="modal" data-target="#viewPertemuanModal">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button wire:click.prevent="edit({{ $row->id }})" class="btn program-btn-edit" data-toggle="modal" data-target="#formDataModal">
-                                        <i class="fas fa-pen"></i>
-                                    </button>
-                                    <button wire:click.prevent="deleteConfirm({{ $row->id }})" class="btn program-btn-delete">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
+                                    @if ($this->can("program_pembelajaran.view"))
+                                        <button wire:click.prevent="viewPertemuan({{ $row->id }})" class="btn program-btn-view" data-toggle="modal" data-target="#viewPertemuanModal">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    @endif
+
+                                    @if ($this->can("program_pembelajaran.edit"))
+                                        <button wire:click.prevent="edit({{ $row->id }})" class="btn program-btn-edit" data-toggle="modal" data-target="#formDataModal">
+                                            <i class="fas fa-pen"></i>
+                                        </button>
+                                    @endif
+
+                                    @if ($this->can("program_pembelajaran.delete"))
+                                        <button wire:click.prevent="deleteConfirm({{ $row->id }})" class="btn program-btn-delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -108,9 +116,11 @@
                 </div>
             </div>
         </div>
-        <button wire:click.prevent="isEditingMode(false)" class="btn-modal" data-toggle="modal" data-backdrop="static" data-keyboard="false" data-target="#formDataModal">
-            <i class="far fa-plus"></i>
-        </button>
+        @if ($this->can("program_pembelajaran.create"))
+            <button wire:click.prevent="isEditingMode(false)" class="btn-modal" data-toggle="modal" data-backdrop="static" data-keyboard="false" data-target="#formDataModal">
+                <i class="far fa-plus"></i>
+            </button>
+        @endif
     </section>
 
     <div class="modal fade" wire:ignore.self id="formDataModal" aria-labelledby="formDataModalLabel" aria-hidden="true">

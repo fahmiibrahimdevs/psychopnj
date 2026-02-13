@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('nama_lengkap');
             $table->string('jurusan_prodi_kelas');
             $table->string('nama_jabatan')->nullable();
-            $table->enum('status_seleksi', ['pending', 'lulus', 'tidak lulus'])->default('pending');
+            $table->enum('status_seleksi', ['pending', 'lulus', 'gagal'])->default('pending');
             
             $table->index('id_user');
             $table->index('id_anggota');

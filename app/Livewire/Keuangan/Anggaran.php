@@ -10,11 +10,12 @@ use App\Models\Anggaran as ModelsAnggaran;
 use App\Models\Department;
 use App\Models\Project;
 use App\Models\JenisAnggaran;
+use App\Traits\WithPermissionCache;
 use Illuminate\Support\Facades\Auth;
 
 class Anggaran extends Component
 {
-    use WithPagination;
+    use WithPagination, WithPermissionCache;
     #[Title('Anggaran')]
 
     protected $listeners = [
@@ -45,6 +46,7 @@ class Anggaran extends Component
 
     public function mount()
     {
+        $this->cacheUserPermissions();
         $activeTahun = TahunKepengurusan::where('status', 'aktif')->first();
         $this->activeTahunId = $activeTahun ? $activeTahun->id : null;
 
@@ -52,11 +54,13 @@ class Anggaran extends Component
         $this->loadJenisAnggaran();
 
         // Filter departments by active tahun
-        $this->departments = Department::where('id_tahun', $this->activeTahunId)
+        $this->departments = \Illuminate\Support\Facades\DB::table('departments')
+            ->where('id_tahun', $this->activeTahunId)
             ->select('id', 'nama_department')
             ->orderBy('nama_department')
             ->get();
-        $this->projects = Project::where('id_tahun', $this->activeTahunId)
+        $this->projects = \Illuminate\Support\Facades\DB::table('projects')
+            ->where('id_tahun', $this->activeTahunId)
             ->select('id', 'nama_project')
             ->orderBy('nama_project')
             ->get();
@@ -69,23 +73,40 @@ class Anggaran extends Component
         $this->searchResetPage();
         $search = '%'.$this->searchTerm.'%';
 
-        $query = ModelsAnggaran::with(['department', 'project', 'user'])
-            ->where('id_tahun', $this->activeTahunId)
-            ->where('nama', 'LIKE', $search);
+        $query = \Illuminate\Support\Facades\DB::table('anggaran')
+            ->leftJoin('departments', 'anggaran.id_department', '=', 'departments.id')
+            ->leftJoin('projects', 'anggaran.id_project', '=', 'projects.id')
+            ->leftJoin('users', 'anggaran.id_user', '=', 'users.id')
+            ->select(
+                'anggaran.id',
+                'anggaran.kategori',
+                'anggaran.jenis',
+                'anggaran.nama',
+                'anggaran.nominal',
+                'anggaran.id_department',
+                'anggaran.id_project',
+                'departments.nama_department as department_name',
+                'projects.nama_project as project_name',
+                'users.name as user_name'
+            )
+            ->where('anggaran.id_tahun', $this->activeTahunId)
+            ->where('anggaran.nama', 'LIKE', $search);
             
         if ($this->filterKategori) {
-            $query->where('kategori', $this->filterKategori);
+            $query->where('anggaran.kategori', $this->filterKategori);
         }
 
-        $data = $query->orderBy('kategori', 'ASC')
-            ->orderBy('jenis', 'ASC')
-            ->orderBy('id', 'ASC')
+        $data = $query->orderBy('anggaran.kategori', 'ASC')
+            ->orderBy('anggaran.jenis', 'ASC')
+            ->orderBy('anggaran.id', 'ASC')
             ->get();
 
         // Calculate totals
-        $totalPemasukan = ModelsAnggaran::where('id_tahun', $this->activeTahunId)
+        $totalPemasukan = \Illuminate\Support\Facades\DB::table('anggaran')
+            ->where('id_tahun', $this->activeTahunId)
             ->where('kategori', 'pemasukan')->sum('nominal');
-        $totalPengeluaran = ModelsAnggaran::where('id_tahun', $this->activeTahunId)
+        $totalPengeluaran = \Illuminate\Support\Facades\DB::table('anggaran')
+            ->where('id_tahun', $this->activeTahunId)
             ->where('kategori', 'pengeluaran')->sum('nominal');
 
         return view('livewire.keuangan.anggaran', compact('data', 'totalPemasukan', 'totalPengeluaran'));
@@ -95,18 +116,25 @@ class Anggaran extends Component
     {
         $this->validate();
 
-        ModelsAnggaran::create([
-            'id_tahun'      => $this->activeTahunId,
-            'kategori'      => $this->kategori,
-            'jenis'         => $this->jenis,
-            'id_department' => $this->jenis === 'Departemen' ? $this->id_department : null,
-            'id_project'    => $this->jenis === 'Project' ? $this->id_project : null,
-            'nama'          => $this->nama,
-            'nominal'       => $this->nominal,
-            'id_user'       => Auth::id(),
-        ]);
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            ModelsAnggaran::create([
+                'id_tahun'      => $this->activeTahunId,
+                'kategori'      => $this->kategori,
+                'jenis'         => $this->jenis,
+                'id_department' => $this->jenis === 'Departemen' ? $this->id_department : null,
+                'id_project'    => $this->jenis === 'Project' ? $this->id_project : null,
+                'nama'          => $this->nama,
+                'nominal'       => $this->nominal,
+                'id_user'       => Auth::id(),
+            ]);
 
-        $this->dispatchAlert('success', 'Success!', 'Anggaran berhasil ditambahkan.');
+            \Illuminate\Support\Facades\DB::commit();
+            $this->dispatchAlert('success', 'Success!', 'Anggaran berhasil ditambahkan.');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
+        }
     }
 
     public function updated()
@@ -145,17 +173,24 @@ class Anggaran extends Component
         $this->validate();
 
         if ($this->dataId) {
-            ModelsAnggaran::findOrFail($this->dataId)->update([
-                'kategori'      => $this->kategori,
-                'jenis'         => $this->jenis,
-                'id_department' => $this->jenis === 'Departemen' ? $this->id_department : null,
-                'id_project'    => $this->jenis === 'Project' ? $this->id_project : null,
-                'nama'          => $this->nama,
-                'nominal'       => $this->nominal,
-            ]);
+            \Illuminate\Support\Facades\DB::beginTransaction();
+            try {
+                ModelsAnggaran::findOrFail($this->dataId)->update([
+                    'kategori'      => $this->kategori,
+                    'jenis'         => $this->jenis,
+                    'id_department' => $this->jenis === 'Departemen' ? $this->id_department : null,
+                    'id_project'    => $this->jenis === 'Project' ? $this->id_project : null,
+                    'nama'          => $this->nama,
+                    'nominal'       => $this->nominal,
+                ]);
 
-            $this->dispatchAlert('success', 'Success!', 'Anggaran berhasil diperbarui.');
-            $this->dataId = null;
+                \Illuminate\Support\Facades\DB::commit();
+                $this->dispatchAlert('success', 'Success!', 'Anggaran berhasil diperbarui.');
+                $this->dataId = null;
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\DB::rollBack();
+                $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
+            }
         }
     }
 
@@ -171,8 +206,15 @@ class Anggaran extends Component
 
     public function delete()
     {
-        ModelsAnggaran::findOrFail($this->dataId)->delete();
-        $this->dispatchAlert('success', 'Success!', 'Anggaran berhasil dihapus.');
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            ModelsAnggaran::findOrFail($this->dataId)->delete();
+            \Illuminate\Support\Facades\DB::commit();
+            $this->dispatchAlert('success', 'Success!', 'Anggaran berhasil dihapus.');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
+        }
     }
 
     public function updatingLengthData()
@@ -228,7 +270,8 @@ class Anggaran extends Component
 
     public function loadJenisAnggaran()
     {
-        $this->jenisAnggaranList = JenisAnggaran::select('nama_kategori', 'nama_jenis')
+        $this->jenisAnggaranList = \Illuminate\Support\Facades\DB::table('jenis_anggaran')
+            ->select('nama_kategori', 'nama_jenis')
             ->orderBy('nama_kategori')
             ->orderBy('nama_jenis')
             ->get()
@@ -238,7 +281,8 @@ class Anggaran extends Component
 
     public function getJenisAnggaranByKategori($kategori)
     {
-        return JenisAnggaran::where('nama_kategori', $kategori)
+        return \Illuminate\Support\Facades\DB::table('jenis_anggaran')
+            ->where('nama_kategori', $kategori)
             ->pluck('nama_jenis')
             ->toArray();
     }

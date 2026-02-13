@@ -75,13 +75,15 @@
                                             {{ \Carbon\Carbon::parse($user->created_at)->format("d M Y") }}
                                         </td>
                                         <td class="tw-whitespace-nowrap">
-                                            <button wire:click="toggleActive({{ $user->id }})" class="btn {{ $user->active === "1" ? "btn-warning" : "btn-success" }}" title="{{ $user->active === "1" ? "Deactivate" : "Activate" }}">
-                                                @if ($user->active === "1")
-                                                    <i class="fas fa-ban"></i>
-                                                @else
-                                                    <i class="fas fa-check"></i>
-                                                @endif
-                                            </button>
+                                            @if($this->can("control_user.update_status"))
+                                                <button wire:click="toggleActive({{ $user->id }})" class="btn {{ $user->active === "1" ? "btn-warning" : "btn-success" }}" title="{{ $user->active === "1" ? "Deactivate" : "Activate" }}">
+                                                    @if ($user->active === "1")
+                                                        <i class="fas fa-ban"></i>
+                                                    @else
+                                                        <i class="fas fa-check"></i>
+                                                    @endif
+                                                </button>
+                                            @endif
                                         </td>
                                     </tr>
                                 @empty

@@ -8,9 +8,11 @@ use Exception;
 use Livewire\Component;
 use Livewire\Attributes\Title;
 use Illuminate\Support\Facades\DB;
+use App\Traits\WithPermissionCache;
 
 class Koreksi extends Component
 {
+    use WithPermissionCache;
     #[Title('Koreksi')]
 
     protected $listeners = ['updatePoint' => 'updateP'];
@@ -21,6 +23,9 @@ class Koreksi extends Component
 
     public function mount($id_pertemuan = '0', $id_anggota = '0')
     {
+        // Cache user permissions to avoid N+1 queries
+        $this->cacheUserPermissions();
+        
         try {
             $this->id_pertemuan = $id_pertemuan;
             $this->id_anggota = $id_anggota;

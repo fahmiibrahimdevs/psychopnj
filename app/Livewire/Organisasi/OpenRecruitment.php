@@ -9,10 +9,11 @@ use Livewire\Attributes\Title;
 use App\Models\TahunKepengurusan;
 use Illuminate\Support\Facades\DB;
 use App\Models\OpenRecruitment as ModelsOpenRecruitment;
+use App\Traits\WithPermissionCache;
 
 class OpenRecruitment extends Component
 {
-    use WithPagination;
+    use WithPagination, WithPermissionCache;
     #[Title('Open Recruitment')]
 
     protected $listeners = [
@@ -45,6 +46,9 @@ class OpenRecruitment extends Component
 
     public function mount()
     {
+        // Cache user permissions to avoid N+1 queries
+        $this->cacheUserPermissions();
+        
         $yearAktif = DB::table('tahun_kepengurusan')->where('status', 'aktif')->first();
         $this->id_tahun            = $yearAktif ? $yearAktif->id : '';
         
@@ -254,7 +258,7 @@ class OpenRecruitment extends Component
             $this->dispatchAlert('success', 'Success!', 'Data created successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
         }
     }
 
@@ -276,7 +280,7 @@ class OpenRecruitment extends Component
             $this->nama_jabatan     = $data->nama_jabatan;
             $this->status_seleksi   = $data->status_seleksi;
         } catch (\Exception $e) {
-            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
         }
     }
 
@@ -322,7 +326,7 @@ class OpenRecruitment extends Component
                 $this->dataId = null;
             } catch (\Exception $e) {
                 DB::rollBack();
-                $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+                $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
             }
         }
     }
@@ -348,8 +352,8 @@ class OpenRecruitment extends Component
                 if ($openRecruitment->id_user) {
                     $user = \App\Models\User::find($openRecruitment->id_user);
                     if ($user) {
-                        // Hapus role dari tabel role_user
-                        DB::table('role_user')->where('user_id', $openRecruitment->id_user)->delete();
+                        // Hapus semua role dari user
+                        $user->syncRoles([]); 
                         $user->delete();
                     }
                 }
@@ -366,7 +370,7 @@ class OpenRecruitment extends Component
             $this->dispatchAlert('success', 'Success!', 'Data deleted successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
         }
     }
 
@@ -406,7 +410,9 @@ class OpenRecruitment extends Component
                 ]);
                 
                 // Assign role berdasarkan jenis_oprec
-                $user->addRole($openRecruitment->jenis_oprec);
+                // Karena role 'pengurus' tidak ada, dan open recruitment belum menentukan jabatan spesifik yang match ke role,
+                // maka default-nya kita set 'anggota'. Admin bisa mengubah role nanti di menu Anggota.
+                $user->assignRole('anggota');
                 
                 // Create Anggota
                 $anggota = \App\Models\Anggota::create([
@@ -448,8 +454,8 @@ class OpenRecruitment extends Component
                 if ($openRecruitment->id_user) {
                     $user = \App\Models\User::find($openRecruitment->id_user);
                     if ($user) {
-                        // Hapus role dari tabel role_user
-                        DB::table('role_user')->where('user_id', $openRecruitment->id_user)->delete();
+                        // Hapus semua role dari user
+                        $user->syncRoles([]); 
                         $user->delete();
                     }
                 }
@@ -489,7 +495,7 @@ class OpenRecruitment extends Component
             }
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
         }
     }
     

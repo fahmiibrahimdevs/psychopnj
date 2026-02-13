@@ -3,15 +3,17 @@
         <div class="section-header">
             <h1>Presensi Pertemuan</h1>
             @if ($selectedPertemuan)
-                <!-- Tombol Update -->
-                <button @click="collectAndSubmit()" wire:loading.attr="disabled" class="btn btn-primary tw-ml-auto">
-                    <i class="fas fa-save tw-mr-2"></i>
-                    <span wire:loading.remove>Update Presensi</span>
-                    <span wire:loading>
-                        <i class="fas fa-spinner fa-spin tw-mr-2"></i>
-                        Saving...
-                    </span>
-                </button>
+                @if ($this->can("presensi.update"))
+                    <!-- Tombol Update -->
+                    <button @click="collectAndSubmit()" wire:loading.attr="disabled" class="btn btn-primary tw-ml-auto">
+                        <i class="fas fa-save tw-mr-2"></i>
+                        <span wire:loading.remove>Update Presensi</span>
+                        <span wire:loading>
+                            <i class="fas fa-spinner fa-spin tw-mr-2"></i>
+                            Saving...
+                        </span>
+                    </button>
+                @endif
             @endif
         </div>
 
@@ -239,30 +241,62 @@
                                                                         </div>
                                                                     </td>
                                                                     <td class="tw-text-center">{{ $anggotaObj->jurusan_prodi_kelas ?? "-" }}</td>
-                                                                    <td class="tw-text-center">
-                                                                        <input type="radio" name="presensi_{{ $anggotaObj->id }}" x-model="selectedStatus" value="hadir" class="tw-w-5 tw-h-5 tw-cursor-pointer" />
-                                                                        <div class="tw-mt-1" x-show="selectedStatus === 'hadir'" x-cloak>
-                                                                            <button type="button" @click.prevent="selectedStatus = ''" class="tw-text-xs tw-text-red-500 hover:tw-text-red-700 tw-underline">clear</button>
-                                                                        </div>
-                                                                    </td>
-                                                                    <td class="tw-text-center">
-                                                                        <input type="radio" name="presensi_{{ $anggotaObj->id }}" x-model="selectedStatus" value="izin" class="tw-w-5 tw-h-5 tw-cursor-pointer" />
-                                                                        <div class="tw-mt-1" x-show="selectedStatus === 'izin'" x-cloak>
-                                                                            <button type="button" @click.prevent="selectedStatus = ''" class="tw-text-xs tw-text-red-500 hover:tw-text-red-700 tw-underline">clear</button>
-                                                                        </div>
-                                                                    </td>
-                                                                    <td class="tw-text-center">
-                                                                        <input type="radio" name="presensi_{{ $anggotaObj->id }}" x-model="selectedStatus" value="sakit" class="tw-w-5 tw-h-5 tw-cursor-pointer" />
-                                                                        <div class="tw-mt-1" x-show="selectedStatus === 'sakit'" x-cloak>
-                                                                            <button type="button" @click.prevent="selectedStatus = ''" class="tw-text-xs tw-text-red-500 hover:tw-text-red-700 tw-underline">clear</button>
-                                                                        </div>
-                                                                    </td>
-                                                                    <td class="tw-text-center">
-                                                                        <input type="radio" name="presensi_{{ $anggotaObj->id }}" x-model="selectedStatus" value="alfa" class="tw-w-5 tw-h-5 tw-cursor-pointer" />
-                                                                        <div class="tw-mt-1" x-show="selectedStatus === 'alfa'" x-cloak>
-                                                                            <button type="button" @click.prevent="selectedStatus = ''" class="tw-text-xs tw-text-red-500 hover:tw-text-red-700 tw-underline">clear</button>
-                                                                        </div>
-                                                                    </td>
+
+                                                                    @if ($this->can("presensi.action"))
+                                                                        <td class="tw-text-center">
+                                                                            <input type="radio" name="presensi_{{ $anggotaObj->id }}" x-model="selectedStatus" value="hadir" class="tw-w-5 tw-h-5 tw-cursor-pointer" />
+                                                                            <div class="tw-mt-1" x-show="selectedStatus === 'hadir'" x-cloak>
+                                                                                <button type="button" @click.prevent="selectedStatus = ''" class="tw-text-xs tw-text-red-500 hover:tw-text-red-700 tw-underline">clear</button>
+                                                                            </div>
+                                                                        </td>
+                                                                        <td class="tw-text-center">
+                                                                            <input type="radio" name="presensi_{{ $anggotaObj->id }}" x-model="selectedStatus" value="izin" class="tw-w-5 tw-h-5 tw-cursor-pointer" />
+                                                                            <div class="tw-mt-1" x-show="selectedStatus === 'izin'" x-cloak>
+                                                                                <button type="button" @click.prevent="selectedStatus = ''" class="tw-text-xs tw-text-red-500 hover:tw-text-red-700 tw-underline">clear</button>
+                                                                            </div>
+                                                                        </td>
+                                                                        <td class="tw-text-center">
+                                                                            <input type="radio" name="presensi_{{ $anggotaObj->id }}" x-model="selectedStatus" value="sakit" class="tw-w-5 tw-h-5 tw-cursor-pointer" />
+                                                                            <div class="tw-mt-1" x-show="selectedStatus === 'sakit'" x-cloak>
+                                                                                <button type="button" @click.prevent="selectedStatus = ''" class="tw-text-xs tw-text-red-500 hover:tw-text-red-700 tw-underline">clear</button>
+                                                                            </div>
+                                                                        </td>
+                                                                        <td class="tw-text-center">
+                                                                            <input type="radio" name="presensi_{{ $anggotaObj->id }}" x-model="selectedStatus" value="alfa" class="tw-w-5 tw-h-5 tw-cursor-pointer" />
+                                                                            <div class="tw-mt-1" x-show="selectedStatus === 'alfa'" x-cloak>
+                                                                                <button type="button" @click.prevent="selectedStatus = ''" class="tw-text-xs tw-text-red-500 hover:tw-text-red-700 tw-underline">clear</button>
+                                                                            </div>
+                                                                        </td>
+                                                                    @else
+                                                                        <td class="tw-text-center">
+                                                                            @if ($status === "hadir")
+                                                                                <i class="fas fa-check tw-text-green-600 tw-text-xl"></i>
+                                                                            @else
+                                                                                <span class="tw-text-gray-300">-</span>
+                                                                            @endif
+                                                                        </td>
+                                                                        <td class="tw-text-center">
+                                                                            @if ($status === "izin")
+                                                                                <i class="fas fa-check tw-text-orange-600 tw-text-xl"></i>
+                                                                            @else
+                                                                                <span class="tw-text-gray-300">-</span>
+                                                                            @endif
+                                                                        </td>
+                                                                        <td class="tw-text-center">
+                                                                            @if ($status === "sakit")
+                                                                                <i class="fas fa-check tw-text-blue-600 tw-text-xl"></i>
+                                                                            @else
+                                                                                <span class="tw-text-gray-300">-</span>
+                                                                            @endif
+                                                                        </td>
+                                                                        <td class="tw-text-center">
+                                                                            @if ($status === "alfa")
+                                                                                <i class="fas fa-check tw-text-red-600 tw-text-xl"></i>
+                                                                            @else
+                                                                                <span class="tw-text-gray-300">-</span>
+                                                                            @endif
+                                                                        </td>
+                                                                    @endif
                                                                 </tr>
                                                             @endforeach
                                                         @endforeach
@@ -338,30 +372,62 @@
                                                                     </div>
                                                                 </td>
                                                                 <td class="tw-text-center">{{ $anggotaObj->jurusan_prodi_kelas ?? "-" }}</td>
-                                                                <td class="tw-text-center">
-                                                                    <input type="radio" name="presensi_{{ $anggotaObj->id }}" x-model="selectedStatus" value="hadir" class="tw-w-5 tw-h-5 tw-cursor-pointer" />
-                                                                    <div class="tw-mt-1" x-show="selectedStatus === 'hadir'" x-cloak>
-                                                                        <button type="button" @click.prevent="selectedStatus = ''" class="tw-text-xs tw-text-red-500 hover:tw-text-red-700 tw-underline">clear</button>
-                                                                    </div>
-                                                                </td>
-                                                                <td class="tw-text-center">
-                                                                    <input type="radio" name="presensi_{{ $anggotaObj->id }}" x-model="selectedStatus" value="izin" class="tw-w-5 tw-h-5 tw-cursor-pointer" />
-                                                                    <div class="tw-mt-1" x-show="selectedStatus === 'izin'" x-cloak>
-                                                                        <button type="button" @click.prevent="selectedStatus = ''" class="tw-text-xs tw-text-red-500 hover:tw-text-red-700 tw-underline">clear</button>
-                                                                    </div>
-                                                                </td>
-                                                                <td class="tw-text-center">
-                                                                    <input type="radio" name="presensi_{{ $anggotaObj->id }}" x-model="selectedStatus" value="sakit" class="tw-w-5 tw-h-5 tw-cursor-pointer" />
-                                                                    <div class="tw-mt-1" x-show="selectedStatus === 'sakit'" x-cloak>
-                                                                        <button type="button" @click.prevent="selectedStatus = ''" class="tw-text-xs tw-text-red-500 hover:tw-text-red-700 tw-underline">clear</button>
-                                                                    </div>
-                                                                </td>
-                                                                <td class="tw-text-center">
-                                                                    <input type="radio" name="presensi_{{ $anggotaObj->id }}" x-model="selectedStatus" value="alfa" class="tw-w-5 tw-h-5 tw-cursor-pointer" />
-                                                                    <div class="tw-mt-1" x-show="selectedStatus === 'alfa'" x-cloak>
-                                                                        <button type="button" @click.prevent="selectedStatus = ''" class="tw-text-xs tw-text-red-500 hover:tw-text-red-700 tw-underline">clear</button>
-                                                                    </div>
-                                                                </td>
+
+                                                                @if ($this->can("presensi.action"))
+                                                                    <td class="tw-text-center">
+                                                                        <input type="radio" name="presensi_{{ $anggotaObj->id }}" x-model="selectedStatus" value="hadir" class="tw-w-5 tw-h-5 tw-cursor-pointer" />
+                                                                        <div class="tw-mt-1" x-show="selectedStatus === 'hadir'" x-cloak>
+                                                                            <button type="button" @click.prevent="selectedStatus = ''" class="tw-text-xs tw-text-red-500 hover:tw-text-red-700 tw-underline">clear</button>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td class="tw-text-center">
+                                                                        <input type="radio" name="presensi_{{ $anggotaObj->id }}" x-model="selectedStatus" value="izin" class="tw-w-5 tw-h-5 tw-cursor-pointer" />
+                                                                        <div class="tw-mt-1" x-show="selectedStatus === 'izin'" x-cloak>
+                                                                            <button type="button" @click.prevent="selectedStatus = ''" class="tw-text-xs tw-text-red-500 hover:tw-text-red-700 tw-underline">clear</button>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td class="tw-text-center">
+                                                                        <input type="radio" name="presensi_{{ $anggotaObj->id }}" x-model="selectedStatus" value="sakit" class="tw-w-5 tw-h-5 tw-cursor-pointer" />
+                                                                        <div class="tw-mt-1" x-show="selectedStatus === 'sakit'" x-cloak>
+                                                                            <button type="button" @click.prevent="selectedStatus = ''" class="tw-text-xs tw-text-red-500 hover:tw-text-red-700 tw-underline">clear</button>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td class="tw-text-center">
+                                                                        <input type="radio" name="presensi_{{ $anggotaObj->id }}" x-model="selectedStatus" value="alfa" class="tw-w-5 tw-h-5 tw-cursor-pointer" />
+                                                                        <div class="tw-mt-1" x-show="selectedStatus === 'alfa'" x-cloak>
+                                                                            <button type="button" @click.prevent="selectedStatus = ''" class="tw-text-xs tw-text-red-500 hover:tw-text-red-700 tw-underline">clear</button>
+                                                                        </div>
+                                                                    </td>
+                                                                @else
+                                                                    <td class="tw-text-center">
+                                                                        @if ($status === "hadir")
+                                                                            <i class="fas fa-check tw-text-green-600 tw-text-xl"></i>
+                                                                        @else
+                                                                            <span class="tw-text-gray-300">-</span>
+                                                                        @endif
+                                                                    </td>
+                                                                    <td class="tw-text-center">
+                                                                        @if ($status === "izin")
+                                                                            <i class="fas fa-check tw-text-orange-600 tw-text-xl"></i>
+                                                                        @else
+                                                                            <span class="tw-text-gray-300">-</span>
+                                                                        @endif
+                                                                    </td>
+                                                                    <td class="tw-text-center">
+                                                                        @if ($status === "sakit")
+                                                                            <i class="fas fa-check tw-text-blue-600 tw-text-xl"></i>
+                                                                        @else
+                                                                            <span class="tw-text-gray-300">-</span>
+                                                                        @endif
+                                                                    </td>
+                                                                    <td class="tw-text-center">
+                                                                        @if ($status === "alfa")
+                                                                            <i class="fas fa-check tw-text-red-600 tw-text-xl"></i>
+                                                                        @else
+                                                                            <span class="tw-text-gray-300">-</span>
+                                                                        @endif
+                                                                    </td>
+                                                                @endif
                                                             </tr>
                                                         @endforeach
                                                     @endif

@@ -159,27 +159,37 @@
                                                         @endif
                                                     </td>
                                                     <td class="tw-whitespace-nowrap">
-                                                        <button wire:click.prevent="view({{ $row->id }})" class="btn btn-info" data-toggle="modal" data-target="#viewDataModal" title="Lihat Detail">
-                                                            <i class="fas fa-eye"></i>
-                                                        </button>
-                                                        @if ($row->status_seleksi !== "lulus")
-                                                            <button wire:click.prevent="updateStatus({{ $row->id }}, 'lulus')" class="btn btn-success" title="Tandai Lulus">
-                                                                <i class="fas fa-check"></i>
+                                                        @if ($this->can("open_recruitment.view_detail"))
+                                                            <button wire:click.prevent="view({{ $row->id }})" class="btn btn-info" data-toggle="modal" data-target="#viewDataModal" title="Lihat Detail">
+                                                                <i class="fas fa-eye"></i>
                                                             </button>
                                                         @endif
 
-                                                        @if ($row->status_seleksi !== "gagal")
-                                                            <button wire:click.prevent="updateStatus({{ $row->id }}, 'gagal')" class="btn btn-danger" title="Tandai Gagal">
-                                                                <i class="fas fa-times"></i>
+                                                        @if ($this->can("open_recruitment.update_status"))
+                                                            @if ($row->status_seleksi !== "lulus")
+                                                                <button wire:click.prevent="updateStatus({{ $row->id }}, 'lulus')" class="btn btn-success" title="Tandai Lulus">
+                                                                    <i class="fas fa-check"></i>
+                                                                </button>
+                                                            @endif
+
+                                                            @if ($row->status_seleksi !== "gagal")
+                                                                <button wire:click.prevent="updateStatus({{ $row->id }}, 'gagal')" class="btn btn-danger" title="Tandai Gagal">
+                                                                    <i class="fas fa-times"></i>
+                                                                </button>
+                                                            @endif
+                                                        @endif
+
+                                                        @if ($this->can("open_recruitment.edit"))
+                                                            <button wire:click.prevent="edit({{ $row->id }})" class="btn btn-primary" data-toggle="modal" data-target="#formDataModal" title="Edit">
+                                                                <i class="fas fa-edit"></i>
                                                             </button>
                                                         @endif
 
-                                                        <button wire:click.prevent="edit({{ $row->id }})" class="btn btn-primary" data-toggle="modal" data-target="#formDataModal" title="Edit">
-                                                            <i class="fas fa-edit"></i>
-                                                        </button>
-                                                        <button wire:click.prevent="deleteConfirm({{ $row->id }})" class="btn btn-secondary" title="Hapus">
-                                                            <i class="fas fa-trash"></i>
-                                                        </button>
+                                                        @if ($this->can("open_recruitment.delete"))
+                                                            <button wire:click.prevent="deleteConfirm({{ $row->id }})" class="btn btn-secondary" title="Hapus">
+                                                                <i class="fas fa-trash"></i>
+                                                            </button>
+                                                        @endif
                                                     </td>
                                                 </tr>
                                             @endforeach
@@ -265,27 +275,37 @@
                                                     @endif
                                                 </td>
                                                 <td class="tw-whitespace-nowrap">
-                                                    <button wire:click.prevent="view({{ $row->id }})" class="btn btn-info" data-toggle="modal" data-target="#viewDataModal" title="Lihat Detail">
-                                                        <i class="fas fa-eye"></i>
-                                                    </button>
-                                                    @if ($row->status_seleksi !== "lulus")
-                                                        <button wire:click.prevent="updateStatus({{ $row->id }}, 'lulus')" class="btn btn-success" title="Tandai Lulus">
-                                                            <i class="fas fa-check"></i>
+                                                    @if ($this->can("open_recruitment.view_detail"))
+                                                        <button wire:click.prevent="view({{ $row->id }})" class="btn btn-info" data-toggle="modal" data-target="#viewDataModal" title="Lihat Detail">
+                                                            <i class="fas fa-eye"></i>
                                                         </button>
                                                     @endif
 
-                                                    @if ($row->status_seleksi !== "gagal")
-                                                        <button wire:click.prevent="updateStatus({{ $row->id }}, 'gagal')" class="btn btn-danger" title="Tandai Gagal">
-                                                            <i class="fas fa-times"></i>
+                                                    @if ($this->can("open_recruitment.update_status"))
+                                                        @if ($row->status_seleksi !== "lulus")
+                                                            <button wire:click.prevent="updateStatus({{ $row->id }}, 'lulus')" class="btn btn-success" title="Tandai Lulus">
+                                                                <i class="fas fa-check"></i>
+                                                            </button>
+                                                        @endif
+
+                                                        @if ($row->status_seleksi !== "gagal")
+                                                            <button wire:click.prevent="updateStatus({{ $row->id }}, 'gagal')" class="btn btn-danger" title="Tandai Gagal">
+                                                                <i class="fas fa-times"></i>
+                                                            </button>
+                                                        @endif
+                                                    @endif
+
+                                                    @if ($this->can("open_recruitment.edit"))
+                                                        <button wire:click.prevent="edit({{ $row->id }})" class="btn btn-primary" data-toggle="modal" data-target="#formDataModal" title="Edit">
+                                                            <i class="fas fa-edit"></i>
                                                         </button>
                                                     @endif
 
-                                                    <button wire:click.prevent="edit({{ $row->id }})" class="btn btn-primary" data-toggle="modal" data-target="#formDataModal" title="Edit">
-                                                        <i class="fas fa-edit"></i>
-                                                    </button>
-                                                    <button wire:click.prevent="deleteConfirm({{ $row->id }})" class="btn btn-secondary" title="Hapus">
-                                                        <i class="fas fa-trash"></i>
-                                                    </button>
+                                                    @if ($this->can("open_recruitment.delete"))
+                                                        <button wire:click.prevent="deleteConfirm({{ $row->id }})" class="btn btn-secondary" title="Hapus">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    @endif
                                                 </td>
                                             </tr>
                                         @empty
@@ -309,9 +329,11 @@
                 </div>
             </div>
         </div>
-        <button wire:click.prevent="isEditingMode(false)" class="btn-modal" data-toggle="modal" data-backdrop="static" data-keyboard="false" data-target="#formDataModal">
-            <i class="far fa-plus"></i>
-        </button>
+        @if ($this->can("open_recruitment.create"))
+            <button wire:click.prevent="isEditingMode(false)" class="btn-modal" data-toggle="modal" data-backdrop="static" data-keyboard="false" data-target="#formDataModal">
+                <i class="far fa-plus"></i>
+            </button>
+        @endif
     </section>
 
     <div class="modal fade" wire:ignore.self id="formDataModal" aria-labelledby="formDataModalLabel" aria-hidden="true">

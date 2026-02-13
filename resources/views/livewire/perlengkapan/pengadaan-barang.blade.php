@@ -133,30 +133,47 @@
                                         </td>
                                         <td class="tw-whitespace-nowrap">
                                             @if ($row->status === "diusulkan")
-                                                <button wire:click.prevent="approveConfirm({{ $row->id }})" class="btn btn-success" title="Setujui">
-                                                    <i class="fas fa-check"></i>
-                                                </button>
-                                                <button wire:click.prevent="rejectConfirm({{ $row->id }})" class="btn btn-warning" title="Tolak">
-                                                    <i class="fas fa-times"></i>
-                                                </button>
-                                                <button wire:click.prevent="edit({{ $row->id }})" class="btn btn-primary" data-toggle="modal" data-target="#formDataModal" title="Edit">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
+                                                @if ($this->can("pengadaan_barang.approve"))
+                                                    <button wire:click.prevent="approveConfirm({{ $row->id }})" class="btn btn-success" title="Setujui">
+                                                        <i class="fas fa-check"></i>
+                                                    </button>
+                                                @endif
+
+                                                @if ($this->can("pengadaan_barang.reject"))
+                                                    <button wire:click.prevent="rejectConfirm({{ $row->id }})" class="btn btn-warning" title="Tolak">
+                                                        <i class="fas fa-times"></i>
+                                                    </button>
+                                                @endif
+
+                                                @if ($this->can("pengadaan_barang.edit"))
+                                                    <button wire:click.prevent="edit({{ $row->id }})" class="btn btn-primary" data-toggle="modal" data-target="#formDataModal" title="Edit">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                @endif
                                             @elseif ($row->status === "disetujui")
-                                                <button wire:click.prevent="markAsSelesai({{ $row->id }})" class="btn btn-info" title="Tandai Selesai">
-                                                    <i class="fas fa-flag-checkered"></i>
-                                                </button>
-                                                <button wire:click.prevent="rollbackConfirm({{ $row->id }})" class="btn btn-warning" title="Batalkan Persetujuan">
-                                                    <i class="fas fa-undo"></i>
-                                                </button>
+                                                @if ($this->can("pengadaan_barang.edit"))
+                                                    <button wire:click.prevent="markAsSelesai({{ $row->id }})" class="btn btn-info" title="Tandai Selesai">
+                                                        <i class="fas fa-flag-checkered"></i>
+                                                    </button>
+                                                @endif
+
+                                                @if ($this->can("pengadaan_barang.approve"))
+                                                    <button wire:click.prevent="rollbackConfirm({{ $row->id }})" class="btn btn-warning" title="Batalkan Persetujuan">
+                                                        <i class="fas fa-undo"></i>
+                                                    </button>
+                                                @endif
                                             @elseif ($row->status === "ditolak")
-                                                <button wire:click.prevent="rollbackConfirm({{ $row->id }})" class="btn btn-warning" title="Batalkan Penolakan">
-                                                    <i class="fas fa-undo"></i>
+                                                @if ($this->can("pengadaan_barang.approve") || $this->can("pengadaan.reject"))
+                                                    <button wire:click.prevent="rollbackConfirm({{ $row->id }})" class="btn btn-warning" title="Batalkan Penolakan">
+                                                        <i class="fas fa-undo"></i>
+                                                    </button>
+                                                @endif
+                                            @endif
+                                            @if ($this->can("pengadaan_barang.delete"))
+                                                <button wire:click.prevent="deleteConfirm({{ $row->id }})" class="btn btn-danger" title="Hapus">
+                                                    <i class="fas fa-trash"></i>
                                                 </button>
                                             @endif
-                                            <button wire:click.prevent="deleteConfirm({{ $row->id }})" class="btn btn-danger" title="Hapus">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
                                         </td>
                                     </tr>
                                 @empty
@@ -173,9 +190,11 @@
                 </div>
             </div>
         </div>
-        <button wire:click.prevent="isEditingMode(false)" class="btn-modal" data-toggle="modal" data-backdrop="static" data-keyboard="false" data-target="#formDataModal">
-            <i class="far fa-plus"></i>
-        </button>
+        @if ($this->can("pengadaan_barang.create"))
+            <button wire:click.prevent="isEditingMode(false)" class="btn-modal" data-toggle="modal" data-backdrop="static" data-keyboard="false" data-target="#formDataModal">
+                <i class="far fa-plus"></i>
+            </button>
+        @endif
     </section>
 
     {{-- Modal Form --}}

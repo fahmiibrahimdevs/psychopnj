@@ -8,10 +8,11 @@ use Livewire\Attributes\Title;
 use Illuminate\Support\Facades\DB;
 use App\Models\TahunKepengurusan;
 use App\Models\Department as ModelsDepartment;
+use App\Traits\WithPermissionCache;
 
 class Department extends Component
 {
-    use WithPagination;
+    use WithPagination, WithPermissionCache;
     #[Title('Department')]
 
     protected $listeners = [
@@ -41,6 +42,9 @@ class Department extends Component
 
     public function mount()
     {
+        // Cache user permissions to avoid N+1 queries
+        $this->cacheUserPermissions();
+        
         $this->tahuns = DB::table('tahun_kepengurusan')
             ->select('id', 'nama_tahun')
             ->orderBy('id', 'ASC')
@@ -119,7 +123,7 @@ class Department extends Component
             $this->dispatchAlert('success', 'Success!', 'Data created successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
         }
     }
 
@@ -152,7 +156,7 @@ class Department extends Component
             $this->status           = $data->status;
             $this->max_members      = $data->max_members;
         } catch (\Exception $e) {
-            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
         }
     }
 
@@ -182,7 +186,7 @@ class Department extends Component
                 $this->dataId = null;
             } catch (\Exception $e) {
                 DB::rollBack();
-                $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+                $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
             }
         }
     }
@@ -209,7 +213,7 @@ class Department extends Component
             $this->dispatchAlert('success', 'Success!', 'Data deleted successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
         }
     }
 

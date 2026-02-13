@@ -83,21 +83,31 @@
                             <div class="d-flex justify-content-between align-items-center program-card-footer tw-px-3">
                                 <p class="font-bagus tw-text-sm tw-font-semibold">Pemateri: {{ $row->nama_pemateri }}</p>
                                 <div class="d-flex program-btn-container">
-                                    @if ($row->has_bank_soal)
-                                        <a href="{{ route("pertemuan.soal", ["pertemuanId" => $row->id]) }}" class="btn btn-warning text-white" title="Kelola Bank Soal">
-                                            <i class="fas fa-folders"></i>
-                                        </a>
+                                    @if ($this->can("pertemuan.bank_soal"))
+                                        @if ($row->has_bank_soal)
+                                            <a href="{{ route("pertemuan.soal", ["pertemuanId" => $row->id]) }}" class="btn btn-warning text-white" title="Kelola Bank Soal">
+                                                <i class="fas fa-folders"></i>
+                                            </a>
+                                        @endif
                                     @endif
 
-                                    <button wire:click.prevent="openGalleryModal({{ $row->id }})" class="btn program-btn-view" data-toggle="modal" data-target="#galleryModal" title="Manage Gallery">
-                                        <i class="fas fa-images"></i>
-                                    </button>
-                                    <button wire:click.prevent="edit({{ $row->id }})" class="btn program-btn-edit" data-toggle="modal" data-target="#formDataModal">
-                                        <i class="fas fa-pen"></i>
-                                    </button>
-                                    <button wire:click.prevent="deleteConfirm({{ $row->id }})" class="btn program-btn-delete">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
+                                    @if ($this->can("pertemuan.gallery"))
+                                        <button wire:click.prevent="openGalleryModal({{ $row->id }})" class="btn program-btn-view" data-toggle="modal" data-target="#galleryModal" title="Manage Gallery">
+                                            <i class="fas fa-images"></i>
+                                        </button>
+                                    @endif
+
+                                    @if ($this->can("pertemuan.edit"))
+                                        <button wire:click.prevent="edit({{ $row->id }})" class="btn program-btn-edit" data-toggle="modal" data-target="#formDataModal">
+                                            <i class="fas fa-pen"></i>
+                                        </button>
+                                    @endif
+
+                                    @if ($this->can("pertemuan.delete"))
+                                        <button wire:click.prevent="deleteConfirm({{ $row->id }})" class="btn program-btn-delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -121,9 +131,11 @@
                 </div>
             </div>
         </div>
-        <button wire:click.prevent="isEditingMode(false)" class="btn-modal" data-toggle="modal" data-backdrop="static" data-keyboard="false" data-target="#formDataModal">
-            <i class="far fa-plus"></i>
-        </button>
+        @if ($this->can("pertemuan.create"))
+            <button wire:click.prevent="isEditingMode(false)" class="btn-modal" data-toggle="modal" data-backdrop="static" data-keyboard="false" data-target="#formDataModal">
+                <i class="far fa-plus"></i>
+            </button>
+        @endif
     </section>
 
     <div class="modal fade" wire:ignore.self id="formDataModal" aria-labelledby="formDataModalLabel" aria-hidden="true">
@@ -655,7 +667,22 @@
             });
         });
 
-        window.addEventListener('swal:confirm', (event) => {
+        window.addEventListener('swal:confirmPertemuan', (event) => {
+            Swal.fire({
+                title: event.detail[0].message,
+                html: event.detail[0].text,
+                icon: event.detail[0].type,
+                showCancelButton: true,
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    @this.call('delete');
+                }
+            });
+        });
+
+        window.addEventListener('swal:confirmGallery', (event) => {
             Swal.fire({
                 title: event.detail[0].message,
                 html: event.detail[0].text,

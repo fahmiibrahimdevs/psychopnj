@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Keuangan;
 
+use App\Traits\WithPermissionCache;
 use Livewire\Component;
 use Livewire\Attributes\Title;
 use App\Models\TahunKepengurusan;
@@ -17,6 +18,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class IuranKas extends Component
 {
+    use WithPermissionCache;
     #[Title('Iuran Kas')]
 
     public $activeTahunId;
@@ -58,6 +60,7 @@ class IuranKas extends Component
 
     public function mount()
     {
+        $this->cacheUserPermissions();
         $activeTahun = TahunKepengurusan::where('status', 'aktif')->first();
         $this->activeTahunId = $activeTahun ? $activeTahun->id : null;
     }
@@ -81,7 +84,9 @@ class IuranKas extends Component
         ];
 
         if ($this->activeTahunId) {
-            $members = Anggota::where('id_tahun', $this->activeTahunId)
+            $members = DB::table('anggota')
+                ->select('id', 'nama_lengkap', 'status_anggota')
+                ->where('id_tahun', $this->activeTahunId)
                 ->where('status_aktif', 'aktif')
                 ->when($this->searchTerm, function ($query) {
                     $query->where('nama_lengkap', 'like', '%' . $this->searchTerm . '%');
@@ -92,7 +97,9 @@ class IuranKas extends Component
             $memberIds = $members->pluck('id');
             
             // Fetch payments
-            $iuranRecords = ModelsIuranKas::where('id_tahun', $this->activeTahunId)
+            $iuranRecords = DB::table('iuran_kas')
+                ->select('id', 'id_anggota', 'periode', 'status', 'tanggal_bayar', 'nominal')
+                ->where('id_tahun', $this->activeTahunId)
                 ->whereIn('id_anggota', $memberIds)
                 ->get()
                 ->groupBy('id_anggota');
@@ -167,7 +174,8 @@ class IuranKas extends Component
     public function loadPeriodeList()
     {
         // Now fetch from IuranKasPeriode table
-        $this->periodeList = IuranKasPeriode::where('id_tahun', $this->activeTahunId)
+        $this->periodeList = DB::table('iuran_kas_periode')
+            ->where('id_tahun', $this->activeTahunId)
             ->orderBy('id', 'ASC') // Or by name if preferred
             ->pluck('nama_periode')
             ->toArray();
@@ -175,23 +183,34 @@ class IuranKas extends Component
 
     public function toggleStatus($anggotaId, $periode)
     {
-        $iuran = ModelsIuranKas::where('id_tahun', $this->activeTahunId)
-            ->where('id_anggota', $anggotaId)
-            ->where('periode', $periode)
-            ->first();
+        DB::beginTransaction();
+        try {
+            $iuran = ModelsIuranKas::where('id_tahun', $this->activeTahunId)
+                ->where('id_anggota', $anggotaId)
+                ->where('periode', $periode)
+                ->first();
 
-        if ($iuran) {
-             $iuran->delete(); // Remove payment record
-        } else {
-            // Create payment record
-            ModelsIuranKas::create([
-                'id_tahun' => $this->activeTahunId,
-                'id_anggota' => $anggotaId,
-                'periode' => $periode,
-                'nominal' => $this->nominalDefault,
-                'status' => 'lunas',
-                'tanggal_bayar' => now()->toDateString(),
-                'id_user' => Auth::id(),
+            if ($iuran) {
+                 $iuran->delete(); // Remove payment record
+            } else {
+                // Create payment record
+                ModelsIuranKas::create([
+                    'id_tahun' => $this->activeTahunId,
+                    'id_anggota' => $anggotaId,
+                    'periode' => $periode,
+                    'nominal' => $this->nominalDefault,
+                    'status' => 'lunas',
+                    'tanggal_bayar' => now()->toDateString(),
+                    'id_user' => Auth::id(),
+                ]);
+            }
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatch('swal:modal', [
+                'type' => 'error',
+                'message' => 'Error!',
+                'text' => 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage()
             ]);
         }
     }
@@ -238,20 +257,32 @@ class IuranKas extends Component
             return;
         }
 
-        // Create the Period
-        IuranKasPeriode::create([
-            'id_tahun' => $this->activeTahunId,
-            'nama_periode' => $this->newPeriode
-        ]);
+        DB::beginTransaction();
+        try {
+            // Create the Period
+            IuranKasPeriode::create([
+                'id_tahun' => $this->activeTahunId,
+                'nama_periode' => $this->newPeriode
+            ]);
 
-        $this->newPeriode = '';
+            DB::commit();
 
-        $this->dispatch('close-modal', ['id' => 'generateModal']);
-        $this->dispatch('swal:modal', [
-            'type' => 'success',
-            'message' => 'Success!',
-            'text' => 'Periode baru berhasil dibuat.'
-        ]);
+            $this->newPeriode = '';
+
+            $this->dispatch('close-modal', ['id' => 'generateModal']);
+            $this->dispatch('swal:modal', [
+                'type' => 'success',
+                'message' => 'Success!',
+                'text' => 'Periode baru berhasil dibuat.'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatch('swal:modal', [
+                'type' => 'error',
+                'message' => 'Error!',
+                'text' => 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage()
+            ]);
+        }
     }
 
     public function renamePeriode()
@@ -278,22 +309,34 @@ class IuranKas extends Component
             return;
         }
 
-        // Update Definition Table
-        IuranKasPeriode::where('id_tahun', $this->activeTahunId)
-            ->where('nama_periode', $this->oldPeriodeName)
-            ->update(['nama_periode' => $this->renamePeriodeValue]);
-            
-        // Update Payments Table
-        ModelsIuranKas::where('id_tahun', $this->activeTahunId)
-            ->where('periode', $this->oldPeriodeName)
-            ->update(['periode' => $this->renamePeriodeValue]);
+        DB::beginTransaction();
+        try {
+            // Update Definition Table
+            IuranKasPeriode::where('id_tahun', $this->activeTahunId)
+                ->where('nama_periode', $this->oldPeriodeName)
+                ->update(['nama_periode' => $this->renamePeriodeValue]);
+                
+            // Update Payments Table
+            ModelsIuranKas::where('id_tahun', $this->activeTahunId)
+                ->where('periode', $this->oldPeriodeName)
+                ->update(['periode' => $this->renamePeriodeValue]);
 
-        $this->dispatch('close-modal', ['id' => 'renameModal']);
-        $this->dispatch('swal:modal', [
-            'type' => 'success',
-            'message' => 'Success!',
-            'text' => 'Periode berhasil diubah.'
-        ]);
+            DB::commit();
+
+            $this->dispatch('close-modal', ['id' => 'renameModal']);
+            $this->dispatch('swal:modal', [
+                'type' => 'success',
+                'message' => 'Success!',
+                'text' => 'Periode berhasil diubah.'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatch('swal:modal', [
+                'type' => 'error',
+                'message' => 'Error!',
+                'text' => 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage()
+            ]);
+        }
     }
     
     public function confirmDeletePeriode($periodeName)
@@ -310,23 +353,35 @@ class IuranKas extends Component
     {
         if(!$this->periodeToDelete) return;
 
-        // Delete from Definition Table
-        IuranKasPeriode::where('id_tahun', $this->activeTahunId)
-            ->where('nama_periode', $this->periodeToDelete)
-            ->delete();
+        DB::beginTransaction();
+        try {
+            // Delete from Definition Table
+            IuranKasPeriode::where('id_tahun', $this->activeTahunId)
+                ->where('nama_periode', $this->periodeToDelete)
+                ->delete();
 
-        // Delete from Payments Table
-        ModelsIuranKas::where('id_tahun', $this->activeTahunId)
-            ->where('periode', $this->periodeToDelete)
-            ->delete();
+            // Delete from Payments Table
+            ModelsIuranKas::where('id_tahun', $this->activeTahunId)
+                ->where('periode', $this->periodeToDelete)
+                ->delete();
+                
+            DB::commit();
             
-        $this->periodeToDelete = '';
-        
-        $this->dispatch('swal:modal', [
-            'type' => 'success',
-            'message' => 'Terhapus!',
-            'text' => 'Periode berhasil dihapus.'
-        ]);
+            $this->periodeToDelete = '';
+            
+            $this->dispatch('swal:modal', [
+                'type' => 'success',
+                'message' => 'Terhapus!',
+                'text' => 'Periode berhasil dihapus.'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatch('swal:modal', [
+                'type' => 'error',
+                'message' => 'Error!',
+                'text' => 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage()
+            ]);
+        }
     }
     
     public function openEditDateModal($iuranId)
@@ -354,24 +409,36 @@ class IuranKas extends Component
             'editTanggalValue' => 'required|date',
         ]);
         
-        $iuran = ModelsIuranKas::find($this->editIuranId);
-        if ($iuran) {
-            $iuran->update([
-                'tanggal_bayar' => $this->editTanggalValue
+        DB::beginTransaction();
+        try {
+            $iuran = ModelsIuranKas::find($this->editIuranId);
+            if ($iuran) {
+                $iuran->update([
+                    'tanggal_bayar' => $this->editTanggalValue
+                ]);
+            }
+            DB::commit();
+            
+            $this->dispatch('close-modal', ['id' => 'editDateModal']);
+            $this->dispatch('swal:modal', [
+                'type' => 'success',
+                'message' => 'Updated!',
+                'text' => 'Tanggal pembayaran berhasil diubah.'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatch('swal:modal', [
+                'type' => 'error',
+                'message' => 'Error!',
+                'text' => 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage()
             ]);
         }
-        
-        $this->dispatch('close-modal', ['id' => 'editDateModal']);
-        $this->dispatch('swal:modal', [
-            'type' => 'success',
-            'message' => 'Updated!',
-            'text' => 'Tanggal pembayaran berhasil diubah.'
-        ]);
     }
     
     public function getDailyHistoryProperty()
     {
-        return ModelsIuranKas::where('id_tahun', $this->activeTahunId)
+        return DB::table('iuran_kas')
+            ->where('id_tahun', $this->activeTahunId)
             ->selectRaw('DATE(tanggal_bayar) as date, SUM(nominal) as total, COUNT(*) as count')
             ->groupBy('date')
             ->orderBy('date', 'desc')

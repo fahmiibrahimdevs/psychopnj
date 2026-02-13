@@ -4,16 +4,18 @@
             <h1>Iuran Kas</h1>
             <div class="section-header-breadcrumb">
                 <div class="d-flex align-items-center">
-                    <div>
-                        <button wire:click="downloadPdf" class="btn btn-danger btn-icon icon-left">
-                            <i class="fas fa-file-pdf"></i>
-                            Export PDF
-                        </button>
-                        <button wire:click="downloadExcel" class="btn btn-success btn-icon icon-left">
-                            <i class="fas fa-file-excel"></i>
-                            Export Excel
-                        </button>
-                    </div>
+                    @if ($this->can("iuran_kas.export"))
+                        <div>
+                            <button wire:click="downloadPdf" class="btn btn-danger btn-icon icon-left">
+                                <i class="fas fa-file-pdf"></i>
+                                Export PDF
+                            </button>
+                            <button wire:click="downloadExcel" class="btn btn-success btn-icon icon-left">
+                                <i class="fas fa-file-excel"></i>
+                                Export Excel
+                            </button>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -49,14 +51,19 @@
                                                     {{ $periode }}
                                                 </a>
                                                 <div class="dropdown-menu shadow" style="z-index: 99999">
-                                                    <a class="dropdown-item has-icon" href="#" wire:click.prevent="openRenameModal('{{ $periode }}')">
-                                                        <i class="fas fa-edit text-primary"></i>
-                                                        Edit Nama
-                                                    </a>
-                                                    <a class="dropdown-item has-icon text-danger" href="#" wire:click.prevent="confirmDeletePeriode('{{ $periode }}')">
-                                                        <i class="fas fa-trash"></i>
-                                                        Hapus
-                                                    </a>
+                                                    @if ($this->can("iuran_kas.edit"))
+                                                        <a class="dropdown-item has-icon" href="#" wire:click.prevent="openRenameModal('{{ $periode }}')">
+                                                            <i class="fas fa-edit text-primary"></i>
+                                                            Edit Nama
+                                                        </a>
+                                                    @endif
+
+                                                    @if ($this->can("iuran_kas.delete"))
+                                                        <a class="dropdown-item has-icon text-danger" href="#" wire:click.prevent="confirmDeletePeriode('{{ $periode }}')">
+                                                            <i class="fas fa-trash"></i>
+                                                            Hapus
+                                                        </a>
+                                                    @endif
                                                 </div>
                                             </div>
                                         </th>
@@ -68,12 +75,12 @@
                             <tbody>
                                 <!-- Group: PENGURUS -->
                                 <tr class="tw-bg-gray-100">
-                                    <td colspan="{{ count($periodeList) + 3 }}" class="tw-font-bold tw-py-2 tw-px-3 tw-text-gray-700 tw-text-base tw-tracking-wider">ROLE: PENGURUS</td>
+                                    <td colspan="{{ count($periodeList) + 3 }}" class="tw-font-bold tw-py-2 tw-px-3 tw-text-gray-700 tw-tracking-wider tw-text-sm">ROLE: PENGURUS</td>
                                 </tr>
                                 @forelse ($matrix["pengurus"] as $index => $row)
                                     <tr class="text-center">
-                                        <td class="tw-text-base">{{ $index + 1 }}</td>
-                                        <td class="text-left tw-text-base">{{ $row["nama"] }}</td>
+                                        <td class="">{{ $index + 1 }}</td>
+                                        <td class="text-left">{{ $row["nama"] }}</td>
 
                                         @foreach ($periodeList as $periode)
                                             @php
@@ -81,27 +88,29 @@
                                             @endphp
 
                                             <td class="p-1">
-                                                <div class="d-flex flex-column align-items-center">
-                                                    <div class="custom-control custom-checkbox mb-1" style="min-height: 1.5rem">
-                                                        <input type="checkbox" class="custom-control-input" id="cb-{{ $row["id"] }}-{{ $loop->index }}" wire:click="toggleStatus({{ $row["id"] }}, '{{ $periode }}')" {{ $payment && $payment["status"] === "lunas" ? "checked" : "" }} />
-                                                        <label class="custom-control-label" for="cb-{{ $row["id"] }}-{{ $loop->index }}"></label>
-                                                    </div>
+                                                @if ($this->can("iuran_kas.approve"))
+                                                    <div class="d-flex flex-column align-items-center">
+                                                        <div class="custom-control custom-checkbox mb-1" style="min-height: 1.5rem">
+                                                            <input type="checkbox" class="custom-control-input" id="cb-{{ $row["id"] }}-{{ $loop->index }}" wire:click="toggleStatus({{ $row["id"] }}, '{{ $periode }}')" {{ $payment && $payment["status"] === "lunas" ? "checked" : "" }} />
+                                                            <label class="custom-control-label" for="cb-{{ $row["id"] }}-{{ $loop->index }}"></label>
+                                                        </div>
 
-                                                    @if ($payment && $payment["status"] === "lunas")
-                                                        <small class="text-success font-weight-bold cursor-pointer hover:text-primary tw-text-xs tw-cursor-pointer" wire:click="openEditDateModal({{ $payment["id"] }})" title="Klik untuk ubah tanggal">
-                                                            {{ \Carbon\Carbon::parse($payment["tanggal_bayar"])->locale("id")->translatedFormat("d M") }}
-                                                        </small>
-                                                    @else
-                                                        <div style="height: 15px"></div>
-                                                    @endif
-                                                </div>
+                                                        @if ($payment && $payment["status"] === "lunas")
+                                                            <small class="text-success font-weight-bold cursor-pointer hover:text-primary tw-text-xs tw-cursor-pointer" wire:click="openEditDateModal({{ $payment["id"] }})" title="Klik untuk ubah tanggal">
+                                                                {{ \Carbon\Carbon::parse($payment["tanggal_bayar"])->locale("id")->translatedFormat("d M") }}
+                                                            </small>
+                                                        @else
+                                                            <div style="height: 15px"></div>
+                                                        @endif
+                                                    </div>
+                                                @endif
                                             </td>
                                         @endforeach
 
                                         <td class="font-weight-bold text-success">
                                             <div class="d-flex justify-content-between">
-                                                <span class="tw-text-base">Rp</span>
-                                                <span class="tw-text-base">{{ number_format($row["total_bayar"], 0, ",", ".") }}</span>
+                                                <span>Rp</span>
+                                                <span>{{ number_format($row["total_bayar"], 0, ",", ".") }}</span>
                                             </div>
                                         </td>
                                     </tr>
@@ -113,12 +122,12 @@
 
                                 <!-- Group: ANGGOTA -->
                                 <tr class="tw-bg-gray-100">
-                                    <td colspan="{{ count($periodeList) + 3 }}" class="tw-font-bold tw-py-2 tw-px-3 tw-text-gray-700 tw-text-base tw-tracking-wider">ROLE: ANGGOTA</td>
+                                    <td colspan="{{ count($periodeList) + 3 }}" class="tw-font-bold tw-py-2 tw-px-3 tw-text-gray-700 tw-tracking-wider tw-text-sm">ROLE: ANGGOTA</td>
                                 </tr>
                                 @forelse ($matrix["anggota"] as $index => $row)
                                     <tr class="text-center">
-                                        <td class="tw-text-base">{{ $index + 1 }}</td>
-                                        <td class="text-left tw-text-base">{{ $row["nama"] }}</td>
+                                        <td class="">{{ $index + 1 }}</td>
+                                        <td class="text-left">{{ $row["nama"] }}</td>
 
                                         @foreach ($periodeList as $periode)
                                             @php
@@ -126,27 +135,29 @@
                                             @endphp
 
                                             <td class="p-1">
-                                                <div class="d-flex flex-column align-items-center">
-                                                    <div class="custom-control custom-checkbox mb-1" style="min-height: 1.5rem">
-                                                        <input type="checkbox" class="custom-control-input" id="cb-ang-{{ $row["id"] }}-{{ $loop->index }}" wire:click="toggleStatus({{ $row["id"] }}, '{{ $periode }}')" {{ $payment && $payment["status"] === "lunas" ? "checked" : "" }} />
-                                                        <label class="custom-control-label" for="cb-ang-{{ $row["id"] }}-{{ $loop->index }}"></label>
-                                                    </div>
+                                                @if ($this->can("iuran_kas.approve"))
+                                                    <div class="d-flex flex-column align-items-center">
+                                                        <div class="custom-control custom-checkbox mb-1" style="min-height: 1.5rem">
+                                                            <input type="checkbox" class="custom-control-input" id="cb-ang-{{ $row["id"] }}-{{ $loop->index }}" wire:click="toggleStatus({{ $row["id"] }}, '{{ $periode }}')" {{ $payment && $payment["status"] === "lunas" ? "checked" : "" }} />
+                                                            <label class="custom-control-label" for="cb-ang-{{ $row["id"] }}-{{ $loop->index }}"></label>
+                                                        </div>
 
-                                                    @if ($payment && $payment["status"] === "lunas")
-                                                        <small class="text-success font-weight-bold hover:text-primary tw-text-xs tw-cursor-pointer" wire:click="openEditDateModal({{ $payment["id"] }})" title="Klik untuk ubah tanggal">
-                                                            {{ \Carbon\Carbon::parse($payment["tanggal_bayar"])->locale("id")->translatedFormat("d M") }}
-                                                        </small>
-                                                    @else
-                                                        <div style="height: 15px"></div>
-                                                    @endif
-                                                </div>
+                                                        @if ($payment && $payment["status"] === "lunas")
+                                                            <small class="text-success font-weight-bold hover:text-primary tw-text-xs tw-cursor-pointer" wire:click="openEditDateModal({{ $payment["id"] }})" title="Klik untuk ubah tanggal">
+                                                                {{ \Carbon\Carbon::parse($payment["tanggal_bayar"])->locale("id")->translatedFormat("d M") }}
+                                                            </small>
+                                                        @else
+                                                            <div style="height: 15px"></div>
+                                                        @endif
+                                                    </div>
+                                                @endif
                                             </td>
                                         @endforeach
 
                                         <td class="font-weight-bold text-success tw-whitespace-nowrap">
                                             <div class="d-flex justify-content-between">
-                                                <span class="tw-text-base">Rp</span>
-                                                <span class="tw-text-base">{{ number_format($row["total_bayar"], 0, ",", ".") }}</span>
+                                                <span class="">Rp</span>
+                                                <span>{{ number_format($row["total_bayar"], 0, ",", ".") }}</span>
                                             </div>
                                         </td>
                                     </tr>
@@ -173,10 +184,12 @@
             </div>
         </div>
 
-        <!-- Floating Action Button for Generate -->
-        <button wire:click="openGenerateModal" class="btn-modal" data-toggle="tooltip" title="Generate Periode Baru">
-            <i class="far fa-plus"></i>
-        </button>
+        @if ($this->can("iuran_kas.create"))
+            <!-- Floating Action Button for Generate -->
+            <button wire:click="openGenerateModal" class="btn-modal" data-toggle="tooltip" title="Generate Periode Baru">
+                <i class="far fa-plus"></i>
+            </button>
+        @endif
     </section>
 
     <!-- Modals (Generate & Rename) -->

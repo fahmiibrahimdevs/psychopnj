@@ -12,10 +12,12 @@
             <div class="card">
                 <div class="tw-flex tw-ml-6 tw-my-5">
                     <h3 class="tw-tracking-wider tw-text-[#34395e] tw-text-base tw-font-semibold tw-mt-1">Daftar Kelompok</h3>
-                    <button wire:click="openTeamModal" class="btn btn-primary ml-auto mr-4" data-toggle="modal" data-target="#teamModal">
-                        <i class="fas fa-plus"></i>
-                        Tambah Kelompok
-                    </button>
+                    @if ($this->can("project_team.create"))
+                        <button wire:click="openTeamModal" class="btn btn-primary ml-auto mr-4" data-toggle="modal" data-target="#teamModal">
+                            <i class="fas fa-plus"></i>
+                            Tambah Kelompok
+                        </button>
+                    @endif
                 </div>
             </div>
             <div class="-tw-mt-2">
@@ -78,12 +80,17 @@
 
                                 <div class="tw-flex tw-items-center tw-justify-end tw-pt-3 tw-border-t tw-border-gray-100">
                                     <div class="tw-flex tw-gap-1">
-                                        <button wire:click="editTeam({{ $team->id }})" class="btn btn-primary" data-toggle="modal" data-target="#teamModal">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button wire:click="deleteTeamConfirm({{ $team->id }})" class="btn btn-danger">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
+                                        @if ($this->can("project_team.edit"))
+                                            <button wire:click="editTeam({{ $team->id }})" class="btn btn-primary" data-toggle="modal" data-target="#teamModal">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                        @endif
+
+                                        @if ($this->can("project_team.delete"))
+                                            <button wire:click="deleteTeamConfirm({{ $team->id }})" class="btn btn-danger">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        @endif
                                     </div>
                                 </div>
                             </div>

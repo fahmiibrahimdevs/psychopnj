@@ -8,9 +8,11 @@ use App\Models\NilaiSoalAnggota;
 use App\Models\SoalAnggota;
 use App\Models\Pertemuan;
 use Illuminate\Support\Facades\DB;
+use App\Traits\WithPermissionCache;
 
 class StatusAnggotaUjian extends Component
 {
+    use WithPermissionCache;
     #[Title('Status Anggota Ujian')]
 
     protected $listeners = ['terapkanAksi'];
@@ -22,6 +24,8 @@ class StatusAnggotaUjian extends Component
 
     public function mount()
     {
+        $this->cacheUserPermissions();
+        
         $data = DB::table('pertemuan')
             ->select('pertemuan.id', 'pertemuan.judul_pertemuan', 'pertemuan.pertemuan_ke', 'program_pembelajaran.nama_program')
             ->join('program_pembelajaran', 'program_pembelajaran.id', 'pertemuan.id_program')
@@ -102,7 +106,7 @@ class StatusAnggotaUjian extends Component
             $this->ulang = [];
             $this->dispatchAlert('success', 'Berhasil!', 'Aksi berhasil diterapkan.');
         } catch (\Exception $e) {
-            $this->dispatchAlert('error', 'Gagal!', 'Terjadi kesalahan: ' . $e->getMessage());
+            $this->dispatchAlert('error', 'Gagal!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
         }
     }
 

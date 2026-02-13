@@ -1,0 +1,604 @@
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\Anggota;
+use App\Models\User;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
+
+class PengurusSeeder extends Seeder
+{
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
+    {
+        $data = [
+            // Ketua
+            [
+                'nama_lengkap' => 'Muhammad Syafiq Aziz',
+                'nama_jabatan' => 'Ketua',
+                'jurusan_prodi_kelas' => 'TE/IKI/4B',
+                'nim' => '2403430132',
+                'ttl' => 'Jakarta, 30 Mei 2006',
+                'alamat' => 'Jl. Malaka IV / 6 No. 81, Malaka Sari, Duren Sawit, Jakarta Timur, 13460',
+                'email' => 'muhammad.syafiq.aziz.te24@stu.pnj.ac.id',
+                'no_hp' => '085712383394',
+                'id_department' => '1',
+            ],
+            // Wakil Ketua
+            [
+                'nama_lengkap' => 'Fahmi Ibrahim',
+                'nama_jabatan' => 'Wakil Ketua',
+                'jurusan_prodi_kelas' => 'TE/EC/4D',
+                'nim' => '2403321073',
+                'ttl' => 'Jakarta, 24 November 2004',
+                'alamat' => 'Jl. Cipinang Muara III No. 33, Cipinang Muara, Jatinegara, Jakarta Timur, 13420',
+                'email' => 'fahmi.ibrahim.te24@stu.pnj.ac.id',
+                'no_hp' => '085691253593',
+                'id_department' => '1',
+            ],
+            // Kepala Department Kesekretariatan
+            [
+                'nama_lengkap' => 'Mutiya Laila Fitri',
+                'nama_jabatan' => 'Kepala Department',
+                'jurusan_prodi_kelas' => 'TE/BM/4A',
+                'nim' => '24003421013',
+                'ttl' => 'Jl. Rawamakmur No. 13, Cakung Timur, Cakung, Jakarta Timur, 13910',
+                'alamat' => 'Jl. Rawamakmur No. 13, Cakung Timur, Cakung, Jakarta Timur, 13910',
+                'email' => 'mutiya.laila.fitri.te24@stu.pnj.ac.id',
+                'no_hp' => '081280717364',
+                'id_department' => '2',
+            ],
+            // Staff Kesekretariatan
+            [
+                'nama_lengkap' => 'Dian Bestari',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TIK/TMD/4A',
+                'nim' => '2407431007',
+                'ttl' => 'Rumbio, 15 November 2005',
+                'alamat' => 'JL.Walet No.1,Beji Timur,Beji ,Depok,16422',
+                'email' => 'dian.bestari.tik24@stu.pnj.ac.id',
+                'no_hp' => '85361906106',
+                'id_department' => '2',
+            ],
+            // Kepala Department Bendahara Umum
+            [
+                'nama_lengkap' => 'Beryl Ghanim Setiyoko',
+                'nama_jabatan' => 'Kepala Department',
+                'jurusan_prodi_kelas' => 'TE/IKI/4B',
+                'nim' => '2403431013',
+                'ttl' => 'Jl. Bojong Hilir, Ds. Bojong, Rt003 Rw010, Kec. Kemang, Kab. Bogor',
+                'alamat' => 'Jl. Bojong Hilir, Ds. Bojong, Rt003 Rw010, Kec. Kemang, Kab. Bogor',
+                'email' => 'beryl.ghanim.setiyoko.te24@stu.pnj.ac.id',
+                'no_hp' => '088293016420',
+                'id_department' => '3',
+            ],
+            // Staff Bendahara Umum
+            [
+                'nama_lengkap' => 'David Vernando Hutagalung',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TE/IKI/4B',
+                'nim' => '2403431009',
+                'ttl' => 'Jl. Condet Raya, Rt 02 Rw06, Kec. Kramat jati, Cililitan',
+                'alamat' => 'Jl. Condet Raya, Rt 02 Rw06, Kec. Kramat jati, Cililitan',
+                'email' => 'david.vernando.hutagalung.te24@stu.pnj.ac.id',
+                'no_hp' => '',
+                'id_department' => '3',
+            ],
+            // Kepala Department PRE
+            [
+                'nama_lengkap' => 'Firhan Maulana Sopian',
+                'nama_jabatan' => 'Kepala Department',
+                'jurusan_prodi_kelas' => 'TE/TOLI/4A',
+                'nim' => '',
+                'ttl' => '',
+                'alamat' => '',
+                'email' => 'firhan.maulana.sopian.te24@stu.pnj.ac.id',
+                'no_hp' => '',
+                'id_department' => '5',
+            ],
+            // Staff PRE
+            [
+                'nama_lengkap' => 'Abdul Latif',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TE/EC/4B',
+                'nim' => '2403321057',
+                'ttl' => 'Jakarta, 15 Desember 1945',
+                'alamat' => 'Cip Clean Laundry, JL Ridwan Rais, Beji, Depok Jawa Barat, 16421.',
+                'email' => 'abdul.latif.te24@stu.pnj.ac.id',
+                'no_hp' => '089604279923',
+                'id_department' => '5',
+            ],
+            [
+                'nama_lengkap' => 'Muhammad Haikal',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TE/EC/4C',
+                'nim' => '2403321066',
+                'ttl' => 'Aur Malintang, 20 Maret 2006',
+                'alamat' => 'Jl Serdang Raya no.16a, Beji Timur, Beji, Depok, Jawa Barat, 16522',
+                'email' => 'muhammad.haikal.te24@stu.pnj.ac.id',
+                'no_hp' => '082171600270',
+                'id_department' => '5',
+            ],
+            [
+                'nama_lengkap' => 'Diaz Marcelo Firman Gandi',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TE/EC/4C',
+                'nim' => '2403321023',
+                'ttl' => 'klaten, 26 Januari 2005',
+                'alamat' => 'jl.rorotan III ,Rorotan,cilincing,Jakarta utara .14140',
+                'email' => 'diaz.marcelo.firman.gandi.te24@stu.pnj.ac.id',
+                'no_hp' => '',
+                'id_department' => '5',
+            ],
+            [
+                'nama_lengkap' => 'Faiz Dwi Jatnika',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TM/TRM/4B',
+                'nim' => '2402411042',
+                'ttl' => 'Bekasi, 19 Oktober 2006',
+                'alamat' => 'Perumahan Pondok Cipta Blok G No86, Bintara, Bekasi Barat',
+                'email' => 'faiz.dwi.jatnika.tm24@stu.pnj.ac.id',
+                'no_hp' => '088808110900',
+                'id_department' => '5',
+            ],
+            [
+                'nama_lengkap' => 'Daffa Firmansyah',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TE/IKI/4B',
+                'nim' => '2403431004',
+                'ttl' => 'Jakarta, 13 November 2005',
+                'alamat' => 'Jl. Mawar 1 Blok F37 No. 2B, Duren Jaya, Bekasi Timur',
+                'email' => 'daffa.firmansyah.te24@stu.pnj.ac.id',
+                'no_hp' => '081380801711',
+                'id_department' => '5',
+            ],
+            [
+                'nama_lengkap' => 'Rakha Alif Ibrahim',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TE/IKI/4B',
+                'nim' => '2403431015',
+                'ttl' => 'Jakarta, 10 Januari 2005',
+                'alamat' => 'Jl. Kamboja No. 30, Kebon Pala, Makasar, Jakarta Timur',
+                'email' => 'rakha.alif.ibrahim.te24@stu.pnj.ac.id',
+                'no_hp' => '085886172843',
+                'id_department' => '5',
+            ],
+            [
+                'nama_lengkap' => 'Mohammad Bintang Satya Guna',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TM/TM/MPRN4A',
+                'nim' => '2402311077',
+                'ttl' => 'Cirebon, 1 Mei 2005',
+                'alamat' => 'Perumahan Duta Asri 1, blok D12, panongan, Kabupaten Tangerang',
+                'email' => 'mohammad.bintang.satya.guna.tm24@stu.pnj.ac.id',
+                'no_hp' => '82299294544',
+                'id_department' => '5',
+            ],
+            [
+                'nama_lengkap' => 'Arsa Danish Fadillah',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TE/IKI/4A',
+                'nim' => '2403431010',
+                'ttl' => 'Bekasi, 7 Mei 2006',
+                'alamat' => 'Perumahan pondok indah, kecamatan mangunjaya, bekasi barat.',
+                'email' => 'arsa.danish.fadillah.te24@stu.pnj.ac.id',
+                'no_hp' => '0813-1824-1795',
+                'id_department' => '5',
+            ],
+            [
+                'nama_lengkap' => 'Fatih Ahmad Ridho',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TM/TRM/4B',
+                'nim' => '',
+                'ttl' => '',
+                'alamat' => '',
+                'email' => 'fatih.ahmad.ridho.tm24@stu.pnj.ac.id',
+                'no_hp' => '',
+                'id_department' => '5',
+            ],
+            [
+                'nama_lengkap' => 'Putrama Abi Aryasatya',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TE/IKI/4A',
+                'nim' => '2403431003',
+                'ttl' => 'Jakarta, 12 Maret 2006',
+                'alamat' => 'Jl. Sekolah No. 60 Rt.02/06, Larangan Selatan, Kota Tangerang',
+                'email' => 'putrama.abi.aryasatya.te24@stu.pnj.ac.id',
+                'no_hp' => '88801033887',
+                'id_department' => '5',
+            ],
+            [
+                'nama_lengkap' => 'Muhammad Ikhwanul Muslim',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TE/EC/4D',
+                'nim' => '2403321031',
+                'ttl' => 'Jakarta, 06 September 2006',
+                'alamat' => 'Jalan taman ciselang Rt01/19 blok A16 Cikampek Utara',
+                'email' => 'muhammad.ikhwanul.muslim.te24@stu.pnj.ac.id',
+                'no_hp' => '085589379254',
+                'id_department' => '5',
+            ],
+            // Kepala Department Kominfo
+            [
+                'nama_lengkap' => 'Isnursyah Yudha Prawira',
+                'nama_jabatan' => 'Kepala Department',
+                'jurusan_prodi_kelas' => 'TE/IKI/4B',
+                'nim' => '2403431002',
+                'ttl' => 'Jakarta, 02 Maret 2006',
+                'alamat' => 'Jl. Swadaya IV No. 165, Jakarta Timur, 13930',
+                'email' => 'isnursyah.yudha.prawira.te24@stu.pnj.ac.id',
+                'no_hp' => '085156814503',
+                'id_department' => '4',
+            ],
+            // Staff Kominfo
+            [
+                'nama_lengkap' => 'Elvina Naira Safitri',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TE/IKI/4B',
+                'nim' => '2403431001',
+                'ttl' => 'Jakarta, 24 Juni 2006',
+                'alamat' => 'Kesatrian Polantas No.28, RT 02 / RW 02, Pelaten Barat, Pasar Minggu, Jakarta Selatan, 12510',
+                'email' => 'elvina.naira.safitri.te24@stu.pnj.ac.id',
+                'no_hp' => '08158825409',
+                'id_department' => '4',
+            ],
+            [
+                'nama_lengkap' => 'Dyo putra mulya',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TE/IKI/4B',
+                'nim' => '2403431027',
+                'ttl' => 'Bekasi, 12 Maret 2006',
+                'alamat' => 'Pondok Gede Permai, blok C6/2, Bekasi',
+                'email' => 'dyo.putra.mulya.te24@stu.pnj.ac.id',
+                'no_hp' => '81219741484',
+                'id_department' => '4',
+            ],
+            [
+                'nama_lengkap' => 'Ilsya nur abika',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TE/IKI/4B',
+                'nim' => '2403431043',
+                'ttl' => 'Jakarta, 05 Desember 1945',
+                'alamat' => 'Jl. Duren Baru, Rt04 Rw01, Bojongede, Bogor',
+                'email' => 'ilsya.nur.abika.te24@stu.pnj.ac.id',
+                'no_hp' => '',
+                'id_department' => '4',
+            ],
+            [
+                'nama_lengkap' => 'Nazarudin Zidan',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TE/IKI/4B',
+                'nim' => '',
+                'ttl' => '',
+                'alamat' => '',
+                'email' => 'nazarudin.zidan.te24@stu.pnj.ac.id',
+                'no_hp' => '',
+                'id_department' => '4',
+            ],
+            [
+                'nama_lengkap' => 'Muhammad Ari Mahesa',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TE/TOLI/4A',
+                'nim' => '2403411030',
+                'ttl' => 'Cirebon, 29 Maret 2006',
+                'alamat' => 'Jl. H. Nawi 1 dalam No 38, RT 03/RW 02 Gandaria Selatan, Jakarta Selatan',
+                'email' => 'muhammad.ari.mahesa.te24@stu.pnj.ac.id',
+                'no_hp' => '85179929038',
+                'id_department' => '4',
+            ],
+            [
+                'nama_lengkap' => 'Ajeng Nur Azizah',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TE/EC/4B',
+                'nim' => '',
+                'ttl' => '',
+                'alamat' => '',
+                'email' => 'ajeng.nur.azizah.te24@stu.pnj.ac.id',
+                'no_hp' => '',
+                'id_department' => '4',
+            ],
+            [
+                'nama_lengkap' => 'Kiki Amaliasari Ahmad',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TE/IKI/4A',
+                'nim' => '2403431045',
+                'ttl' => 'Bekasi, 31 Agustus 2006',
+                'alamat' => 'Jl. Nurussalam No.132. RT 02/RW 05. Jatiluhur. Jatiasih. Kota Bekasi',
+                'email' => 'kiki.amaliasari.ahmad.te24@stu.pnj.ac.id',
+                'no_hp' => '85710824674',
+                'id_department' => '4',
+            ],
+            [
+                'nama_lengkap' => 'Qessar Philoice Raja Pandia',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TE/IKI/4A',
+                'nim' => '',
+                'ttl' => '',
+                'alamat' => '',
+                'email' => 'qessar.philoice.raja.pandia.te24@stu.pnj.ac.id',
+                'no_hp' => '',
+                'id_department' => '4',
+            ],
+            // Kepala Department Perlengkapan
+            [
+                'nama_lengkap' => 'Ibrahim',
+                'nama_jabatan' => 'Kepala Department',
+                'jurusan_prodi_kelas' => 'TE/IKI/4B',
+                'nim' => '',
+                'ttl' => '',
+                'alamat' => '',
+                'email' => 'ibrahim.te24@stu.pnj.ac.id',
+                'no_hp' => '',
+                'id_department' => '6',
+            ],
+            // Staff Perlengkapan
+            [
+                'nama_lengkap' => 'Muhammad Rafli Az-Zikri',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TE/IKI/4A',
+                'nim' => '2403431035',
+                'ttl' => 'Jakarta 24,November 2005',
+                'alamat' => 'Jl. Bekasi Timur Regensi VII, Cimuning,Blok Fainopla, Cimuning, Mustika Jaya, Kota Bekasi.',
+                'email' => 'muhammad.rafli.az.zikri.te24@stu.pnj.ac.id',
+                'no_hp' => '085282541745',
+                'id_department' => '6',
+            ],
+            [
+                'nama_lengkap' => 'Mochamad Aqil Maulana rais',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TM/TM/4E',
+                'nim' => '2402311046',
+                'ttl' => 'Jakarta,17 Juni 2005',
+                'alamat' => 'Jl.Mawar 2 no 15 / Rt 06/Rw 04, Depok jaya,Pancoran mas',
+                'email' => 'mochamad.aqil.maulana.rais.tm24@stu.pnj.ac.id',
+                'no_hp' => '85888108603',
+                'id_department' => '6',
+            ],
+            [
+                'nama_lengkap' => 'Dimas Surya Saputra',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TE/TT/4D',
+                'nim' => '2403332078',
+                'ttl' => 'Bekasi, 23 September 2005',
+                'alamat' => 'Jl. SMP 160 No. 4, RT. 04/RW. 03, Kel. Ceger, Kec. Cipayung, Jakarta Timur, 13820.',
+                'email' => 'dimas.surya.saputra.te24@stu.pnj.ac.id',
+                'no_hp' => '085884588821',
+                'id_department' => '6',
+            ],
+            [
+                'nama_lengkap' => 'Hanif Ramdhan',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TE/EC/4B',
+                'nim' => '',
+                'ttl' => '',
+                'alamat' => '',
+                'email' => 'hanif.ramdhan.te24@stu.pnj.ac.id',
+                'no_hp' => '',
+                'id_department' => '6',
+            ],
+            [
+                'nama_lengkap' => 'Azhar Al Bana',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TE/EC/4B',
+                'nim' => '',
+                'ttl' => '',
+                'alamat' => '',
+                'email' => 'azhar.albana.te24@stu.pnj.ac.id',
+                'no_hp' => '',
+                'id_department' => '6',
+            ],
+            [
+                'nama_lengkap' => 'Leonardus Alvin Natanael Dappa',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TE/IKI/4B',
+                'nim' => '2403431024',
+                'ttl' => 'Jakarta, 26 Maret 2006',
+                'alamat' => 'Perumahan Simprug di Poris, Tangerang Kota, Banten',
+                'email' => 'leonardus.alvin.natanael.dappa.te24@stu.pnj.ac.id',
+                'no_hp' => '081299319098',
+                'id_department' => '6',
+            ],
+            [
+                'nama_lengkap' => 'Rizqi Cahya Ramadhan',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TE/IKI/4A',
+                'nim' => '2403431025',
+                'ttl' => 'Bekasi, 27 Oktober 2004',
+                'alamat' => 'Jl. KH Moh Musa Tanah Tinggi, RT. 02/RW. 05, Kel. Setu Jaya, Kec. Tambun Selatan, Kab. Bekasi',
+                'email' => 'rizqi.cahya.ramadhan.te24@stu.pnj.ac.id',
+                'no_hp' => '081385227304',
+                'id_department' => '6',
+            ],
+            [
+                'nama_lengkap' => 'Haamiim Muhammad Al Fath',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TE/IKI/4B',
+                'nim' => '2403431022',
+                'ttl' => 'Pemalang, 14 November 2004',
+                'alamat' => 'Jl. P. Komarudin, RT 002/ RW 003, Cakung Barat',
+                'email' => 'haamiim.muhammad.al.fath.te24@stu.pnj.ac.id',
+                'no_hp' => '083873023373',
+                'id_department' => '6',
+            ],
+            [
+                'nama_lengkap' => 'Iqbal Jati Djatiran',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TE/IKI/4B',
+                'nim' => '2403431041',
+                'ttl' => 'Padang, 02 Februari 2005',
+                'alamat' => 'Perumahan Bojong Gede Asri Blok C5 No10 RT02 RW15',
+                'email' => 'r.iqbal.jati.djatiran.te24@stu.pnj.ac.id',
+                'no_hp' => '87761182154',
+                'id_department' => '6',
+            ],
+            // Kepala Department Polytechnic Robotics
+            [
+                'nama_lengkap' => 'Arif Fahmi Abdillah',
+                'nama_jabatan' => 'Kepala Department',
+                'jurusan_prodi_kelas' => 'TE/EC/4D',
+                'nim' => '2403321042',
+                'ttl' => 'Jakarta, 02 Juli 2005',
+                'alamat' => 'Jl. H. Ten Raya, No.45C, RT.1/RW.1, Rawamangun, Kec. Pulo Gadung, Kota Jakarta Timur, Daerah Khusus Ibukota Jakarta 13220',
+                'email' => 'arif.fahmi.abdillah.te24@stu.pnj.ac.id',
+                'no_hp' => '081311753425',
+                'id_department' => '7',
+            ],
+            // Staff Polytechnic Robotics
+            [
+                'nama_lengkap' => 'Muhammad Mufid',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TE/IKI/4B',
+                'nim' => '',
+                'ttl' => '',
+                'alamat' => '',
+                'email' => 'muhammad.mufid.te24@stu.pnj.ac.id',
+                'no_hp' => '',
+                'id_department' => '7',
+            ],
+            [
+                'nama_lengkap' => 'Ali Fari Fakhrozi',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TE/EC/4A',
+                'nim' => '',
+                'ttl' => 'Brebes, 03 Oktober 2005',
+                'alamat' => 'Kp. Sawah Mede RT.1/RW.6, Kamal, Kalideres, Jakarta Barat',
+                'email' => 'ali.fari.fakhrozi.te24@stu.pnj.ac.id',
+                'no_hp' => '',
+                'id_department' => '7',
+            ],
+            [
+                'nama_lengkap' => 'Jeremy Matthew Sejati',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TE/EC/4D',
+                'nim' => '2403321043',
+                'ttl' => '',
+                'alamat' => '',
+                'email' => 'jeremy.matthew.sejati.te24@stu.pnj.ac.id',
+                'no_hp' => '',
+                'id_department' => '7',
+            ],
+            [
+                'nama_lengkap' => 'Hasna Khaira Pramudianto',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'AK/AKT/4B',
+                'nim' => '2404431049',
+                'ttl' => 'Jakarta, 10 Mei 2006',
+                'alamat' => 'Jl. Ridwan Rais No.141, RT.1, Beji Tim., Kecamatan Beji, Kota Depok, Jawa Barat 16422',
+                'email' => 'hasna.khaira.pramudianto.ak24@stu.pnj.ac.id',
+                'no_hp' => '082124114947',
+                'id_department' => '7',
+            ],
+            [
+                'nama_lengkap' => 'Pandu Muhamad Fazri',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TE/IKI/4B',
+                'nim' => '2403431011',
+                'ttl' => 'Jakarta, 18 Maret 2010',
+                'alamat' => 'Cip Clean Laundry Kiloan, Jalan Ridwan Rais, Beji Tim, Beji, KOTA DEPOK, BEJI, JAWA BARAT, ID, 16421',
+                'email' => 'pandu.muhamad.fazri.te24@stu.pnj.ac.id',
+                'no_hp' => '087783017325',
+                'id_department' => '7',
+            ],
+            [
+                'nama_lengkap' => 'Illbe Jihadin Wilen',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TE/TOLI/4A',
+                'nim' => '2403411025',
+                'ttl' => 'Bekasi, 01 Oktober 2006',
+                'alamat' => 'Perum Tridaya Nuansa Indah Blok DA 7 NO 19, Bekasi, Jawa barat 17510',
+                'email' => 'illbe.jihadin.wilen.te24@stu.pnj.ac.id',
+                'no_hp' => '85694829837',
+                'id_department' => '7',
+            ],
+            [
+                'nama_lengkap' => 'Dhika Adiansyah',
+                'nama_jabatan' => 'Staff',
+                'jurusan_prodi_kelas' => 'TM/ME/4D',
+                'nim' => '2402311100',
+                'ttl' => 'Jakarta, 05 Desember 2005',
+                'alamat' => 'Jl. Rawa No.17 Pegangsaan Dua, Kelapa Gading, Jakarta Utara',
+                'email' => 'dhika.adiansyah.tm24@stu.pnj.ac.id',
+                'no_hp' => '82113278024',
+                'id_department' => '7',
+            ],
+        ];
+
+        foreach ($data as $anggota) {
+            // Create user account
+            $user = User::create([
+                'name' => $anggota['nama_lengkap'],
+                'email' => $anggota['email'],
+                'password' => Hash::make('1'),
+                'active' => '1', // AKTIF - Agar bisa login
+            ]);
+
+            // Determine role based on department or position
+            $role = 'anggota'; // Default role
+
+            // 1. Ketua & Wakil -> Chairman
+            if (in_array($anggota['nama_jabatan'], ['Ketua', 'Wakil Ketua'])) {
+                $role = 'chairman';
+            } 
+            // 2. Department Specific Roles
+            else {
+                switch ($anggota['id_department']) {
+                    case '1': // BPH (If any besides Ketua/Wakil)
+                        $role = 'chairman'; 
+                        break;
+                    case '2': // Kesekretariatan
+                        $role = 'admin_sekretaris';
+                        break;
+                    case '3': // Bendahara
+                        $role = 'admin_keuangan';
+                        break;
+                    case '4': // Kominfo (Media)
+                        $role = 'admin_media';
+                        break;
+                    case '5': // PRE (Pengajaran)
+                        $role = 'admin_pengajaran';
+                        break;
+                    case '6': // Perlengkapan (Inventaris)
+                        $role = 'admin_inventaris';
+                        break;
+                    case '7': // Polytechnic Robotics (Project/Kegiatan ? or Pengajaran?)
+                        // Let's assume polytechnic robotics team handles projects
+                        $role = 'admin_project'; 
+                        break;
+                    default:
+                        $role = 'anggota';
+                        break;
+                }
+            }
+
+            // Validasi: Pastikan role ada di database (Spatie requirement)
+            // if (! \Spatie\Permission\Models\Role::where('name', $role)->exists()) {
+            //    $role = 'anggota';
+            // }
+
+            // Attach determined role to user
+            $user->assignRole($role);
+
+            // Create anggota record
+            Anggota::create([
+                'id_user' => $user->id,
+                'id_tahun' => '1',
+                'id_department' => $anggota['id_department'] ?? '',
+                'nama_jabatan' => $anggota['nama_jabatan'],
+                'nama_lengkap' => $anggota['nama_lengkap'],
+                'jurusan_prodi_kelas' => $anggota['jurusan_prodi_kelas'],
+                'nim' => $anggota['nim'],
+                'ttl' => $anggota['ttl'],
+                'alamat' => $anggota['alamat'],
+                'email' => $anggota['email'],
+                'no_hp' => $anggota['no_hp'],
+                'status_anggota' => 'pengurus',
+                'status_aktif' => 'aktif',
+                'foto' => '',
+            ]);
+        }
+    }
+}
+

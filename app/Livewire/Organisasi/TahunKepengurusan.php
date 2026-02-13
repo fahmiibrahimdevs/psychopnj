@@ -7,10 +7,11 @@ use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\Attributes\Title;
 use Illuminate\Support\Facades\DB;
+use App\Traits\WithPermissionCache;
 
 class TahunKepengurusan extends Component
 {
-    use WithPagination;
+    use WithPagination, WithPermissionCache;
     #[Title('Tahun Kepengurusan')]
 
     protected $listeners = [
@@ -34,6 +35,9 @@ class TahunKepengurusan extends Component
 
     public function mount()
     {
+        // Cache user permissions to avoid N+1 queries
+        $this->cacheUserPermissions();
+        
         $this->nama_tahun          = '';
         $this->status              = 'nonaktif';
         $this->deskripsi           = '';
@@ -108,7 +112,7 @@ class TahunKepengurusan extends Component
             $this->dispatchAlert('success', 'Success!', 'Data created successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
         }
     }
 
@@ -126,7 +130,7 @@ class TahunKepengurusan extends Component
             $this->status           = $data->status;
             $this->deskripsi        = $data->deskripsi;
         } catch (\Exception $e) {
-            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
         }
     }
 
@@ -159,7 +163,7 @@ class TahunKepengurusan extends Component
                 $this->dataId = null;
             } catch (\Exception $e) {
                 DB::rollBack();
-                $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+                $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
             }
         }
     }
@@ -186,7 +190,7 @@ class TahunKepengurusan extends Component
             $this->dispatchAlert('success', 'Success!', 'Data deleted successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
         }
     }
 
@@ -208,7 +212,7 @@ class TahunKepengurusan extends Component
             $this->dispatchAlert('success', 'Success!', 'Tahun kepengurusan berhasil diaktifkan.');
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
         }
     }
 

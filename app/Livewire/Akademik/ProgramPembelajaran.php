@@ -89,43 +89,50 @@ class ProgramPembelajaran extends Component
     {
         $this->validate();
 
-        // Get active tahun kepengurusan name
-        $activeTahun = TahunKepengurusan::where('status', 'aktif')->first();
-        $tahunFolder = $activeTahun ? $activeTahun->mulai : 'default';
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            // Get active tahun kepengurusan name
+            $activeTahun = TahunKepengurusan::where('status', 'aktif')->first();
+            $tahunFolder = $activeTahun ? $activeTahun->mulai : 'default';
 
-        $thumbnailPath = null;
-        if ($this->thumbnail) {
-            // Generate nama file dari nama_program (uppercase with space)
-            $programFolder = strtoupper($this->nama_program);
-            $fileName = strtoupper(str_replace(' ', '_', $this->nama_program)) . '_' . rand(10, 99);
-            $extension = $this->thumbnail->getClientOriginalExtension();
-            $thumbnailPath = $this->thumbnail->storeAs("{$tahunFolder}/{$programFolder}", $fileName . '.' . $extension, 'public');
-            
-            // Compress thumbnail only if larger than target
-            $fullPath = storage_path('app/public/' . $thumbnailPath);
-            $currentSizeKB = filesize($fullPath) / 1024;
-            
-            if ($currentSizeKB > $this->thumbnailTargetSizeKB) {
-                $this->compressImageToSize($fullPath, $this->thumbnailTargetSizeKB, 800);
+            $thumbnailPath = null;
+            if ($this->thumbnail) {
+                // Generate nama file dari nama_program (uppercase with space)
+                $programFolder = strtoupper($this->nama_program);
+                $fileName = strtoupper(str_replace(' ', '_', $this->nama_program)) . '_' . rand(10, 99);
+                $extension = $this->thumbnail->getClientOriginalExtension();
+                $thumbnailPath = $this->thumbnail->storeAs("{$tahunFolder}/{$programFolder}", $fileName . '.' . $extension, 'public');
+                
+                // Compress thumbnail only if larger than target
+                $fullPath = storage_path('app/public/' . $thumbnailPath);
+                $currentSizeKB = filesize($fullPath) / 1024;
+                
+                if ($currentSizeKB > $this->thumbnailTargetSizeKB) {
+                    $this->compressImageToSize($fullPath, $this->thumbnailTargetSizeKB, 800);
+                }
+                
+                // Update path if PNG was converted to JPG
+                if ($extension === 'png' && !file_exists($fullPath)) {
+                    $thumbnailPath = preg_replace('/\.png$/i', '.jpg', $thumbnailPath);
+                }
             }
-            
-            // Update path if PNG was converted to JPG
-            if ($extension === 'png' && !file_exists($fullPath)) {
-                $thumbnailPath = preg_replace('/\.png$/i', '.jpg', $thumbnailPath);
-            }
+
+            ModelsProgramPembelajaran::create([
+                'id_tahun'            => $this->id_tahun,
+                'nama_program'        => $this->nama_program,
+                'jenis_program'       => $this->jenis_program,
+                'deskripsi'           => $this->deskripsi,
+                'jumlah_pertemuan'    => $this->jumlah_pertemuan,
+                'penyelenggara'       => $this->penyelenggara,
+                'thumbnail'           => $thumbnailPath,
+            ]);
+
+            \Illuminate\Support\Facades\DB::commit();
+            $this->dispatchAlert('success', 'Success!', 'Data created successfully.');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
         }
-
-        ModelsProgramPembelajaran::create([
-            'id_tahun'            => $this->id_tahun,
-            'nama_program'        => $this->nama_program,
-            'jenis_program'       => $this->jenis_program,
-            'deskripsi'           => $this->deskripsi,
-            'jumlah_pertemuan'    => $this->jumlah_pertemuan,
-            'penyelenggara'       => $this->penyelenggara,
-            'thumbnail'           => $thumbnailPath,
-        ]);
-
-        $this->dispatchAlert('success', 'Success!', 'Data created successfully.');
     }
 
     public function edit($id)
@@ -149,49 +156,56 @@ class ProgramPembelajaran extends Component
 
         if( $this->dataId )
         {
-            // Get active tahun kepengurusan name
-            $activeTahun = TahunKepengurusan::where('status', 'aktif')->first();
-            $tahunFolder = $activeTahun ? $activeTahun->mulai : 'default';
+            \Illuminate\Support\Facades\DB::beginTransaction();
+            try {
+                // Get active tahun kepengurusan name
+                $activeTahun = TahunKepengurusan::where('status', 'aktif')->first();
+                $tahunFolder = $activeTahun ? $activeTahun->mulai : 'default';
 
-            $thumbnailPath = $this->oldThumbnail;
-            
-            if ($this->thumbnail) {
-                // Hapus thumbnail lama jika ada
-                if ($this->oldThumbnail && Storage::disk('public')->exists($this->oldThumbnail)) {
-                    Storage::disk('public')->delete($this->oldThumbnail);
-                }
-                // Generate nama file dari nama_program (uppercase with space)
-                $programFolder = strtoupper($this->nama_program);
-                $fileName = strtoupper(str_replace(' ', '_', $this->nama_program)) . '_' . rand(10, 99);
-                $extension = $this->thumbnail->getClientOriginalExtension();
-                $thumbnailPath = $this->thumbnail->storeAs("{$tahunFolder}/{$programFolder}", $fileName . '.' . $extension, 'public');
+                $thumbnailPath = $this->oldThumbnail;
                 
-                // Compress thumbnail only if larger than target
-                $fullPath = storage_path('app/public/' . $thumbnailPath);
-                $currentSizeKB = filesize($fullPath) / 1024;
-                
-                if ($currentSizeKB > $this->thumbnailTargetSizeKB) {
-                    $this->compressImageToSize($fullPath, $this->thumbnailTargetSizeKB, 800);
+                if ($this->thumbnail) {
+                    // Hapus thumbnail lama jika ada
+                    if ($this->oldThumbnail && Storage::disk('public')->exists($this->oldThumbnail)) {
+                        Storage::disk('public')->delete($this->oldThumbnail);
+                    }
+                    // Generate nama file dari nama_program (uppercase with space)
+                    $programFolder = strtoupper($this->nama_program);
+                    $fileName = strtoupper(str_replace(' ', '_', $this->nama_program)) . '_' . rand(10, 99);
+                    $extension = $this->thumbnail->getClientOriginalExtension();
+                    $thumbnailPath = $this->thumbnail->storeAs("{$tahunFolder}/{$programFolder}", $fileName . '.' . $extension, 'public');
+                    
+                    // Compress thumbnail only if larger than target
+                    $fullPath = storage_path('app/public/' . $thumbnailPath);
+                    $currentSizeKB = filesize($fullPath) / 1024;
+                    
+                    if ($currentSizeKB > $this->thumbnailTargetSizeKB) {
+                        $this->compressImageToSize($fullPath, $this->thumbnailTargetSizeKB, 800);
+                    }
+                    
+                    // Update path if PNG was converted to JPG
+                    if ($extension === 'png' && !file_exists($fullPath)) {
+                        $thumbnailPath = preg_replace('/\.png$/i', '.jpg', $thumbnailPath);
+                    }
                 }
-                
-                // Update path if PNG was converted to JPG
-                if ($extension === 'png' && !file_exists($fullPath)) {
-                    $thumbnailPath = preg_replace('/\.png$/i', '.jpg', $thumbnailPath);
-                }
+
+                ModelsProgramPembelajaran::findOrFail($this->dataId)->update([
+                    'id_tahun'            => $this->id_tahun,
+                    'nama_program'        => $this->nama_program,
+                    'jenis_program'       => $this->jenis_program,
+                    'deskripsi'           => $this->deskripsi,
+                    'jumlah_pertemuan'    => $this->jumlah_pertemuan,
+                    'penyelenggara'       => $this->penyelenggara,
+                    'thumbnail'           => $thumbnailPath,
+                ]);
+
+                \Illuminate\Support\Facades\DB::commit();
+                $this->dispatchAlert('success', 'Success!', 'Data updated successfully.');
+                $this->dataId = null;
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\DB::rollBack();
+                $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
             }
-
-            ModelsProgramPembelajaran::findOrFail($this->dataId)->update([
-                'id_tahun'            => $this->id_tahun,
-                'nama_program'        => $this->nama_program,
-                'jenis_program'       => $this->jenis_program,
-                'deskripsi'           => $this->deskripsi,
-                'jumlah_pertemuan'    => $this->jumlah_pertemuan,
-                'penyelenggara'       => $this->penyelenggara,
-                'thumbnail'           => $thumbnailPath,
-            ]);
-
-            $this->dispatchAlert('success', 'Success!', 'Data updated successfully.');
-            $this->dataId = null;
         }
     }
 
@@ -207,15 +221,22 @@ class ProgramPembelajaran extends Component
 
     public function delete()
     {
-        $data = ModelsProgramPembelajaran::findOrFail($this->dataId);
-        
-        // Hapus thumbnail jika ada
-        if ($data->thumbnail && Storage::disk('public')->exists($data->thumbnail)) {
-            Storage::disk('public')->delete($data->thumbnail);
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            $data = ModelsProgramPembelajaran::findOrFail($this->dataId);
+            
+            // Hapus thumbnail jika ada
+            if ($data->thumbnail && Storage::disk('public')->exists($data->thumbnail)) {
+                Storage::disk('public')->delete($data->thumbnail);
+            }
+            
+            $data->delete();
+            \Illuminate\Support\Facades\DB::commit();
+            $this->dispatchAlert('success', 'Success!', 'Data deleted successfully.');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
         }
-        
-        $data->delete();
-        $this->dispatchAlert('success', 'Success!', 'Data deleted successfully.');
     }
 
     public function updatingLengthData()

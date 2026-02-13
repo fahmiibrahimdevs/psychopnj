@@ -7,9 +7,11 @@ use Livewire\Attributes\Title;
 use App\Models\NilaiSoalAnggota;
 use App\Models\Pertemuan;
 use Illuminate\Support\Facades\DB;
+use App\Traits\WithPermissionCache;
 
 class HasilUjianPertemuan extends Component
 {
+    use WithPermissionCache;
     #[Title('Hasil Ujian Pertemuan')]
 
     public $id_pertemuan = '0';
@@ -20,6 +22,8 @@ class HasilUjianPertemuan extends Component
 
     public function mount()
     {
+        $this->cacheUserPermissions();
+        
         $data = DB::table('pertemuan')
             ->select('pertemuan.id', 'pertemuan.judul_pertemuan', 'pertemuan.pertemuan_ke', 'program_pembelajaran.nama_program')
             ->join('program_pembelajaran', 'program_pembelajaran.id', 'pertemuan.id_program')
@@ -95,7 +99,7 @@ class HasilUjianPertemuan extends Component
             $this->loadHasil();
             $this->dispatchAlert('success', 'Berhasil!', 'Semua anggota sudah ditandai sebagai dikoreksi.');
         } catch (\Exception $e) {
-            $this->dispatchAlert('warning', 'Gagal!', 'Kesalahan: ' . $e->getMessage());
+            $this->dispatchAlert('warning', 'Gagal!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
         }
     }
 
@@ -126,6 +130,7 @@ class HasilUjianPertemuan extends Component
 
     public function updateNilai()
     {
+        DB::beginTransaction();
         try {
             foreach ($this->inputan as $anggotaId => $nilaiData) {
                 NilaiSoalAnggota::updateOrCreate(
@@ -133,11 +138,13 @@ class HasilUjianPertemuan extends Component
                     $nilaiData
                 );
             }
+            DB::commit();
             $this->loadHasil();
             $this->dispatchAlert('success', 'Berhasil!', 'Data nilai berhasil diubah.');
             $this->inputan = [];
         } catch (\Exception $e) {
-            $this->dispatchAlert('warning', 'Gagal!', 'Kesalahan: ' . $e->getMessage());
+            DB::rollBack();
+            $this->dispatchAlert('warning', 'Gagal!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
             $this->inputan = [];
         }
     }

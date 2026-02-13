@@ -9,9 +9,11 @@ use App\Models\Project as ModelsProject;
 use App\Models\ProjectTeam;
 use App\Models\ProjectTeamMember;
 use App\Models\Anggota;
+use App\Traits\WithPermissionCache;
 
 class ProjectTeams extends Component
 {
+    use WithPermissionCache;
     #[Title('Kelompok Project')]
 
     protected $listeners = [
@@ -42,6 +44,7 @@ class ProjectTeams extends Component
 
     public function mount($projectId)
     {
+        $this->cacheUserPermissions();
         $this->projectId = $projectId;
         $this->loadProject();
         $this->loadTeams();
@@ -191,31 +194,38 @@ class ProjectTeams extends Component
 
     private function createTeam()
     {
-        $team = ProjectTeam::create([
-            'id_project' => $this->projectId,
-            'nama_kelompok' => $this->nama_kelompok,
-            'deskripsi' => $this->deskripsi_kelompok,
-        ]);
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            $team = ProjectTeam::create([
+                'id_project' => $this->projectId,
+                'nama_kelompok' => $this->nama_kelompok,
+                'deskripsi' => $this->deskripsi_kelompok,
+            ]);
 
-        // Add leader
-        ProjectTeamMember::create([
-            'id_project_team' => $team->id,
-            'id_anggota' => $this->id_leader,
-            'role' => 'leader',
-        ]);
-
-        // Add anggota (exclude leader to prevent duplicate)
-        $anggotaIds = array_diff($this->id_anggota, [$this->id_leader]);
-        foreach ($anggotaIds as $anggotaId) {
+            // Add leader
             ProjectTeamMember::create([
                 'id_project_team' => $team->id,
-                'id_anggota' => $anggotaId,
-                'role' => 'anggota',
+                'id_anggota' => $this->id_leader,
+                'role' => 'leader',
             ]);
-        }
 
-        $this->loadTeams();
-        $this->dispatchAlert('success', 'Success!', 'Kelompok berhasil ditambahkan.');
+            // Add anggota (exclude leader to prevent duplicate)
+            $anggotaIds = array_diff($this->id_anggota, [$this->id_leader]);
+            foreach ($anggotaIds as $anggotaId) {
+                ProjectTeamMember::create([
+                    'id_project_team' => $team->id,
+                    'id_anggota' => $anggotaId,
+                    'role' => 'anggota',
+                ]);
+            }
+
+            \Illuminate\Support\Facades\DB::commit();
+            $this->loadTeams();
+            $this->dispatchAlert('success', 'Success!', 'Kelompok berhasil ditambahkan.');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
+        }
     }
 
     public function updated()
@@ -225,35 +235,42 @@ class ProjectTeams extends Component
 
     private function updateTeam()
     {
-        $team = ProjectTeam::findOrFail($this->teamId);
-        
-        $team->update([
-            'nama_kelompok' => $this->nama_kelompok,
-            'deskripsi' => $this->deskripsi_kelompok,
-        ]);
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            $team = ProjectTeam::findOrFail($this->teamId);
+            
+            $team->update([
+                'nama_kelompok' => $this->nama_kelompok,
+                'deskripsi' => $this->deskripsi_kelompok,
+            ]);
 
-        // Delete existing members
-        ProjectTeamMember::where('id_project_team', $team->id)->delete();
+            // Delete existing members
+            ProjectTeamMember::where('id_project_team', $team->id)->delete();
 
-        // Add new leader
-        ProjectTeamMember::create([
-            'id_project_team' => $team->id,
-            'id_anggota' => $this->id_leader,
-            'role' => 'leader',
-        ]);
-
-        // Add new anggota (exclude leader to prevent duplicate)
-        $anggotaIds = array_diff($this->id_anggota, [$this->id_leader]);
-        foreach ($anggotaIds as $anggotaId) {
+            // Add new leader
             ProjectTeamMember::create([
                 'id_project_team' => $team->id,
-                'id_anggota' => $anggotaId,
-                'role' => 'anggota',
+                'id_anggota' => $this->id_leader,
+                'role' => 'leader',
             ]);
-        }
 
-        $this->loadTeams();
-        $this->dispatchAlert('success', 'Success!', 'Kelompok berhasil diperbarui.');
+            // Add new anggota (exclude leader to prevent duplicate)
+            $anggotaIds = array_diff($this->id_anggota, [$this->id_leader]);
+            foreach ($anggotaIds as $anggotaId) {
+                ProjectTeamMember::create([
+                    'id_project_team' => $team->id,
+                    'id_anggota' => $anggotaId,
+                    'role' => 'anggota',
+                ]);
+            }
+
+            \Illuminate\Support\Facades\DB::commit();
+            $this->loadTeams();
+            $this->dispatchAlert('success', 'Success!', 'Kelompok berhasil diperbarui.');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
+        }
     }
 
     public function deleteTeamConfirm($teamId)
@@ -268,18 +285,25 @@ class ProjectTeams extends Component
 
     public function deleteTeam()
     {
-        // Delete team members first
-        DB::table('project_team_members')
-            ->where('id_project_team', $this->teamId)
-            ->delete();
-            
-        // Delete team
-        DB::table('project_teams')
-            ->where('id', $this->teamId)
-            ->delete();
-            
-        $this->loadTeams();
-        $this->dispatchAlert('success', 'Success!', 'Kelompok berhasil dihapus.');
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            // Delete team members first
+            DB::table('project_team_members')
+                ->where('id_project_team', $this->teamId)
+                ->delete();
+                
+            // Delete team
+            DB::table('project_teams')
+                ->where('id', $this->teamId)
+                ->delete();
+                
+            \Illuminate\Support\Facades\DB::commit();
+            $this->loadTeams();
+            $this->dispatchAlert('success', 'Success!', 'Kelompok berhasil dihapus.');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
+        }
     }
 
     public function closeTeamModal()

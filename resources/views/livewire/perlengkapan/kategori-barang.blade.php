@@ -15,14 +15,17 @@
                             Import
                             </button>
                         --}}
-                        <button wire:click="downloadPdf" class="btn btn-danger btn-icon icon-left">
-                            <i class="fas fa-file-pdf"></i>
-                            PDF
-                        </button>
-                        <button wire:click="downloadExcel" class="btn btn-success btn-icon icon-left">
-                            <i class="fas fa-file-excel"></i>
-                            Excel
-                        </button>
+
+                        @if ($this->can("kategori_barang.export"))
+                            <button wire:click="downloadPdf" class="btn btn-danger btn-icon icon-left">
+                                <i class="fas fa-file-pdf"></i>
+                                PDF
+                            </button>
+                            <button wire:click="downloadExcel" class="btn btn-success btn-icon icon-left">
+                                <i class="fas fa-file-excel"></i>
+                                Excel
+                            </button>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -68,12 +71,17 @@
                                             <span class="tw-text-gray-600">{{ $row->user->name ?? "-" }}</span>
                                         </td>
                                         <td>
-                                            <button wire:click.prevent="edit({{ $row->id }})" class="btn btn-primary" data-toggle="modal" data-target="#formDataModal">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button wire:click.prevent="deleteConfirm({{ $row->id }})" class="btn btn-danger">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
+                                            @if ($this->can("kategori_barang.edit"))
+                                                <button wire:click.prevent="edit({{ $row->id }})" class="btn btn-primary" data-toggle="modal" data-target="#formDataModal">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                            @endif
+
+                                            @if ($this->can("kategori_barang.delete"))
+                                                <button wire:click.prevent="deleteConfirm({{ $row->id }})" class="btn btn-danger">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            @endif
                                         </td>
                                     </tr>
                                 @empty
@@ -90,9 +98,11 @@
                 </div>
             </div>
         </div>
-        <button wire:click.prevent="isEditingMode(false)" class="btn-modal" data-toggle="modal" data-backdrop="static" data-keyboard="false" data-target="#formDataModal">
-            <i class="far fa-plus"></i>
-        </button>
+        @if ($this->can("kategori_barang.create"))
+            <button wire:click.prevent="isEditingMode(false)" class="btn-modal" data-toggle="modal" data-backdrop="static" data-keyboard="false" data-target="#formDataModal">
+                <i class="far fa-plus"></i>
+            </button>
+        @endif
     </section>
 
     <div class="modal fade" wire:ignore.self id="formDataModal" aria-labelledby="formDataModalLabel" aria-hidden="true">

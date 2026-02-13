@@ -9,9 +9,11 @@ use App\Models\SoalPertemuan as SoalPertemuanModel;
 use Livewire\Attributes\Title;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use App\Traits\WithPermissionCache;
 
 class SoalPertemuan extends Component
 {
+    use WithPermissionCache;
     #[Title('Kelola Bank Soal')]
 
     protected $listeners = ['delete'];
@@ -33,10 +35,10 @@ class SoalPertemuan extends Component
 
     public function mount($pertemuanId)
     {
-        // Authorization check - only pengurus role
-        if (!auth()->user()->hasRole('pengurus')) {
-            abort(403, 'Unauthorized access. Hanya pengurus yang dapat mengakses halaman ini.');
-        }
+        // Cache user permissions to avoid N+1 queries
+        $this->cacheUserPermissions();
+        
+
 
         $this->pertemuanId = $pertemuanId;
         $this->loadPertemuanData();
@@ -56,7 +58,6 @@ class SoalPertemuan extends Component
 
     public function render()
     {
-        $this->loadPertemuanData();
 
         // Load soal data - Optimized with DB::table
         $this->datas = DB::table('soal_pertemuan')
@@ -424,6 +425,9 @@ class SoalPertemuan extends Component
         
         // Clear cache after toggling status
         Cache::forget("bank_soal_stats_{$this->bankSoal->id}");
+
+        // Refresh data
+        $this->loadPertemuanData();
     }
 
     public function updateStatus($status)

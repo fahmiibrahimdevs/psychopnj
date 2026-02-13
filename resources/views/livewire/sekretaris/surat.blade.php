@@ -48,10 +48,12 @@
                                 Tabel {{ $currentKategori ? $currentKategori->nama_kategori : "Dokumen" }}
                             @endif
                         </h3>
-                        <button class="btn btn-primary" data-toggle="modal" data-target="#formSuratModal">
-                            <i class="fas fa-plus"></i>
-                            Tambah Data
-                        </button>
+                        @if ($this->can("surat.create"))
+                            <button class="btn btn-primary" data-toggle="modal" data-target="#formSuratModal">
+                                <i class="fas fa-plus"></i>
+                                Tambah Data
+                            </button>
+                        @endif
                     </div>
                     <div class="card-body">
                         <div class="show-entries">
@@ -163,31 +165,37 @@
                                             @endif
 
                                             <td class="tw-whitespace-nowrap">
-                                                @if ($row->files->count() > 0)
-                                                    <div class="btn-group">
-                                                        <button type="button" class="btn btn-info dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                                            <i class="fas fa-eye"></i>
-                                                            ({{ $row->files->count() }})
-                                                        </button>
-                                                        <div class="dropdown-menu">
-                                                            @foreach ($row->files as $file)
-                                                                <a class="dropdown-item" href="javascript:void(0)" onclick="previewFile('{{ asset("storage/" . $file->file_path) }}', '{{ Storage::mimeType("public/" . $file->file_path) }}')">
-                                                                    {{ Str::limit($file->file_name, 20) }}
-                                                                </a>
-                                                            @endforeach
+                                                @if ($this->can("surat.download"))
+                                                    @if ($row->files->count() > 0)
+                                                        <div class="btn-group">
+                                                            <button type="button" class="btn btn-info dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                                <i class="fas fa-eye"></i>
+                                                                ({{ $row->files->count() }})
+                                                            </button>
+                                                            <div class="dropdown-menu">
+                                                                @foreach ($row->files as $file)
+                                                                    <a class="dropdown-item" href="javascript:void(0)" onclick="previewFile('{{ asset("storage/" . $file->file_path) }}', '{{ Storage::mimeType("public/" . $file->file_path) }}')">
+                                                                        {{ Str::limit($file->file_name, 20) }}
+                                                                    </a>
+                                                                @endforeach
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                @else
-                                                    <button class="btn btn-secondary" disabled><i class="fas fa-eye-slash"></i></button>
+                                                    @else
+                                                        <button class="btn btn-secondary" disabled><i class="fas fa-eye-slash"></i></button>
+                                                    @endif
                                                 @endif
 
-                                                <button wire:click="edit({{ $row->id }})" class="btn btn-primary" data-toggle="modal" data-target="#formSuratModal">
-                                                    <i class="fas fa-edit"></i>
-                                                </button>
+                                                @if ($this->can("surat.edit"))
+                                                    <button wire:click="edit({{ $row->id }})" class="btn btn-primary" data-toggle="modal" data-target="#formSuratModal">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                @endif
 
-                                                <button wire:click="deleteConfirm({{ $row->id }})" class="btn btn-danger">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
+                                                @if ($this->can("surat.delete"))
+                                                    <button wire:click="deleteConfirm({{ $row->id }})" class="btn btn-danger">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                @endif
                                             </td>
                                         </tr>
                                     @empty

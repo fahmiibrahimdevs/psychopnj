@@ -10,10 +10,11 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Anggota as ModelsAnggota;
 use App\Models\Department as ModelsDepartment;
 use App\Models\OpenRecruitment as ModelsOpenRecruitment;
+use App\Traits\WithPermissionCache;
 
 class Anggota extends Component
 {
-    use WithPagination;
+    use WithPagination, WithPermissionCache;
     #[Title('Anggota')]
 
     protected $listeners = [
@@ -37,6 +38,7 @@ class Anggota extends Component
         'foto'                => '',
         'password'            => '',
         'password_confirmation' => '',
+        'role'                => 'required',
     ];
 
     public $lengthData = 25;
@@ -53,9 +55,14 @@ class Anggota extends Component
     public $id_user, $id_tahun, $id_department, $nama_lengkap, $nama_jabatan, $jurusan_prodi_kelas, $nim, $ttl, $alamat, $email, $no_hp, $status_anggota, $status_aktif, $foto;
     public $password, $password_confirmation;
     public $tahuns, $departments;
+    public $role;
+    public $roles = [];
 
     public function mount()
     {
+        // Cache user permissions to avoid N+1 queries
+        $this->cacheUserPermissions();
+        
         $this->id_user             = '';
         // Set id_tahun default ke tahun kepengurusan yang aktif
         $yearAktif = DB::table('tahun_kepengurusan')->where('status', 'aktif')->first();
@@ -74,8 +81,15 @@ class Anggota extends Component
         $this->foto                = '';
         $this->password            = '';
         $this->password_confirmation = '';
+        $this->role                = '';
         $this->getTahunKepengurusan();
         $this->getDepartment($this->id_tahun);
+        $this->getRoles();
+    }
+
+    private function getRoles()
+    {
+        $this->roles = \Spatie\Permission\Models\Role::where('name', '!=', 'super_admin')->pluck('name');
     }
 
     private function getTahunKepengurusan()
@@ -109,10 +123,12 @@ class Anggota extends Component
         if ($value === 'anggota') {
             $this->id_department = '';
             $this->nama_jabatan = 'anggota';
+            $this->role = 'anggota';
         } else {
             // Reset untuk pengurus
             $this->id_department = '';
             $this->nama_jabatan = '';
+            $this->role = '';
         }
     }
 
@@ -307,7 +323,7 @@ class Anggota extends Component
                     ]);
                     
                     // Assign role berdasarkan status_anggota
-                    $user->addRole($this->status_anggota);
+                    $user->assignRole($this->role ?: $this->status_anggota);
                     
                     $userId = $user->id;
                 }
@@ -334,7 +350,7 @@ class Anggota extends Component
             $this->dispatchAlert('success', 'Success!', 'Data created successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
         }
     }
 
@@ -387,11 +403,15 @@ class Anggota extends Component
                 if ($user && $user->email !== $data->email) {
                     $this->email = $user->email;
                 }
+                
+                if ($user) {
+                    $this->role = $user->getRoleNames()->first();
+                }
             }
             $this->password = '';
             $this->password_confirmation = '';
         } catch (\Exception $e) {
-            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
         }
     }
 
@@ -425,7 +445,7 @@ class Anggota extends Component
                 ->where('anggota.id', $id)
                 ->first();
         } catch (\Exception $e) {
-            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
         }
     }
 
@@ -477,7 +497,7 @@ class Anggota extends Component
                             $user->update($userData);
                             
                             // Sync role berdasarkan status_anggota
-                            $user->syncRoles([$this->status_anggota]);
+                            $user->syncRoles([$this->role ?: $this->status_anggota]);
                         }
                     } else {
                         // Create new user
@@ -489,7 +509,7 @@ class Anggota extends Component
                         ]);
                         
                         // Assign role
-                        $user->addRole($this->status_anggota);
+                        $user->assignRole($this->role ?: $this->status_anggota);
                         
                         $userId = $user->id;
                     }
@@ -517,7 +537,7 @@ class Anggota extends Component
                 $this->dataId = null;
             } catch (\Exception $e) {
                 DB::rollBack();
-                $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+                $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
             }
         }
     }
@@ -542,9 +562,8 @@ class Anggota extends Component
             if ($anggota->id_user) {
                 $user = \App\Models\User::find($anggota->id_user);
                 if ($user) {
-                    // Hapus role dari tabel role_user
-                    // Note: syncRoles([]) or detachRoles() might be cleaner but direct DB is used here
-                    DB::table('role_user')->where('user_id', $anggota->id_user)->delete();
+                    // Hapus semua role dari user
+                    $user->syncRoles([]); 
                     $user->delete();
                 }
             }
@@ -565,7 +584,7 @@ class Anggota extends Component
             $this->dispatchAlert('success', 'Success!', 'Data deleted successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
         }
     }
 
@@ -627,6 +646,7 @@ class Anggota extends Component
         $this->foto                = '';
         $this->password            = '';
         $this->password_confirmation = '';
+        $this->role                = '';
 
     }
 

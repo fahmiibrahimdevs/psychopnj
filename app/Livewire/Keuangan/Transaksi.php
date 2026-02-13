@@ -20,10 +20,11 @@ use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Exports\KeuanganExport;
 use App\Traits\ImageCompressor;
+use App\Traits\WithPermissionCache;
 
 class Transaksi extends Component
 {
-    use WithPagination, WithFileUploads, ImageCompressor;
+    use WithPagination, WithFileUploads, ImageCompressor, WithPermissionCache;
     #[Title('Transaksi Keuangan')]
 
     protected $listeners = [
@@ -36,8 +37,8 @@ class Transaksi extends Component
         'kategori'         => 'required',
         'deskripsi'        => 'required',
         'nominal'          => 'required|numeric|min:0',
-        'id_department'    => 'required_if:kategori,Departemen',
-        'id_project'       => 'required_if:kategori,Project',
+        'id_department'    => 'required_if:kategori,Departemen,dept,Dept',
+        'id_project'       => 'required_if:kategori,Project,project',
         'filesNota.*'      => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
         'filesReimburse.*' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
         'filesFoto.*'      => 'nullable|file|mimes:jpg,jpeg,png,mp4,mov,avi,mkv|max:51200',
@@ -67,6 +68,7 @@ class Transaksi extends Component
 
     public function mount()
     {
+        $this->cacheUserPermissions();
         // Load compression setting from .env
         $this->imageTargetSizeKB = env('IMAGE_COMPRESS_SIZE_KB', 100);
         
@@ -74,11 +76,14 @@ class Transaksi extends Component
         $this->activeTahunId = $activeTahun ? $activeTahun->id : null;
 
         // Filter departments by active tahun
-        $this->departments = Department::where('id_tahun', $this->activeTahunId)
+        // Filter departments by active tahun
+        $this->departments = DB::table('departments')
+            ->where('id_tahun', $this->activeTahunId)
             ->select('id', 'nama_department')
             ->orderBy('nama_department')
             ->get();
-        $this->projects = Project::where('id_tahun', $this->activeTahunId)
+        $this->projects = DB::table('projects')
+            ->where('id_tahun', $this->activeTahunId)
             ->select('id', 'nama_project')
             ->orderBy('nama_project')
             ->get();
@@ -91,23 +96,35 @@ class Transaksi extends Component
         $this->searchResetPage();
         $search = '%'.$this->searchTerm.'%';
 
-        $query = ModelsKeuangan::with(['department', 'project', 'user'])
-            ->where('id_tahun', $this->activeTahunId)
-            ->where('deskripsi', 'LIKE', $search);
+        $query = DB::table('keuangan')
+            ->leftJoin('departments', 'keuangan.id_department', '=', 'departments.id')
+            ->leftJoin('projects', 'keuangan.id_project', '=', 'projects.id')
+            ->leftJoin('users', 'keuangan.id_user', '=', 'users.id')
+            ->select(
+                'keuangan.*',
+                'departments.nama_department',
+                'projects.nama_project',
+                'users.name as user_name'
+            )
+            ->where('keuangan.id_tahun', $this->activeTahunId)
+            ->where('keuangan.deskripsi', 'LIKE', $search);
             
         if ($this->filterJenis) {
-            $query->where('jenis', $this->filterJenis);
+            $query->where('keuangan.jenis', $this->filterJenis);
         }
         if ($this->filterKategori) {
-            $query->where('kategori', $this->filterKategori);
+            $query->where('keuangan.kategori', $this->filterKategori);
         }
 
-        $data = $query->orderBy('tanggal', 'DESC')
-            ->orderBy('id', 'DESC')
+        $data = $query->orderBy('keuangan.tanggal', 'DESC')
+            ->orderBy('keuangan.id', 'DESC')
             ->paginate($this->lengthData);
 
-        // Calculate running totals
-        $allTransactions = ModelsKeuangan::where('id_tahun', $this->activeTahunId)
+        // Calculate running totals (Optimized)
+        // Fetch only necessary columns for calculation
+        $allTransactions = DB::table('keuangan')
+            ->where('id_tahun', $this->activeTahunId)
+            ->select('id', 'jenis', 'nominal')
             ->orderBy('tanggal', 'ASC')
             ->orderBy('id', 'ASC')
             ->get();
@@ -123,18 +140,27 @@ class Transaksi extends Component
             $runningTotals[$tx->id] = $runningTotal;
         }
 
-        // Summary
-        $totalPemasukan = ModelsKeuangan::where('id_tahun', $this->activeTahunId)
-            ->where('jenis', 'pemasukan')->sum('nominal');
-        $totalPengeluaran = ModelsKeuangan::where('id_tahun', $this->activeTahunId)
-            ->where('jenis', 'pengeluaran')->sum('nominal');
+        // Summary Statistics (Optimized)
+        // Use single query for stats if possible, or separate lightweight queries
+        $stats = DB::table('keuangan')
+            ->where('id_tahun', $this->activeTahunId)
+            ->selectRaw("
+                SUM(CASE WHEN jenis = 'pemasukan' THEN nominal ELSE 0 END) as total_pemasukan,
+                SUM(CASE WHEN jenis = 'pengeluaran' THEN nominal ELSE 0 END) as total_pengeluaran
+            ")
+            ->first();
+
+        $totalPemasukan = $stats->total_pemasukan ?? 0;
+        $totalPengeluaran = $stats->total_pengeluaran ?? 0;
         $saldoAkhir = $totalPemasukan - $totalPengeluaran;
 
-        // Load kategori dari tabel JenisAnggaran
-        $jenisAnggaranPemasukan = JenisAnggaran::where('nama_kategori', 'pemasukan')
+        // Load kategori (Optimized)
+        $jenisAnggaranPemasukan = DB::table('jenis_anggaran')
+            ->where('nama_kategori', 'pemasukan')
             ->orderBy('nama_jenis')
             ->get();
-        $jenisAnggaranPengeluaran = JenisAnggaran::where('nama_kategori', 'pengeluaran')
+        $jenisAnggaranPengeluaran = DB::table('jenis_anggaran')
+            ->where('nama_kategori', 'pengeluaran')
             ->orderBy('nama_jenis')
             ->get();
 
@@ -172,25 +198,32 @@ class Transaksi extends Component
     {
         $this->validate();
 
-        $transaksi = ModelsKeuangan::create([
-            'id_tahun'      => $this->activeTahunId,
-            'tanggal'       => $this->tanggal,
-            'jenis'         => $this->jenis,
-            'kategori'      => $this->kategori,
-            'id_department' => $this->kategori === 'Departemen' ? $this->id_department : null,
-            'id_project'    => $this->kategori === 'Project' ? $this->id_project : null,
-            'deskripsi'     => $this->deskripsi,
-            'nominal'       => $this->nominal,
-            'bukti'         => $this->bukti,
-            'id_user'       => Auth::id(),
-        ]);
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            $transaksi = ModelsKeuangan::create([
+                'id_tahun'      => $this->activeTahunId,
+                'tanggal'       => $this->tanggal,
+                'jenis'         => $this->jenis,
+                'kategori'      => $this->kategori,
+                'id_department' => in_array(strtolower($this->kategori), ['departemen', 'dept']) ? $this->id_department : null,
+                'id_project'    => in_array(strtolower($this->kategori), ['project']) ? $this->id_project : null,
+                'deskripsi'     => $this->deskripsi,
+                'nominal'       => $this->nominal,
+                'bukti'         => $this->bukti,
+                'id_user'       => Auth::id(),
+            ]);
 
-        // Upload files if any
-        if (!empty($this->filesNota) || !empty($this->filesReimburse) || !empty($this->filesFoto)) {
-            $this->uploadTransaksiFiles($transaksi->id);
+            // Upload files if any
+            if (!empty($this->filesNota) || !empty($this->filesReimburse) || !empty($this->filesFoto)) {
+                $this->uploadTransaksiFiles($transaksi->id);
+            }
+
+            \Illuminate\Support\Facades\DB::commit();
+            $this->dispatchAlert('success', 'Success!', 'Transaksi berhasil ditambahkan.');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
         }
-
-        $this->dispatchAlert('success', 'Success!', 'Transaksi berhasil ditambahkan.');
     }
 
     public function edit($id)
@@ -220,24 +253,31 @@ class Transaksi extends Component
         $this->validate();
 
         if ($this->dataId) {
-            ModelsKeuangan::findOrFail($this->dataId)->update([
-                'tanggal'       => $this->tanggal,
-                'jenis'         => $this->jenis,
-                'kategori'      => $this->kategori,
-                'id_department' => $this->kategori === 'Departemen' ? $this->id_department : null,
-                'id_project'    => $this->kategori === 'Project' ? $this->id_project : null,
-                'deskripsi'     => $this->deskripsi,
-                'nominal'       => $this->nominal,
-                'bukti'         => $this->bukti,
-            ]);
+            \Illuminate\Support\Facades\DB::beginTransaction();
+            try {
+                ModelsKeuangan::findOrFail($this->dataId)->update([
+                    'tanggal'       => $this->tanggal,
+                    'jenis'         => $this->jenis,
+                    'kategori'      => $this->kategori,
+                    'id_department' => in_array(strtolower($this->kategori), ['departemen', 'dept']) ? $this->id_department : null,
+                    'id_project'    => in_array(strtolower($this->kategori), ['project']) ? $this->id_project : null,
+                    'deskripsi'     => $this->deskripsi,
+                    'nominal'       => $this->nominal,
+                    'bukti'         => $this->bukti,
+                ]);
 
-            // Upload new files if any
-            if (!empty($this->filesNota) || !empty($this->filesReimburse) || !empty($this->filesFoto)) {
-                $this->uploadTransaksiFiles($this->dataId);
+                // Upload new files if any
+                if (!empty($this->filesNota) || !empty($this->filesReimburse) || !empty($this->filesFoto)) {
+                    $this->uploadTransaksiFiles($this->dataId);
+                }
+
+                \Illuminate\Support\Facades\DB::commit();
+                $this->dispatchAlert('success', 'Success!', 'Transaksi berhasil diperbarui.');
+                $this->dataId = null;
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\DB::rollBack();
+                $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
             }
-
-            $this->dispatchAlert('success', 'Success!', 'Transaksi berhasil diperbarui.');
-            $this->dataId = null;
         }
     }
 
@@ -253,8 +293,15 @@ class Transaksi extends Component
 
     public function delete()
     {
-        ModelsKeuangan::findOrFail($this->dataId)->delete();
-        $this->dispatchAlert('success', 'Success!', 'Transaksi berhasil dihapus.');
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            ModelsKeuangan::findOrFail($this->dataId)->delete();
+            \Illuminate\Support\Facades\DB::commit();
+            $this->dispatchAlert('success', 'Success!', 'Transaksi berhasil dihapus.');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
+        }
     }
 
     public function updatingLengthData()
@@ -515,7 +562,7 @@ class Transaksi extends Component
             $this->dispatch('swal:modal', [
                 'type' => 'error',
                 'message' => 'Error!',
-                'text' => 'Gagal menghapus file: ' . $e->getMessage()
+                'text' => 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. Gagal menghapus file: ' . $e->getMessage()
             ]);
         }
     }

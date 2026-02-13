@@ -47,17 +47,23 @@
                                                 <i class="fas fa-check text-success"></i>
                                                 AKTIF
                                             @elseif ($row->status == "nonaktif")
-                                                <button wire:click.prevent="activate({{ $row->id }})" class="btn btn-sm btn-info">AKTIFKAN</button>
+                                                @if ($this->can("tahun_kepengurusan.activate"))
+                                                    <button wire:click.prevent="activate({{ $row->id }})" class="btn btn-sm btn-info">AKTIFKAN</button>
+                                                @endif
                                             @endif
                                         </td>
                                         <td>
-                                            <button wire:click.prevent="edit({{ $row->id }})" class="btn btn-primary" data-toggle="modal" data-target="#formDataModal">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
+                                            @if ($this->can("tahun_kepengurusan.edit"))
+                                                <button wire:click.prevent="edit({{ $row->id }})" class="btn btn-primary" data-toggle="modal" data-target="#formDataModal">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                            @endif
 
-                                            <button wire:click.prevent="deleteConfirm({{ $row->id }})" class="btn btn-danger">
-                                                <i class="fas fa-trash"></i>
-                                            </button>
+                                            @if ($this->can("tahun_kepengurusan.delete"))
+                                                <button wire:click.prevent="deleteConfirm({{ $row->id }})" class="btn btn-danger">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            @endif
                                         </td>
                                     </tr>
                                 @empty
@@ -74,9 +80,11 @@
                 </div>
             </div>
         </div>
-        <button wire:click.prevent="isEditingMode(false)" class="btn-modal" data-toggle="modal" data-backdrop="static" data-keyboard="false" data-target="#formDataModal">
-            <i class="far fa-plus"></i>
-        </button>
+        @if ($this->can("tahun_kepengurusan.create"))
+            <button wire:click.prevent="isEditingMode(false)" class="btn-modal" data-toggle="modal" data-backdrop="static" data-keyboard="false" data-target="#formDataModal">
+                <i class="far fa-plus"></i>
+            </button>
+        @endif
     </section>
 
     <div class="modal fade" wire:ignore.self id="formDataModal" aria-labelledby="formDataModalLabel" aria-hidden="true">

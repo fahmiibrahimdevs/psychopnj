@@ -70,134 +70,235 @@
                                     <span>Dashboard</span>
                                 </a>
                             </li>
-                            @if (Auth::user()->hasRole("pengurus"))
-                                <li class="nav-item dropdown {{ request()->is("tahun-kepengurusan") || request()->is("profil-organisasi") || request()->is("department") || request()->is("anggota") || request()->is("struktur-jabatan") || request()->is("open-recruitment") || request()->is("control-user") || request()->is("door-lock-history") ? "active" : "" }}">
-                                    <a href="#" data-toggle="dropdown" class="nav-link has-dropdown">
-                                        <i class="far fa-sitemap"></i>
-                                        <span>Organisasi</span>
-                                    </a>
-                                    <ul class="dropdown-menu">
-                                        <li class="nav-item {{ request()->is("tahun-kepengurusan") ? "active" : "" }}">
-                                            <a href="/tahun-kepengurusan" class="nav-link">Tahun Kepengurusan</a>
-                                        </li>
-                                        <li class="nav-item {{ request()->is("profil-organisasi") ? "active" : "" }}">
-                                            <a href="/profil-organisasi" class="nav-link">Profil Organisasi</a>
-                                        </li>
-                                        <li class="nav-item {{ request()->is("department") ? "active" : "" }}">
-                                            <a href="/department" class="nav-link">Department</a>
-                                        </li>
-                                        <li class="nav-item {{ request()->is("anggota") ? "active" : "" }}">
-                                            <a href="/anggota" class="nav-link">Anggota</a>
-                                        </li>
-                                        <li class="nav-item {{ request()->is("open-recruitment") ? "active" : "" }}">
-                                            <a href="/open-recruitment" class="nav-link">Open Recruitment</a>
-                                        </li>
-                                        <li class="nav-item {{ request()->is("control-user") ? "active" : "" }}">
-                                            <a href="/control-user" class="nav-link">Control User</a>
-                                        </li>
-                                        <li class="nav-item {{ request()->is("door-lock-history") ? "active" : "" }}">
-                                            <a href="/door-lock-history" class="nav-link">Riwayat Door Lock</a>
-                                        </li>
-                                    </ul>
-                                </li>
-                                <li class="nav-item dropdown {{ request()->is("program-pembelajaran") || request()->is("pertemuan") || request()->is("projects") || request()->is("presensi-kehadiran") || request()->is("statistik-kehadiran") || request()->is("status-anggota-ujian") || request()->is("hasil-ujian-pertemuan") ? "active" : "" }}">
-                                    <a href="#" data-toggle="dropdown" class="nav-link has-dropdown">
-                                        <i class="far fa-users-class"></i>
-                                        <span>PRE</span>
-                                    </a>
-                                    <ul class="dropdown-menu">
-                                        <li class="nav-item {{ request()->is("program-pembelajaran") ? "active" : "" }}">
-                                            <a href="/program-pembelajaran" class="nav-link">Program Kegiatan</a>
-                                        </li>
-                                        <li class="nav-item {{ request()->is("pertemuan") ? "active" : "" }}">
-                                            <a href="/pertemuan" class="nav-link">Pertemuan</a>
-                                        </li>
-                                        <li class="nav-item {{ request()->is("projects") ? "active" : "" }}">
-                                            <a href="/projects" class="nav-link">Project/Kegiatan</a>
-                                        </li>
-                                        <li class="nav-item {{ request()->is("presensi-kehadiran") ? "active" : "" }}">
-                                            <a href="/presensi-kehadiran" class="nav-link">Presensi Kehadiran</a>
-                                        </li>
-                                        <li class="nav-item {{ request()->is("statistik-kehadiran") ? "active" : "" }}">
-                                            <a href="/statistik-kehadiran" class="nav-link">Statistik Kehadiran</a>
-                                        </li>
-                                        <li class="nav-item {{ request()->is("status-anggota-ujian") ? "active" : "" }}">
-                                            <a href="/status-anggota-ujian" class="nav-link">Status Anggota Ujian</a>
-                                        </li>
-                                        <li class="nav-item {{ request()->is("hasil-ujian-pertemuan") ? "active" : "" }}">
-                                            <a href="/hasil-ujian-pertemuan" class="nav-link">Hasil Ujian Pertemuan</a>
-                                        </li>
-                                    </ul>
-                                </li>
-                                <li class="nav-item dropdown {{ request()->is("jenis-anggaran") || request()->is("anggaran") || request()->is("transaksi-keuangan") || request()->is("iuran-kas") || request()->is("laporan-keuangan") ? "active" : "" }}">
-                                    <a href="#" data-toggle="dropdown" class="nav-link has-dropdown">
-                                        <i class="far fa-money-bill-wave"></i>
-                                        <span>Keuangan</span>
-                                    </a>
-                                    <ul class="dropdown-menu">
-                                        <li class="nav-item {{ request()->is("jenis-anggaran") ? "active" : "" }}">
-                                            <a href="/jenis-anggaran" class="nav-link">Jenis Anggaran</a>
-                                        </li>
-                                        <li class="nav-item {{ request()->is("anggaran") ? "active" : "" }}">
-                                            <a href="/anggaran" class="nav-link">Anggaran</a>
-                                        </li>
-                                        <li class="nav-item {{ request()->is("transaksi-keuangan") ? "active" : "" }}">
-                                            <a href="/transaksi-keuangan" class="nav-link">Transaksi Keuangan</a>
-                                        </li>
-                                        <li class="nav-item {{ request()->is("iuran-kas") ? "active" : "" }}">
-                                            <a href="/iuran-kas" class="nav-link">Iuran Kas</a>
-                                        </li>
-                                        <li class="nav-item {{ request()->is("laporan-keuangan") ? "active" : "" }}">
-                                            <a href="/laporan-keuangan" class="nav-link">Laporan Keuangan</a>
-                                        </li>
-                                    </ul>
-                                </li>
-                                <li class="nav-item dropdown {{ request()->is("kategori-barang") || request()->is("barang") || request()->is("peminjaman-barang") || request()->is("pengadaan-barang") ? "active" : "" }}">
-                                    <a href="#" data-toggle="dropdown" class="nav-link has-dropdown">
-                                        <i class="far fa-boxes"></i>
-                                        <span>Perlengkapan</span>
-                                    </a>
-                                    <ul class="dropdown-menu">
-                                        <li class="nav-item {{ request()->is("kategori-barang") ? "active" : "" }}">
-                                            <a href="/kategori-barang" class="nav-link">Kategori Barang</a>
-                                        </li>
-                                        <li class="nav-item {{ request()->is("barang") ? "active" : "" }}">
-                                            <a href="/barang" class="nav-link">Barang</a>
-                                        </li>
-                                        <li class="nav-item {{ request()->is("peminjaman-barang") ? "active" : "" }}">
-                                            <a href="/peminjaman-barang" class="nav-link">Peminjaman Barang</a>
-                                        </li>
-                                        <li class="nav-item {{ request()->is("pengadaan-barang") ? "active" : "" }}">
-                                            <a href="/pengadaan-barang" class="nav-link">Pengadaan Barang</a>
-                                        </li>
-                                    </ul>
-                                </li>
-                                <li class="nav-item dropdown {{ request()->is("surat-administrasi") ? "active" : "" }}">
-                                    <a href="#" data-toggle="dropdown" class="nav-link has-dropdown">
-                                        <i class="far fa-envelope"></i>
-                                        <span>Sekretaris</span>
-                                    </a>
-                                    <ul class="dropdown-menu">
-                                        <li class="nav-item {{ request()->is("surat-administrasi") ? "active" : "" }}">
-                                            <a href="/surat-administrasi" class="nav-link">Administrasi Surat</a>
-                                        </li>
-                                    </ul>
-                                </li>
-                                <li class="nav-item dropdown {{ request()->is("example") ? "active" : "" }}">
-                                    <a href="#" data-toggle="dropdown" class="nav-link has-dropdown">
-                                        <i class="far fa-file"></i>
-                                        <span>Evaluasi & Laporan</span>
-                                    </a>
-                                    <ul class="dropdown-menu">
-                                        <li class="nav-item {{ request()->is("example") ? "active" : "" }}">
-                                            <a href="/example" class="nav-link">Kritik & Saran</a>
-                                        </li>
-                                        <li class="nav-item {{ request()->is("example") ? "active" : "" }}">
-                                            <a href="/example" class="nav-link">Rekap Evaluasi</a>
-                                        </li>
-                                    </ul>
-                                </li>
-                            @endif
+                            @hasanyrole("super_admin|chairman|admin_pengajaran|admin_keuangan|admin_inventaris|admin_sekretaris|admin_project|admin_media")
+                                {{-- Organisasi Module --}}
+                                @if ($isSuperAdmin || array_intersect(["tahun_kepengurusan.view", "profil_organisasi.view", "department.view", "anggota.view", "open_recruitment.view", "control_user.view", "door_lock.view", "permission_matrix.view"], $userPermissions))
+                                    <li class="nav-item dropdown {{ request()->is("tahun-kepengurusan") || request()->is("profil-organisasi") || request()->is("department") || request()->is("anggota") || request()->is("struktur-jabatan") || request()->is("open-recruitment") || request()->is("control-user") || request()->is("door-lock-history") || request()->is("permission-matrix") ? "active" : "" }}">
+                                        <a href="#" data-toggle="dropdown" class="nav-link has-dropdown">
+                                            <i class="far fa-sitemap"></i>
+                                            <span>Organisasi</span>
+                                        </a>
+                                        <ul class="dropdown-menu">
+                                            @if ($isSuperAdmin || in_array("tahun_kepengurusan.view", $userPermissions))
+                                                <li class="nav-item {{ request()->is("tahun-kepengurusan") ? "active" : "" }}">
+                                                    <a href="/tahun-kepengurusan" class="nav-link">Tahun Kepengurusan</a>
+                                                </li>
+                                            @endif
+
+                                            @if ($isSuperAdmin || in_array("profil_organisasi.view", $userPermissions))
+                                                <li class="nav-item {{ request()->is("profil-organisasi") ? "active" : "" }}">
+                                                    <a href="/profil-organisasi" class="nav-link">Profil Organisasi</a>
+                                                </li>
+                                            @endif
+
+                                            @if ($isSuperAdmin || in_array("department.view", $userPermissions))
+                                                <li class="nav-item {{ request()->is("department") ? "active" : "" }}">
+                                                    <a href="/department" class="nav-link">Department</a>
+                                                </li>
+                                            @endif
+
+                                            @if ($isSuperAdmin || in_array("anggota.view", $userPermissions))
+                                                <li class="nav-item {{ request()->is("anggota") ? "active" : "" }}">
+                                                    <a href="/anggota" class="nav-link">Anggota</a>
+                                                </li>
+                                            @endif
+
+                                            @if ($isSuperAdmin || in_array("open_recruitment.view", $userPermissions))
+                                                <li class="nav-item {{ request()->is("open-recruitment") ? "active" : "" }}">
+                                                    <a href="/open-recruitment" class="nav-link">Open Recruitment</a>
+                                                </li>
+                                            @endif
+
+                                            @if ($isSuperAdmin || in_array("control_user.view", $userPermissions))
+                                                <li class="nav-item {{ request()->is("control-user") ? "active" : "" }}">
+                                                    <a href="/control-user" class="nav-link">Control User</a>
+                                                </li>
+                                            @endif
+
+                                            @if ($isSuperAdmin || in_array("permission_matrix.view", $userPermissions))
+                                                <li class="nav-item {{ request()->is("permission-matrix") ? "active" : "" }}">
+                                                    <a href="/permission-matrix" class="nav-link">Permission Matrix</a>
+                                                </li>
+                                            @endif
+
+                                            @if ($isSuperAdmin || in_array("door_lock.view", $userPermissions))
+                                                <li class="nav-item {{ request()->is("door-lock-history") ? "active" : "" }}">
+                                                    <a href="/door-lock-history" class="nav-link">Riwayat Door Lock</a>
+                                                </li>
+                                            @endif
+                                        </ul>
+                                    </li>
+                                @endif
+
+                                {{-- PRE (Akademik) Module --}}
+                                @if ($isSuperAdmin || array_intersect(["program_kegiatan.view", "pertemuan.view", "project.view", "presensi.view", "statistik_kehadiran.view", "ujian.view_status", "ujian.view_hasil"], $userPermissions))
+                                    <li class="nav-item dropdown {{ request()->is("program-kegiatan") || request()->is("pertemuan") || request()->is("projects") || request()->is("presensi-kehadiran") || request()->is("statistik-kehadiran") || request()->is("status-anggota-ujian") || request()->is("hasil-ujian-pertemuan") ? "active" : "" }}">
+                                        <a href="#" data-toggle="dropdown" class="nav-link has-dropdown">
+                                            <i class="far fa-users-class"></i>
+                                            <span>PRE</span>
+                                        </a>
+                                        <ul class="dropdown-menu">
+                                            @if ($isSuperAdmin || in_array("program_kegiatan.view", $userPermissions))
+                                                <li class="nav-item {{ request()->is("program-kegiatan") ? "active" : "" }}">
+                                                    <a href="/program-kegiatan" class="nav-link">Program Kegiatan</a>
+                                                </li>
+                                            @endif
+
+                                            @if ($isSuperAdmin || in_array("pertemuan.view", $userPermissions))
+                                                <li class="nav-item {{ request()->is("pertemuan") ? "active" : "" }}">
+                                                    <a href="/pertemuan" class="nav-link">Pertemuan</a>
+                                                </li>
+                                            @endif
+
+                                            @if ($isSuperAdmin || in_array("project.view", $userPermissions))
+                                                <li class="nav-item {{ request()->is("projects") ? "active" : "" }}">
+                                                    <a href="/projects" class="nav-link">Project/Kegiatan</a>
+                                                </li>
+                                            @endif
+
+                                            @if ($isSuperAdmin || in_array("presensi.view", $userPermissions))
+                                                <li class="nav-item {{ request()->is("presensi-kehadiran") ? "active" : "" }}">
+                                                    <a href="/presensi-kehadiran" class="nav-link">Presensi Kehadiran</a>
+                                                </li>
+                                            @endif
+
+                                            @if ($isSuperAdmin || in_array("statistik_kehadiran.view", $userPermissions))
+                                                <li class="nav-item {{ request()->is("statistik-kehadiran") ? "active" : "" }}">
+                                                    <a href="/statistik-kehadiran" class="nav-link">Statistik Kehadiran</a>
+                                                </li>
+                                            @endif
+
+                                            @if ($isSuperAdmin || in_array("ujian.view", $userPermissions))
+                                                <li class="nav-item {{ request()->is("status-anggota-ujian") ? "active" : "" }}">
+                                                    <a href="/status-anggota-ujian" class="nav-link">Status Anggota Ujian</a>
+                                                </li>
+                                            @endif
+
+                                            @if ($isSuperAdmin || in_array("ujian.view", $userPermissions))
+                                                <li class="nav-item {{ request()->is("hasil-ujian-pertemuan") ? "active" : "" }}">
+                                                    <a href="/hasil-ujian-pertemuan" class="nav-link">Hasil Ujian Pertemuan</a>
+                                                </li>
+                                            @endif
+                                        </ul>
+                                    </li>
+                                @endif
+
+                                {{-- Keuangan Module --}}
+                                @if ($isSuperAdmin || array_intersect(["anggaran.view", "jenis_anggaran.view", "transaksi.view", "iuran_kas.view", "laporan_keuangan.view"], $userPermissions))
+                                    <li class="nav-item dropdown {{ request()->is("jenis-anggaran") || request()->is("anggaran") || request()->is("transaksi-keuangan") || request()->is("iuran-kas") || request()->is("laporan-keuangan") ? "active" : "" }}">
+                                        <a href="#" data-toggle="dropdown" class="nav-link has-dropdown">
+                                            <i class="far fa-money-bill-wave"></i>
+                                            <span>Keuangan</span>
+                                        </a>
+                                        <ul class="dropdown-menu">
+                                            @if ($isSuperAdmin || in_array("jenis_anggaran.view", $userPermissions))
+                                                <li class="nav-item {{ request()->is("jenis-anggaran") ? "active" : "" }}">
+                                                    <a href="/jenis-anggaran" class="nav-link">Jenis Anggaran</a>
+                                                </li>
+                                            @endif
+
+                                            @if ($isSuperAdmin || in_array("anggaran.view", $userPermissions))
+                                                <li class="nav-item {{ request()->is("anggaran") ? "active" : "" }}">
+                                                    <a href="/anggaran" class="nav-link">Anggaran</a>
+                                                </li>
+                                            @endif
+
+                                            @if ($isSuperAdmin || in_array("transaksi.view", $userPermissions))
+                                                <li class="nav-item {{ request()->is("transaksi-keuangan") ? "active" : "" }}">
+                                                    <a href="/transaksi-keuangan" class="nav-link">Transaksi Keuangan</a>
+                                                </li>
+                                            @endif
+
+                                            @if ($isSuperAdmin || in_array("iuran_kas.view", $userPermissions))
+                                                <li class="nav-item {{ request()->is("iuran-kas") ? "active" : "" }}">
+                                                    <a href="/iuran-kas" class="nav-link">Iuran Kas</a>
+                                                </li>
+                                            @endif
+
+                                            @if ($isSuperAdmin || in_array("laporan_keuangan.view", $userPermissions))
+                                                <li class="nav-item {{ request()->is("laporan-keuangan") ? "active" : "" }}">
+                                                    <a href="/laporan-keuangan" class="nav-link">Laporan Keuangan</a>
+                                                </li>
+                                            @endif
+                                        </ul>
+                                    </li>
+                                @endif
+
+                                {{-- Perlengkapan Module --}}
+                                @if ($isSuperAdmin || array_intersect(["barang.view", "kategori_barang.view", "peminjaman_barang.view", "pengadaan_barang.view"], $userPermissions))
+                                    <li class="nav-item dropdown {{ request()->is("kategori-barang") || request()->is("barang") || request()->is("peminjaman-barang") || request()->is("pengadaan-barang") ? "active" : "" }}">
+                                        <a href="#" data-toggle="dropdown" class="nav-link has-dropdown">
+                                            <i class="far fa-boxes"></i>
+                                            <span>Perlengkapan</span>
+                                        </a>
+                                        <ul class="dropdown-menu">
+                                            @if ($isSuperAdmin || in_array("kategori_barang.view", $userPermissions))
+                                                <li class="nav-item {{ request()->is("kategori-barang") ? "active" : "" }}">
+                                                    <a href="/kategori-barang" class="nav-link">Kategori Barang</a>
+                                                </li>
+                                            @endif
+
+                                            @if ($isSuperAdmin || in_array("barang.view", $userPermissions))
+                                                <li class="nav-item {{ request()->is("barang") ? "active" : "" }}">
+                                                    <a href="/barang" class="nav-link">Barang</a>
+                                                </li>
+                                            @endif
+
+                                            @if ($isSuperAdmin || in_array("peminjaman_barang.view", $userPermissions))
+                                                <li class="nav-item {{ request()->is("peminjaman-barang") ? "active" : "" }}">
+                                                    <a href="/peminjaman-barang" class="nav-link">Peminjaman Barang</a>
+                                                </li>
+                                            @endif
+
+                                            @if ($isSuperAdmin || in_array("pengadaan_barang.view", $userPermissions))
+                                                <li class="nav-item {{ request()->is("pengadaan-barang") ? "active" : "" }}">
+                                                    <a href="/pengadaan-barang" class="nav-link">Pengadaan Barang</a>
+                                                </li>
+                                            @endif
+                                        </ul>
+                                    </li>
+                                @endif
+
+                                {{-- Sekretaris Module --}}
+                                @if ($isSuperAdmin || in_array("surat.view", $userPermissions))
+                                    <li class="nav-item dropdown {{ request()->is("surat-administrasi") ? "active" : "" }}">
+                                        <a href="#" data-toggle="dropdown" class="nav-link has-dropdown">
+                                            <i class="far fa-envelope"></i>
+                                            <span>Sekretaris</span>
+                                        </a>
+                                        <ul class="dropdown-menu">
+                                            @if ($isSuperAdmin || in_array("surat.view", $userPermissions))
+                                                <li class="nav-item {{ request()->is("surat-administrasi") ? "active" : "" }}">
+                                                    <a href="/surat-administrasi" class="nav-link">Administrasi Surat</a>
+                                                </li>
+                                            @endif
+                                        </ul>
+                                    </li>
+                                @endif
+
+                                {{-- Evaluasi Module --}}
+                                @if ($isSuperAdmin || array_intersect(["kritik_saran.view", "rekap_evaluasi.view"], $userPermissions))
+                                    <li class="nav-item dropdown {{ request()->is("example") ? "active" : "" }}">
+                                        <a href="#" data-toggle="dropdown" class="nav-link has-dropdown">
+                                            <i class="far fa-file"></i>
+                                            <span>Evaluasi & Laporan</span>
+                                        </a>
+                                        <ul class="dropdown-menu">
+                                            @if ($isSuperAdmin || in_array("kritik_saran.view", $userPermissions))
+                                                <li class="nav-item {{ request()->is("example") ? "active" : "" }}">
+                                                    <a href="/example" class="nav-link">Kritik & Saran</a>
+                                                </li>
+                                            @endif
+
+                                            @if ($isSuperAdmin || in_array("rekap_evaluasi.view", $userPermissions))
+                                                <li class="nav-item {{ request()->is("example") ? "active" : "" }}">
+                                                    <a href="/example" class="nav-link">Rekap Evaluasi</a>
+                                                </li>
+                                            @endif
+                                        </ul>
+                                    </li>
+                                @endif
+                            @endhasanyrole
 
                             @if (Auth::user()->hasRole("anggota"))
                                 <li class="nav-item dropdown {{ request()->is("anggota/daftar-pertemuan") || request()->is("anggota/hasil-soal") ? "active" : "" }}">

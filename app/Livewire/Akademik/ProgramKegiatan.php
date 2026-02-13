@@ -12,10 +12,11 @@ use App\Models\Pertemuan;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use App\Traits\ImageCompressor;
+use App\Traits\WithPermissionCache;
 
 class ProgramKegiatan extends Component
 {
-    use WithPagination, WithFileUploads, ImageCompressor;
+    use WithPagination, WithFileUploads, ImageCompressor, WithPermissionCache;
     #[Title('Program Kegiatan')]
 
     protected $listeners = [
@@ -53,6 +54,9 @@ class ProgramKegiatan extends Component
 
     public function mount()
     {
+        // Cache user permissions to avoid N+1 queries
+        $this->cacheUserPermissions();
+        
         // Load compression setting from .env
         $this->thumbnailTargetSizeKB = env('IMAGE_COMPRESS_SIZE_KB', 100);
         
@@ -104,51 +108,58 @@ class ProgramKegiatan extends Component
     {
         $this->validate();
 
-        // Get active tahun kepengurusan name
-        $activeTahun = DB::table('tahun_kepengurusan')
-            ->select('id', 'nama_tahun')
-            ->where('status', 'aktif')
-            ->first();
-        $tahunFolder = $activeTahun ? $activeTahun->nama_tahun : 'default';
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            // Get active tahun kepengurusan name
+            $activeTahun = DB::table('tahun_kepengurusan')
+                ->select('id', 'nama_tahun')
+                ->where('status', 'aktif')
+                ->first();
+            $tahunFolder = $activeTahun ? $activeTahun->nama_tahun : 'default';
 
-        $thumbnailPath = null;
-        if ($this->thumbnail) {
-            // Generate nama file dari nama_program (uppercase with space)
-            $programFolder = strtoupper($this->nama_program);
-            $fileName = strtoupper(str_replace(' ', '_', $this->nama_program)) . '_' . rand(10, 99);
-            $extension = $this->thumbnail->getClientOriginalExtension();
-            $thumbnailPath = $this->thumbnail->storeAs("{$tahunFolder}/{$programFolder}", $fileName . '.' . $extension, 'public');
-            
-            // Compress thumbnail only if larger than target
-            $fullPath = storage_path('app/public/' . $thumbnailPath);
-            $currentSizeKB = filesize($fullPath) / 1024;
-            
-            if ($currentSizeKB > $this->thumbnailTargetSizeKB) {
-                $this->compressImageToSize($fullPath, $this->thumbnailTargetSizeKB, 800);
+            $thumbnailPath = null;
+            if ($this->thumbnail) {
+                // Generate nama file dari nama_program (uppercase with space)
+                $programFolder = strtoupper($this->nama_program);
+                $fileName = strtoupper(str_replace(' ', '_', $this->nama_program)) . '_' . rand(10, 99);
+                $extension = $this->thumbnail->getClientOriginalExtension();
+                $thumbnailPath = $this->thumbnail->storeAs("{$tahunFolder}/{$programFolder}", $fileName . '.' . $extension, 'public');
+                
+                // Compress thumbnail only if larger than target
+                $fullPath = storage_path('app/public/' . $thumbnailPath);
+                $currentSizeKB = filesize($fullPath) / 1024;
+                
+                if ($currentSizeKB > $this->thumbnailTargetSizeKB) {
+                    $this->compressImageToSize($fullPath, $this->thumbnailTargetSizeKB, 800);
+                }
+                
+                // Update path if PNG was converted to JPG
+                if ($extension === 'png' && !file_exists($fullPath)) {
+                    $thumbnailPath = preg_replace('/\.png$/i', '.jpg', $thumbnailPath);
+                }
             }
-            
-            // Update path if PNG was converted to JPG
-            if ($extension === 'png' && !file_exists($fullPath)) {
-                $thumbnailPath = preg_replace('/\.png$/i', '.jpg', $thumbnailPath);
-            }
+
+            DB::table('program_pembelajaran')->insert([
+                'id_tahun'            => $this->id_tahun,
+                'nama_program'        => $this->nama_program,
+                'jenis_program'       => $this->jenis_program,
+                'deskripsi'           => $this->deskripsi,
+                'jumlah_pertemuan'    => $this->jumlah_pertemuan,
+                'penyelenggara'       => $this->penyelenggara,
+                'thumbnail'           => $thumbnailPath,
+
+                'untuk_anggota'       => $this->untuk_anggota ? 1 : 0,
+                'status'              => 'aktif',
+                'created_at'          => now(),
+                'updated_at'          => now(),
+            ]);
+
+            \Illuminate\Support\Facades\DB::commit();
+            $this->dispatchAlert('success', 'Success!', 'Data created successfully.');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
         }
-
-        DB::table('program_pembelajaran')->insert([
-            'id_tahun'            => $this->id_tahun,
-            'nama_program'        => $this->nama_program,
-            'jenis_program'       => $this->jenis_program,
-            'deskripsi'           => $this->deskripsi,
-            'jumlah_pertemuan'    => $this->jumlah_pertemuan,
-            'penyelenggara'       => $this->penyelenggara,
-            'thumbnail'           => $thumbnailPath,
-
-            'untuk_anggota'       => $this->untuk_anggota ? 1 : 0,
-            'status'              => 'aktif',
-            'created_at'          => now(),
-            'updated_at'          => now(),
-        ]);
-
-        $this->dispatchAlert('success', 'Success!', 'Data created successfully.');
     }
 
     public function edit($id)
@@ -177,58 +188,67 @@ class ProgramKegiatan extends Component
 
         if( $this->dataId )
         {
-            // Get active tahun kepengurusan name
-            $activeTahun = DB::table('tahun_kepengurusan')
-                ->select('id', 'nama_tahun')
-                ->where('status', 'aktif')
-                ->first();
-            $tahunFolder = $activeTahun ? $activeTahun->nama_tahun : 'default';
+            \Illuminate\Support\Facades\DB::beginTransaction();
+            try {
+                // Get active tahun kepengurusan name
+                $activeTahun = DB::table('tahun_kepengurusan')
+                    ->select('id', 'nama_tahun')
+                    ->where('status', 'aktif')
+                    ->first();
+                $tahunFolder = $activeTahun ? $activeTahun->nama_tahun : 'default';
 
-            $thumbnailPath = $this->oldThumbnail;
-            
-            if ($this->thumbnail) {
-                // Hapus thumbnail lama jika ada
-                if ($this->oldThumbnail && Storage::disk('public')->exists($this->oldThumbnail)) {
-                    Storage::disk('public')->delete($this->oldThumbnail);
-                }
-                // Generate nama file dari nama_program (uppercase with space)
+                // Get program name
+                // Note: We use $this->nama_program which is the updated name, or maybe we should use old name for consistency if we wanted to change folders but usually folders stay.
+                // But the code uses $this->nama_program for new files.
                 $programFolder = strtoupper($this->nama_program);
-                $fileName = strtoupper(str_replace(' ', '_', $this->nama_program)) . '_' . rand(10, 99);
-                $extension = $this->thumbnail->getClientOriginalExtension();
-                $thumbnailPath = $this->thumbnail->storeAs("{$tahunFolder}/{$programFolder}", $fileName . '.' . $extension, 'public');
+
+                $thumbnailPath = $this->oldThumbnail;
                 
-                // Compress thumbnail only if larger than target
-                $fullPath = storage_path('app/public/' . $thumbnailPath);
-                $currentSizeKB = filesize($fullPath) / 1024;
-                
-                if ($currentSizeKB > $this->thumbnailTargetSizeKB) {
-                    $this->compressImageToSize($fullPath, $this->thumbnailTargetSizeKB, 800);
+                if ($this->thumbnail) {
+                    // Hapus thumbnail lama jika ada
+                    if ($this->oldThumbnail && Storage::disk('public')->exists($this->oldThumbnail)) {
+                        Storage::disk('public')->delete($this->oldThumbnail);
+                    }
+                    // Generate nama file dari nama_program (uppercase with space)
+                    $fileName = strtoupper(str_replace(' ', '_', $this->nama_program)) . '_' . rand(10, 99);
+                    $extension = $this->thumbnail->getClientOriginalExtension();
+                    $thumbnailPath = $this->thumbnail->storeAs("{$tahunFolder}/{$programFolder}", $fileName . '.' . $extension, 'public');
+                    
+                    // Compress thumbnail only if larger than target
+                    $fullPath = storage_path('app/public/' . $thumbnailPath);
+                    $currentSizeKB = filesize($fullPath) / 1024;
+                    
+                    if ($currentSizeKB > $this->thumbnailTargetSizeKB) {
+                        $this->compressImageToSize($fullPath, $this->thumbnailTargetSizeKB, 800);
+                    }
+                    
+                    // Update path if PNG was converted to JPG
+                    if ($extension === 'png' && !file_exists($fullPath)) {
+                        $thumbnailPath = preg_replace('/\.png$/i', '.jpg', $thumbnailPath);
+                    }
                 }
-                
-                // Update path if PNG was converted to JPG
-                if ($extension === 'png' && !file_exists($fullPath)) {
-                    $thumbnailPath = preg_replace('/\.png$/i', '.jpg', $thumbnailPath);
-                }
+
+                DB::table('program_pembelajaran')
+                    ->where('id', $this->dataId)
+                    ->update([
+                        'id_tahun'            => $this->id_tahun,
+                        'nama_program'        => $this->nama_program,
+                        'jenis_program'       => $this->jenis_program,
+                        'deskripsi'           => $this->deskripsi,
+                        'jumlah_pertemuan'    => $this->jumlah_pertemuan,
+                        'penyelenggara'       => $this->penyelenggara,
+                        'thumbnail'           => $thumbnailPath,
+                        'untuk_anggota'       => $this->untuk_anggota ? 1 : 0,
+                        'updated_at'          => now(),
+                    ]);
+
+                \Illuminate\Support\Facades\DB::commit();
+                $this->dispatchAlert('success', 'Success!', 'Data updated successfully.');
+                $this->dataId = null;
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\DB::rollBack();
+                $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
             }
-
-            DB::table('program_pembelajaran')
-                ->where('id', $this->dataId)
-                ->update([
-                    'id_tahun'            => $this->id_tahun,
-                    'nama_program'        => $this->nama_program,
-                    'jenis_program'       => $this->jenis_program,
-                    'deskripsi'           => $this->deskripsi,
-                    'jumlah_pertemuan'    => $this->jumlah_pertemuan,
-                    'penyelenggara'       => $this->penyelenggara,
-
-                    'thumbnail'           => $thumbnailPath,
-                    'untuk_anggota'       => $this->untuk_anggota ? 1 : 0,
-                    'updated_at'          => now(),
-
-                ]);
-
-            $this->dispatchAlert('success', 'Success!', 'Data updated successfully.');
-            $this->dataId = null;
         }
     }
 
@@ -244,18 +264,25 @@ class ProgramKegiatan extends Component
 
     public function delete()
     {
-        $data = DB::table('program_pembelajaran')
-            ->select('thumbnail')
-            ->where('id', $this->dataId)
-            ->first();
-        
-        // Hapus thumbnail jika ada
-        if ($data && $data->thumbnail && Storage::disk('public')->exists($data->thumbnail)) {
-            Storage::disk('public')->delete($data->thumbnail);
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            $data = DB::table('program_pembelajaran')
+                ->select('thumbnail')
+                ->where('id', $this->dataId)
+                ->first();
+            
+            // Hapus thumbnail jika ada
+            if ($data && $data->thumbnail && Storage::disk('public')->exists($data->thumbnail)) {
+                Storage::disk('public')->delete($data->thumbnail);
+            }
+            
+            DB::table('program_pembelajaran')->where('id', $this->dataId)->delete();
+            \Illuminate\Support\Facades\DB::commit();
+            $this->dispatchAlert('success', 'Success!', 'Data deleted successfully.');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
         }
-        
-        DB::table('program_pembelajaran')->where('id', $this->dataId)->delete();
-        $this->dispatchAlert('success', 'Success!', 'Data deleted successfully.');
     }
 
     public function updatingLengthData()

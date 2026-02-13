@@ -3,16 +3,18 @@
         <div class="section-header tw-block">
             <div class="tw-flex">
                 <h1 class="tw-text-lg">Status Anggota Ujian</h1>
-                <div class="ml-auto">
-                    <button wire:click.prevent="refresh()" class="btn btn-info mr-2" @if ($id_pertemuan == '0') disabled @endif>
-                        <i class="fas fa-sync mr-1"></i>
-                        Refresh
-                    </button>
-                    <button wire:click.prevent="terapkanAksiConfirm()" class="btn btn-primary" @if (!((int) $id_pertemuan > 0 && (!empty($paksa_selesai) || !empty($ulang)))) disabled @endif>
-                        <i class="fas fa-check mr-1"></i>
-                        Terapkan Aksi
-                    </button>
-                </div>
+                @if ($this->can("ujian.view_status"))
+                    <div class="ml-auto">
+                        <button wire:click.prevent="refresh()" class="btn btn-info mr-2" @if ($id_pertemuan == '0') disabled @endif>
+                            <i class="fas fa-sync mr-1"></i>
+                            Refresh
+                        </button>
+                        <button wire:click.prevent="terapkanAksiConfirm()" class="btn btn-primary" @if (!((int) $id_pertemuan > 0 && (!empty($paksa_selesai) || !empty($ulang)))) disabled @endif>
+                            <i class="fas fa-check mr-1"></i>
+                            Terapkan Aksi
+                        </button>
+                    </div>
+                @endif
             </div>
         </div>
 

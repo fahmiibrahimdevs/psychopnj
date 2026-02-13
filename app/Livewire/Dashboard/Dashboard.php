@@ -27,7 +27,7 @@ class Dashboard extends Component
     {
         $user = User::find(Auth::user()->id);
         
-        if($user->hasRole('pengurus')) {
+        if($user->hasRole(['chairman', 'admin_media', 'admin_pengajaran', 'admin_keuangan', 'admin_inventaris', 'admin_sekretaris', 'admin_project', 'super_admin'])) {
             return view('livewire.dashboard.dashboard-pengurus');
         } else if ($user->hasRole('anggota')) {
             $this->loadAnggotaDashboard();

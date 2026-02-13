@@ -3,22 +3,26 @@
         <div class="section-header tw-block">
             <div class="tw-flex">
                 <h1 class="tw-text-lg">Hasil Ujian Pertemuan</h1>
-                <div class="ml-auto">
-                    <button wire:click.prevent="refresh()" class="btn btn-info mr-2" @if ($id_pertemuan == '0') disabled @endif>
-                        <i class="fas fa-sync mr-1"></i>
-                        Refresh
-                    </button>
-                    @if (! empty($hasil_ujian) && count($hasil_ujian) > 0)
-                        <button wire:click.prevent="tandaiSemua()" class="btn btn-success mr-2">
-                            <i class="fas fa-check-double mr-1"></i>
-                            Tandai Semua Dikoreksi
+                @if ($this->can("ujian.view_hasil"))
+                    <div class="ml-auto">
+                        <button wire:click.prevent="refresh()" class="btn btn-info mr-2" @if ($id_pertemuan == '0') disabled @endif>
+                            <i class="fas fa-sync mr-1"></i>
+                            Refresh
                         </button>
-                        <button wire:click.prevent="inputNilai()" class="btn btn-warning" data-toggle="modal" data-target="#inputNilaiModal">
-                            <i class="fas fa-edit mr-1"></i>
-                            Input Nilai
-                        </button>
-                    @endif
-                </div>
+                        @if ($this->can("ujian.koreksi"))
+                            @if (! empty($hasil_ujian) && count($hasil_ujian) > 0)
+                                <button wire:click.prevent="tandaiSemua()" class="btn btn-success mr-2">
+                                    <i class="fas fa-check-double mr-1"></i>
+                                    Tandai Semua Dikoreksi
+                                </button>
+                                <button wire:click.prevent="inputNilai()" class="btn btn-warning" data-toggle="modal" data-target="#inputNilaiModal">
+                                    <i class="fas fa-edit mr-1"></i>
+                                    Input Nilai
+                                </button>
+                            @endif
+                        @endif
+                    </div>
+                @endif
             </div>
         </div>
 

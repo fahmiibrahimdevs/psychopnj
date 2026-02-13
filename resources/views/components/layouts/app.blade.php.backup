@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta content="width=device-width, initial-scale=1, maximum-scale=1, shrink-to-fit=no" name="viewport" />
+        <title>{{ $title }}</title>
+
+        <!-- General CSS Files -->
+        <link rel="icon" type="image/png" href="{{ asset("icons/MIDRAGON.png") }}" />
+        <link rel="stylesheet" href="{{ asset("/assets/stisla/css/bootstrap.min.css") }}" />
+        <link rel="stylesheet" href="{{ asset("assets/fontawesome/all.css") }}" />
+        <link rel="stylesheet" href="{{ asset("assets/midragon/css/custom.css") }}" />
+        <link rel="stylesheet" href="{{ asset("assets/midragon/css/card-style.css") }}" />
+
+        @stack("general-css")
+
+        <!-- Template CSS -->
+        <link rel="stylesheet" href="{{ asset("/assets/stisla/css/style.css") }}" />
+        <link rel="stylesheet" href="{{ asset("/assets/stisla/css/components.css") }}" />
+        @vite(["resources/css/app.css", "resources/js/app.js"])
+    </head>
+
+    <body class="layout-3" style="font-family: 'Inter', sans-serif">
+        <div id="app">
+            <div class="main-wrapper container">
+                <div class="navbar-bg"></div>
+                <nav class="navbar navbar-expand-lg main-navbar">
+                    <a href="{{ url("dashboard") }}" class="navbar-brand sidebar-gone-hide">PSYCHOROBOTIC</a>
+                    <div class="navbar-nav">
+                        <a href="#" class="nav-link sidebar-gone-show" data-toggle="sidebar">
+                            <i class="fas fa-bars"></i>
+                        </a>
+                    </div>
+                    <form class="form-inline ml-auto"></form>
+                    <ul class="navbar-nav navbar-right">
+                        <li class="dropdown">
+                            <a href="#" data-toggle="dropdown" class="nav-link dropdown-toggle nav-link-lg nav-link-user">
+                                <div class="d-sm-none d-lg-inline-block">Hi, {{ Auth::user()->name }}</div>
+                            </a>
+                            <div class="dropdown-menu dropdown-menu-right">
+                                <div class="dropdown-title">Logged in 5 min ago</div>
+                                <a href="/profile" class="dropdown-item has-icon">
+                                    <i class="far fa-user"></i>
+                                    Profile
+                                </a>
+                                <div class="dropdown-divider"></div>
+                                <form method="POST" action="{{ route("logout") }}">
+                                    @csrf
+                                    <a
+                                        href="{{ route("logout") }}"
+                                        class="dropdown-item text-danger has-icon"
+                                        onclick="event.preventDefault();
+                                this.closest('form').submit();"
+                                    >
+                                        <i class="far fa-sign-out-alt"></i>
+                                        Logout
+                                    </a>
+                                </form>
+                            </div>
+                        </li>
+                    </ul>
+                </nav>
+
+                <nav class="navbar navbar-secondary navbar-expand-lg">
+                    <div class="container">
+                        <ul class="navbar-nav" style="margin-top: 0px">
+                            <li class="nav-item {{ request()->is("dashboard") ? "active" : "" }}">
+                                <a href="/dashboard" class="nav-link">
+                                    <i class="far fa-home"></i>
+                                    <span>Dashboard</span>
+                                </a>
+                            </li>
+                            @hasanyrole("super_admin|chairman|admin_pengajaran|admin_keuangan|admin_inventaris|admin_sekretaris|admin_project|admin_media")
+                                {{-- Organisasi Module --}}
+                                @canany(["tahun_kepengurusan.view", "profil_organisasi.view", "department.view", "anggota.view", "open_recruitment.view", "user.view", "door_lock.view_history", "role.manage"])
+                                    <li class="nav-item dropdown {{ request()->is("tahun-kepengurusan") || request()->is("profil-organisasi") || request()->is("department") || request()->is("anggota") || request()->is("struktur-jabatan") || request()->is("open-recruitment") || request()->is("control-user") || request()->is("door-lock-history") || request()->is("permission-matrix") ? "active" : "" }}">
+                                        <a href="#" data-toggle="dropdown" class="nav-link has-dropdown">
+                                            <i class="far fa-sitemap"></i>
+                                            <span>Organisasi</span>
+                                        </a>
+                                        <ul class="dropdown-menu">
+                                            @can("tahun_kepengurusan.view")
+                                                <li class="nav-item {{ request()->is("tahun-kepengurusan") ? "active" : "" }}">
+                                                    <a href="/tahun-kepengurusan" class="nav-link">Tahun Kepengurusan</a>
+                                                </li>
+                                            @endcan
+
+                                            @can("profil_organisasi.view")
+                                                <li class="nav-item {{ request()->is("profil-organisasi") ? "active" : "" }}">
+                                                    <a href="/profil-organisasi" class="nav-link">Profil Organisasi</a>
+                                                </li>
+                                            @endcan
+
+                                            @can("department.view")
+                                                <li class="nav-item {{ request()->is("department") ? "active" : "" }}">
+                                                    <a href="/department" class="nav-link">Department</a>
+                                                </li>
+                                            @endcan
+
+                                            @can("anggota.view")
+                                                <li class="nav-item {{ request()->is("anggota") ? "active" : "" }}">
+                                                    <a href="/anggota" class="nav-link">Anggota</a>
+                                                </li>
+                                            @endcan
+
+                                            @can("open_recruitment.view")
+                                                <li class="nav-item {{ request()->is("open-recruitment") ? "active" : "" }}">
+                                                    <a href="/open-recruitment" class="nav-link">Open Recruitment</a>
+                                                </li>
+                                            @endcan
+
+                                            @can("user.view")
+                                                <li class="nav-item {{ request()->is("control-user") ? "active" : "" }}">
+                                                    <a href="/control-user" class="nav-link">Control User</a>
+                                                </li>
+                                            @endcan
+
+                                            @can("role.manage")
+                                                <li class="nav-item {{ request()->is("permission-matrix") ? "active" : "" }}">
+                                                    <a href="/permission-matrix" class="nav-link">Permission Matrix</a>
+                                                </li>
+                                            @endcan
+
+                                            @can("door_lock.view_history")
+                                                <li class="nav-item {{ request()->is("door-lock-history") ? "active" : "" }}">
+                                                    <a href="/door-lock-history" class="nav-link">Riwayat Door Lock</a>
+                                                </li>
+                                            @endcan
+                                        </ul>
+                                    </li>
+                                @endcanany
+
+                                {{-- PRE (Akademik) Module --}}
+                                @canany(["program_pembelajaran.view", "pertemuan.view", "project.view", "presensi.view", "statistik_kehadiran.view", "ujian.view_status", "ujian.view_hasil"])
+                                    <li class="nav-item dropdown {{ request()->is("program-pembelajaran") || request()->is("pertemuan") || request()->is("projects") || request()->is("presensi-kehadiran") || request()->is("statistik-kehadiran") || request()->is("status-anggota-ujian") || request()->is("hasil-ujian-pertemuan") ? "active" : "" }}">
+                                        <a href="#" data-toggle="dropdown" class="nav-link has-dropdown">
+                                            <i class="far fa-users-class"></i>
+                                            <span>PRE</span>
+                                        </a>
+                                        <ul class="dropdown-menu">
+                                            @can("program_pembelajaran.view")
+                                                <li class="nav-item {{ request()->is("program-pembelajaran") ? "active" : "" }}">
+                                                    <a href="/program-pembelajaran" class="nav-link">Program Kegiatan</a>
+                                                </li>
+                                            @endcan
+
+                                            @can("pertemuan.view")
+                                                <li class="nav-item {{ request()->is("pertemuan") ? "active" : "" }}">
+                                                    <a href="/pertemuan" class="nav-link">Pertemuan</a>
+                                                </li>
+                                            @endcan
+
+                                            @can("project.view")
+                                                <li class="nav-item {{ request()->is("projects") ? "active" : "" }}">
+                                                    <a href="/projects" class="nav-link">Project/Kegiatan</a>
+                                                </li>
+                                            @endcan
+
+                                            @can("presensi.view")
+                                                <li class="nav-item {{ request()->is("presensi-kehadiran") ? "active" : "" }}">
+                                                    <a href="/presensi-kehadiran" class="nav-link">Presensi Kehadiran</a>
+                                                </li>
+                                            @endcan
+
+                                            @can("statistik_kehadiran.view")
+                                                <li class="nav-item {{ request()->is("statistik-kehadiran") ? "active" : "" }}">
+                                                    <a href="/statistik-kehadiran" class="nav-link">Statistik Kehadiran</a>
+                                                </li>
+                                            @endcan
+
+                                            @can("ujian.view_status")
+                                                <li class="nav-item {{ request()->is("status-anggota-ujian") ? "active" : "" }}">
+                                                    <a href="/status-anggota-ujian" class="nav-link">Status Anggota Ujian</a>
+                                                </li>
+                                            @endcan
+
+                                            @can("ujian.view_hasil")
+                                                <li class="nav-item {{ request()->is("hasil-ujian-pertemuan") ? "active" : "" }}">
+                                                    <a href="/hasil-ujian-pertemuan" class="nav-link">Hasil Ujian Pertemuan</a>
+                                                </li>
+                                            @endcan
+                                        </ul>
+                                    </li>
+                                @endcanany
+
+                                {{-- Keuangan Module --}}
+                                @canany(["anggaran.view", "jenis_anggaran.view", "transaksi.view", "iuran_kas.view", "laporan_keuangan.view"])
+                                    <li class="nav-item dropdown {{ request()->is("jenis-anggaran") || request()->is("anggaran") || request()->is("transaksi-keuangan") || request()->is("iuran-kas") || request()->is("laporan-keuangan") ? "active" : "" }}">
+                                        <a href="#" data-toggle="dropdown" class="nav-link has-dropdown">
+                                            <i class="far fa-money-bill-wave"></i>
+                                            <span>Keuangan</span>
+                                        </a>
+                                        <ul class="dropdown-menu">
+                                            @can("jenis_anggaran.view")
+                                                <li class="nav-item {{ request()->is("jenis-anggaran") ? "active" : "" }}">
+                                                    <a href="/jenis-anggaran" class="nav-link">Jenis Anggaran</a>
+                                                </li>
+                                            @endcan
+
+                                            @can("anggaran.view")
+                                                <li class="nav-item {{ request()->is("anggaran") ? "active" : "" }}">
+                                                    <a href="/anggaran" class="nav-link">Anggaran</a>
+                                                </li>
+                                            @endcan
+
+                                            @can("transaksi.view")
+                                                <li class="nav-item {{ request()->is("transaksi-keuangan") ? "active" : "" }}">
+                                                    <a href="/transaksi-keuangan" class="nav-link">Transaksi Keuangan</a>
+                                                </li>
+                                            @endcan
+
+                                            @can("iuran_kas.view")
+                                                <li class="nav-item {{ request()->is("iuran-kas") ? "active" : "" }}">
+                                                    <a href="/iuran-kas" class="nav-link">Iuran Kas</a>
+                                                </li>
+                                            @endcan
+
+                                            @can("laporan_keuangan.view")
+                                                <li class="nav-item {{ request()->is("laporan-keuangan") ? "active" : "" }}">
+                                                    <a href="/laporan-keuangan" class="nav-link">Laporan Keuangan</a>
+                                                </li>
+                                            @endcan
+                                        </ul>
+                                    </li>
+                                @endcanany
+
+                                {{-- Perlengkapan Module --}}
+                                @canany(["barang.view", "kategori_barang.view", "peminjaman.view", "pengadaan.view"])
+                                    <li class="nav-item dropdown {{ request()->is("kategori-barang") || request()->is("barang") || request()->is("peminjaman-barang") || request()->is("pengadaan-barang") ? "active" : "" }}">
+                                        <a href="#" data-toggle="dropdown" class="nav-link has-dropdown">
+                                            <i class="far fa-boxes"></i>
+                                            <span>Perlengkapan</span>
+                                        </a>
+                                        <ul class="dropdown-menu">
+                                            @can("kategori_barang.view")
+                                                <li class="nav-item {{ request()->is("kategori-barang") ? "active" : "" }}">
+                                                    <a href="/kategori-barang" class="nav-link">Kategori Barang</a>
+                                                </li>
+                                            @endcan
+
+                                            @can("barang.view")
+                                                <li class="nav-item {{ request()->is("barang") ? "active" : "" }}">
+                                                    <a href="/barang" class="nav-link">Barang</a>
+                                                </li>
+                                            @endcan
+
+                                            @can("peminjaman.view")
+                                                <li class="nav-item {{ request()->is("peminjaman-barang") ? "active" : "" }}">
+                                                    <a href="/peminjaman-barang" class="nav-link">Peminjaman Barang</a>
+                                                </li>
+                                            @endcan
+
+                                            @can("pengadaan.view")
+                                                <li class="nav-item {{ request()->is("pengadaan-barang") ? "active" : "" }}">
+                                                    <a href="/pengadaan-barang" class="nav-link">Pengadaan Barang</a>
+                                                </li>
+                                            @endcan
+                                        </ul>
+                                    </li>
+                                @endcanany
+
+                                {{-- Sekretaris Module --}}
+                                @can("surat.view")
+                                    <li class="nav-item dropdown {{ request()->is("surat-administrasi") ? "active" : "" }}">
+                                        <a href="#" data-toggle="dropdown" class="nav-link has-dropdown">
+                                            <i class="far fa-envelope"></i>
+                                            <span>Sekretaris</span>
+                                        </a>
+                                        <ul class="dropdown-menu">
+                                            @can("surat.view")
+                                                <li class="nav-item {{ request()->is("surat-administrasi") ? "active" : "" }}">
+                                                    <a href="/surat-administrasi" class="nav-link">Administrasi Surat</a>
+                                                </li>
+                                            @endcan
+                                        </ul>
+                                    </li>
+                                @endcan
+
+                                {{-- Evaluasi Module --}}
+                                @canany(["kritik_saran.view", "rekap_evaluasi.view"])
+                                    <li class="nav-item dropdown {{ request()->is("example") ? "active" : "" }}">
+                                        <a href="#" data-toggle="dropdown" class="nav-link has-dropdown">
+                                            <i class="far fa-file"></i>
+                                            <span>Evaluasi & Laporan</span>
+                                        </a>
+                                        <ul class="dropdown-menu">
+                                            @can("kritik_saran.view")
+                                                <li class="nav-item {{ request()->is("example") ? "active" : "" }}">
+                                                    <a href="/example" class="nav-link">Kritik & Saran</a>
+                                                </li>
+                                            @endcan
+
+                                            @can("rekap_evaluasi.view")
+                                                <li class="nav-item {{ request()->is("example") ? "active" : "" }}">
+                                                    <a href="/example" class="nav-link">Rekap Evaluasi</a>
+                                                </li>
+                                            @endcan
+                                        </ul>
+                                    </li>
+                                @endcanany
+                            @endhasanyrole
+
+                            @if (Auth::user()->hasRole("anggota"))
+                                <li class="nav-item dropdown {{ request()->is("anggota/daftar-pertemuan") || request()->is("anggota/hasil-soal") ? "active" : "" }}">
+                                    <a href="#" data-toggle="dropdown" class="nav-link has-dropdown">
+                                        <i class="far fa-book-open"></i>
+                                        <span>Akademik</span>
+                                    </a>
+                                    <ul class="dropdown-menu">
+                                        <li class="nav-item {{ request()->is("anggota/daftar-pertemuan") ? "active" : "" }}">
+                                            <a href="/anggota/daftar-pertemuan" class="nav-link">Daftar Pertemuan</a>
+                                        </li>
+                                        <li class="nav-item {{ request()->is("anggota/hasil-soal") ? "active" : "" }}">
+                                            <a href="/anggota/hasil-soal" class="nav-link">Hasil Ujian</a>
+                                        </li>
+                                    </ul>
+                                </li>
+                                <li class="nav-item {{ request()->is("anggota/riwayat-presensi") ? "active" : "" }}">
+                                    <a href="/anggota/riwayat-presensi" class="nav-link">
+                                        <i class="far fa-clipboard-list"></i>
+                                        <span>Riwayat Presensi</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item {{ request()->is("anggota/iuran-kas-saya") ? "active" : "" }}">
+                                    <a href="/anggota/iuran-kas-saya" class="nav-link">
+                                        <i class="far fa-money-bill-wave"></i>
+                                        <span>Iuran Kas</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item {{ request()->is("anggota/lihat-project") ? "active" : "" }}">
+                                    <a href="/anggota/lihat-project" class="nav-link">
+                                        <i class="far fa-project-diagram"></i>
+                                        <span>Project/Kegiatan</span>
+                                    </a>
+                                </li>
+                            @endif
+                        </ul>
+                    </div>
+                </nav>
+
+                <!-- Main Content -->
+                <div class="main-content">
+                    {{ $slot }}
+                </div>
+                <footer class="main-footer">
+                    <div class="footer-left">
+                        Copyright &copy; 2024
+                        <div class="bullet"></div>
+                        Created By
+                        <a href="http://fahmiibrahimdev.tech/">Fahmi Ibrahim</a>
+                    </div>
+                    <div class="footer-right">1.0.1</div>
+                </footer>
+            </div>
+        </div>
+
+        <!-- General JS Scripts -->
+        <script src="{{ asset("/assets/midragon/select2/jquery.min.js") }}"></script>
+        <script src="{{ asset("assets/midragon/js/bootstrap.bundle.min.js") }}"></script>
+        <script src="{{ asset("assets/midragon/js/bootstrap.min.js") }}"></script>
+        <script src="{{ asset("assets/midragon/js/jquery.nicescroll.min.js") }}"></script>
+
+        <!-- JS Libraies -->
+        <script src="{{ asset("assets/midragon/js/sweetalert2@11.js") }}"></script>
+        @stack("js-libraries")
+
+        <!-- Page Specific JS File -->
+        <script src="{{ asset("/assets/stisla/js/stisla.js") }}"></script>
+        <script>
+            window.addEventListener('swal:modal', (event) => {
+                Swal.fire({
+                    title: event.detail[0].message,
+                    text: event.detail[0].text,
+                    icon: event.detail[0].type,
+                });
+                $('#formDataModal').modal('hide');
+            });
+            window.addEventListener('swal:confirm', (event) => {
+                Swal.fire({
+                    title: event.detail[0].message,
+                    text: event.detail[0].text,
+                    icon: event.detail[0].type,
+                    showCancelButton: true,
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Livewire.dispatch('delete');
+                    }
+                });
+            });
+            window.onbeforeunload = function () {
+                window.scrollTo(5, 75);
+            };
+        </script>
+
+        <!-- Template JS File -->
+        <script src="{{ asset("/assets/stisla/js/scripts.js") }}"></script>
+        <script src="{{ asset("/assets/stisla/js/custom.js") }}"></script>
+        @stack("scripts")
+    </body>
+</html>

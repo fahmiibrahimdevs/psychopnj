@@ -7,10 +7,11 @@ use Livewire\WithPagination;
 use Livewire\Attributes\Title;
 use Illuminate\Support\Facades\DB;
 use App\Models\ProfilOrganisasi as ModelsProfilOrganisasi;
+use App\Traits\WithPermissionCache;
 
 class ProfilOrganisasi extends Component
 {
-    use WithPagination;
+    use WithPagination, WithPermissionCache;
     #[Title('Profil Organisasi')]
 
     protected $listeners = [
@@ -38,6 +39,9 @@ class ProfilOrganisasi extends Component
 
     public function mount()
     {
+        // Cache user permissions to avoid N+1 queries
+        $this->cacheUserPermissions();
+        
         $this->id_tahun            = DB::table('tahun_kepengurusan')->where('status', 'aktif')->value('id');
         $this->headline            = '';
         $this->deskripsi           = '';
@@ -114,7 +118,7 @@ class ProfilOrganisasi extends Component
             $this->dispatchAlert('success', 'Success!', 'Data created successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
         }
     }
 
@@ -138,7 +142,7 @@ class ProfilOrganisasi extends Component
 
             $this->initSummernote();
         } catch (\Exception $e) {
-            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
         }
     }
 
@@ -168,7 +172,7 @@ class ProfilOrganisasi extends Component
                 $this->dataId = null;
             } catch (\Exception $e) {
                 DB::rollBack();
-                $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+                $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
             }
         }
     }
@@ -195,7 +199,7 @@ class ProfilOrganisasi extends Component
             $this->dispatchAlert('success', 'Success!', 'Data deleted successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593');
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
         }
     }
 

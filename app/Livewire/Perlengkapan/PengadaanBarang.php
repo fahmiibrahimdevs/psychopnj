@@ -12,10 +12,11 @@ use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\Attributes\Title;
 use Illuminate\Support\Facades\DB;
+use App\Traits\WithPermissionCache;
 
 class PengadaanBarang extends Component
 {
-    use WithPagination;
+    use WithPagination, WithPermissionCache;
     #[Title('Pengadaan Barang')]
 
     protected $listeners = [
@@ -62,6 +63,7 @@ class PengadaanBarang extends Component
 
     public function mount()
     {
+        $this->cacheUserPermissions();
         $this->resetInputFields();
     }
 
@@ -170,25 +172,32 @@ class PengadaanBarang extends Component
             return;
         }
 
-        ModelsPengadaanBarang::create([
-            'tahun_kepengurusan_id' => $tahunAktif->id,
-            'pengusul_id' => $pengusul->id,
-            'department_id' => $this->kategori_anggaran === 'dept' ? $this->department_id : null,
-            'project_id' => $this->kategori_anggaran === 'project' ? $this->project_id : null,
-            'nama_barang' => $this->nama_barang,
-            'jumlah' => $this->jumlah,
-            'harga' => $this->harga,
-            'biaya_lainnya' => $this->biaya_lainnya,
-            'total' => (($this->jumlah * $this->harga) + $this->biaya_lainnya),
-            'prioritas' => $this->prioritas,
-            'keterangan' => $this->keterangan ?? '-',
-            'nama_toko' => $this->nama_toko,
-            'link_pembelian' => $this->link_pembelian,
-            'status' => 'diusulkan',
-            'id_user' => auth()->id(),
-        ]);
+        DB::beginTransaction();
+        try {
+            ModelsPengadaanBarang::create([
+                'tahun_kepengurusan_id' => $tahunAktif->id,
+                'pengusul_id' => $pengusul->id,
+                'department_id' => $this->kategori_anggaran === 'dept' ? $this->department_id : null,
+                'project_id' => $this->kategori_anggaran === 'project' ? $this->project_id : null,
+                'nama_barang' => $this->nama_barang,
+                'jumlah' => $this->jumlah,
+                'harga' => $this->harga,
+                'biaya_lainnya' => $this->biaya_lainnya,
+                'total' => (($this->jumlah * $this->harga) + $this->biaya_lainnya),
+                'prioritas' => $this->prioritas,
+                'keterangan' => $this->keterangan ?? '-',
+                'nama_toko' => $this->nama_toko,
+                'link_pembelian' => $this->link_pembelian,
+                'status' => 'diusulkan',
+                'id_user' => auth()->id(),
+            ]);
 
-        $this->dispatchAlert('success', 'Berhasil!', 'Usulan pengadaan barang berhasil dibuat.');
+            DB::commit();
+            $this->dispatchAlert('success', 'Berhasil!', 'Usulan pengadaan barang berhasil dibuat.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
+        }
     }
 
     public function edit($id)
@@ -243,22 +252,29 @@ class PengadaanBarang extends Component
                 return;
             }
 
-            $pengadaan->update([
-                'department_id' => $this->kategori_anggaran === 'dept' ? $this->department_id : null,
-                'project_id' => $this->kategori_anggaran === 'project' ? $this->project_id : null,
-                'nama_barang' => $this->nama_barang,
-                'jumlah' => $this->jumlah,
-                'harga' => $this->harga,
-                'biaya_lainnya' => $this->biaya_lainnya,
-                'total' => (($this->jumlah * $this->harga) + $this->biaya_lainnya),
-                'prioritas' => $this->prioritas,
-                'keterangan' => $this->keterangan ?? '-',
-                'nama_toko' => $this->nama_toko,
-                'link_pembelian' => $this->link_pembelian,
-            ]);
+            DB::beginTransaction();
+            try {
+                $pengadaan->update([
+                    'department_id' => $this->kategori_anggaran === 'dept' ? $this->department_id : null,
+                    'project_id' => $this->kategori_anggaran === 'project' ? $this->project_id : null,
+                    'nama_barang' => $this->nama_barang,
+                    'jumlah' => $this->jumlah,
+                    'harga' => $this->harga,
+                    'biaya_lainnya' => $this->biaya_lainnya,
+                    'total' => (($this->jumlah * $this->harga) + $this->biaya_lainnya),
+                    'prioritas' => $this->prioritas,
+                    'keterangan' => $this->keterangan ?? '-',
+                    'nama_toko' => $this->nama_toko,
+                    'link_pembelian' => $this->link_pembelian,
+                ]);
 
-            $this->dispatchAlert('success', 'Berhasil!', 'Usulan pengadaan berhasil diperbarui.');
-            $this->dataId = null;
+                DB::commit();
+                $this->dispatchAlert('success', 'Berhasil!', 'Usulan pengadaan berhasil diperbarui.');
+                $this->dataId = null;
+            } catch (\Exception $e) {
+                DB::rollBack();
+                $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
+            }
         }
     }
 
@@ -286,40 +302,49 @@ class PengadaanBarang extends Component
                 return;
             }
 
-            DB::transaction(function () use ($pengadaan) {
-                // Tentukan kategori keuangan
-                $kategori = 'Pengeluaran Lainnya';
-                if ($pengadaan->department_id) {
-                    $kategori = 'Departemen';
-                } elseif ($pengadaan->project_id) {
-                    $kategori = 'Project';
-                }
+            try {
+                DB::transaction(function () use ($pengadaan) {
+                    // Tentukan kategori keuangan
+                    $kategori = 'Pengeluaran Lainnya';
+                    if ($pengadaan->department_id) {
+                        $kategori = 'Departemen';
+                    } elseif ($pengadaan->project_id) {
+                        $kategori = 'Project';
+                    }
 
-                // Buat transaksi keuangan
-                $keuangan = Keuangan::create([
-                    'id_tahun' => $pengadaan->tahun_kepengurusan_id,
-                    'tanggal' => now(),
-                    'jenis' => 'pengeluaran',
-                    'kategori' => $kategori,
-                    'id_department' => $pengadaan->department_id,
-                    'id_project' => $pengadaan->project_id,
-                    'deskripsi' => "Pengadaan: {$pengadaan->nama_barang} ({$pengadaan->jumlah} pcs)",
-                    'nominal' => $pengadaan->total,
-                    'id_user' => auth()->id(),
+                    // Buat transaksi keuangan
+                    $keuangan = Keuangan::create([
+                        'id_tahun' => $pengadaan->tahun_kepengurusan_id,
+                        'tanggal' => now(),
+                        'jenis' => 'pengeluaran',
+                        'kategori' => $kategori,
+                        'id_department' => $pengadaan->department_id,
+                        'id_project' => $pengadaan->project_id,
+                        'deskripsi' => "Pengadaan: {$pengadaan->nama_barang} ({$pengadaan->jumlah} pcs)",
+                        'nominal' => $pengadaan->total,
+                        'id_user' => auth()->id(),
+                    ]);
+
+                    // Update pengadaan
+                    $pengadaan->update([
+                        'status' => 'disetujui',
+                        'keuangan_id' => $keuangan->id,
+                    ]);
+                });
+
+                $this->dispatch('swal:modal', [
+                    'type' => 'success',
+                    'message' => 'Berhasil!',
+                    'text' => 'Pengadaan disetujui dan transaksi keuangan telah dibuat.'
                 ]);
-
-                // Update pengadaan
-                $pengadaan->update([
-                    'status' => 'disetujui',
-                    'keuangan_id' => $keuangan->id,
+            } catch (\Exception $e) {
+                // DB::transaction automatically rolls back on exception
+                $this->dispatch('swal:modal', [
+                    'type' => 'error',
+                    'message' => 'Error!',
+                    'text' => 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage()
                 ]);
-            });
-
-            $this->dispatch('swal:modal', [
-                'type' => 'success',
-                'message' => 'Berhasil!',
-                'text' => 'Pengadaan disetujui dan transaksi keuangan telah dibuat.'
-            ]);
+            }
             $this->dataId = null;
         }
     }
@@ -348,25 +373,33 @@ class PengadaanBarang extends Component
                 return;
             }
 
-            DB::transaction(function () use ($pengadaan) {
-                // Hapus transaksi keuangan jika ada
-                if ($pengadaan->keuangan_id) {
-                    Keuangan::find($pengadaan->keuangan_id)?->delete();
-                }
+            try {
+                DB::transaction(function () use ($pengadaan) {
+                    // Hapus transaksi keuangan jika ada
+                    if ($pengadaan->keuangan_id) {
+                        Keuangan::find($pengadaan->keuangan_id)?->delete();
+                    }
 
-                // Kembalikan status
-                $pengadaan->update([
-                    'status' => 'diusulkan',
-                    'keuangan_id' => null,
-                    'catatan' => null,
+                    // Kembalikan status
+                    $pengadaan->update([
+                        'status' => 'diusulkan',
+                        'keuangan_id' => null,
+                        'catatan' => null,
+                    ]);
+                });
+
+                $this->dispatch('swal:modal', [
+                    'type' => 'success',
+                    'message' => 'Berhasil!',
+                    'text' => 'Persetujuan dibatalkan. Status kembali menjadi Diusulkan.'
                 ]);
-            });
-
-            $this->dispatch('swal:modal', [
-                'type' => 'success',
-                'message' => 'Berhasil!',
-                'text' => 'Persetujuan dibatalkan. Status kembali menjadi Diusulkan.'
-            ]);
+            } catch (\Exception $e) {
+                $this->dispatch('swal:modal', [
+                    'type' => 'error',
+                    'message' => 'Error!',
+                    'text' => 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage()
+                ]);
+            }
             $this->dataId = null;
         }
     }
@@ -384,20 +417,30 @@ class PengadaanBarang extends Component
     public function reject()
     {
         if ($this->dataId) {
-            $pengadaan = ModelsPengadaanBarang::findOrFail($this->dataId);
-            
-            $pengadaan->update([
-                'status' => 'ditolak',
-                'catatan' => $this->catatan,
-            ]);
+            DB::beginTransaction();
+            try {
+                $pengadaan = ModelsPengadaanBarang::findOrFail($this->dataId);
+                $pengadaan->update([
+                    'status' => 'ditolak',
+                    'catatan' => $this->catatan,
+                ]);
 
-            $this->dispatch('swal:modal', [
-                'type' => 'success',
-                'message' => 'Berhasil!',
-                'text' => 'Pengadaan telah ditolak.'
-            ]);
-            $this->dataId = null;
-            $this->catatan = '';
+                DB::commit();
+                $this->dispatch('swal:modal', [
+                    'type' => 'success',
+                    'message' => 'Berhasil!',
+                    'text' => 'Pengadaan telah ditolak.'
+                ]);
+                $this->dataId = null;
+                $this->catatan = '';
+            } catch (\Exception $e) {
+                DB::rollBack();
+                $this->dispatch('swal:modal', [
+                    'type' => 'error',
+                    'message' => 'Error!',
+                    'text' => 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage()
+                ]);
+            }
         }
     }
 
@@ -414,13 +457,24 @@ class PengadaanBarang extends Component
             return;
         }
 
-        $pengadaan->update(['status' => 'selesai']);
+        DB::beginTransaction();
+        try {
+            $pengadaan->update(['status' => 'selesai']);
+            DB::commit();
 
-        $this->dispatch('swal:modal', [
-            'type' => 'success',
-            'message' => 'Berhasil!',
-            'text' => 'Pengadaan telah ditandai selesai.'
-        ]);
+            $this->dispatch('swal:modal', [
+                'type' => 'success',
+                'message' => 'Berhasil!',
+                'text' => 'Pengadaan telah ditandai selesai.'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatch('swal:modal', [
+                'type' => 'error',
+                'message' => 'Error!',
+                'text' => 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage()
+            ]);
+        }
     }
 
     public function deleteConfirm($id)
@@ -435,15 +489,22 @@ class PengadaanBarang extends Component
 
     public function delete()
     {
-        $pengadaan = ModelsPengadaanBarang::findOrFail($this->dataId);
-        
-        // Jika sudah ada keuangan, hapus juga
-        if ($pengadaan->keuangan_id) {
-            Keuangan::find($pengadaan->keuangan_id)?->delete();
+        DB::beginTransaction();
+        try {
+            $pengadaan = ModelsPengadaanBarang::findOrFail($this->dataId);
+            
+            // Jika sudah ada keuangan, hapus juga
+            if ($pengadaan->keuangan_id) {
+                Keuangan::find($pengadaan->keuangan_id)?->delete();
+            }
+            
+            $pengadaan->delete();
+            DB::commit();
+            $this->dispatchAlert('success', 'Berhasil!', 'Data pengadaan berhasil dihapus.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
         }
-        
-        $pengadaan->delete();
-        $this->dispatchAlert('success', 'Berhasil!', 'Data pengadaan berhasil dihapus.');
     }
 
     public function updatingLengthData()

@@ -8,9 +8,12 @@ use App\Models\Pertemuan;
 use App\Models\Anggota;
 use App\Models\PresensiPertemuan as ModelsPresensiPertemuan;
 use Illuminate\Support\Facades\DB;
+use App\Traits\WithPermissionCache;
 
 class PresensiPertemuan extends Component
 {
+    use WithPermissionCache;
+    
     #[Title('Presensi Pertemuan')]
 
     public $selectedPertemuan = null;
@@ -31,6 +34,8 @@ class PresensiPertemuan extends Component
 
     public function mount()
     {
+        $this->cacheUserPermissions();
+        
         $pertemuansData = DB::table('pertemuan')
                             ->select(
                                 'pertemuan.id',
@@ -349,7 +354,7 @@ class PresensiPertemuan extends Component
             $this->dispatch('swal:modal', [
                 'type'      => 'error',  
                 'message'   => 'Error!', 
-                'text'      => 'Failed to update presensi: ' . $e->getMessage()
+                'text'      => 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage()
             ]);
         }
     }

@@ -3,21 +3,22 @@
 namespace App\Livewire\Sekretaris;
 
 use Livewire\Component;
-use Livewire\WithFileUploads;
+use Illuminate\Support\Str;
 use Livewire\WithPagination;
+use Livewire\WithFileUploads;
 use Livewire\Attributes\Title;
+use App\Models\TahunKepengurusan;
+use App\Traits\WithPermissionCache;
+use App\Models\Sekretaris\SuratFile;
 use App\Models\Sekretaris\SuratMasuk;
 use App\Models\Sekretaris\SuratKeluar;
-use App\Models\Sekretaris\SuratFile;
+use Illuminate\Support\Facades\Storage;
 use App\Models\Sekretaris\KategoriDokumen;
 use App\Models\Sekretaris\DokumenOrganisasi;
-use App\Models\TahunKepengurusan;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 class Surat extends Component
 {
-    use WithFileUploads, WithPagination;
+    use WithFileUploads, WithPagination, WithPermissionCache;
 
     #[Title('Administrasi Surat & Dokumen')]
 
@@ -50,6 +51,7 @@ class Surat extends Component
 
     public function mount()
     {
+        $this->cacheUserPermissions();
         // Load Categories
         $this->kategoriList = KategoriDokumen::all();
 

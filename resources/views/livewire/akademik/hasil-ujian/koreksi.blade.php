@@ -6,12 +6,14 @@
                     <i class="fas fa-arrow-left"></i>
                 </a>
                 <h1 class="tw-text-lg">Koreksi Hasil Anggota</h1>
-                @if ($detail && $detail->dikoreksi != null)
-                    <button class="btn btn-primary ml-auto tw-tracking-wider" wire:click.prevent="sudahDikoreksi()">
-                        <i class="fas fa-check"></i>
-                        Tandai Sudah Dikoreksi
-                    </button>
-                @endif
+                @if($this->can("ujian.koreksi"))
+                    @if ($detail && $detail->dikoreksi != null)
+                        <button class="btn btn-primary ml-auto tw-tracking-wider" wire:click.prevent="sudahDikoreksi()">
+                            <i class="fas fa-check"></i>
+                            Tandai Sudah Dikoreksi
+                        </button>
+                    @endif
+                @endcan
             </div>
         </div>
 
@@ -364,7 +366,9 @@
                                                         @if ($soal->jawaban_anggota !== $soal->jawaban_alias)
                                                             <td class="tw-py-3">
                                                                 <div class="tw-flex tw-justify-center">
-                                                                    <button id="edit{{ $soal->id }}" onclick="edit({{ $soal->id }})" class="btn btn-sm btn-primary mr-3"><i class="fas fa-edit"></i></button>
+                                                                    @if($this->can("ujian.koreksi"))
+                                                                        <button id="edit{{ $soal->id }}" onclick="edit({{ $soal->id }})" class="btn btn-sm btn-primary mr-3"><i class="fas fa-edit"></i></button>
+                                                                    @endcan
                                                                 </div>
                                                             </td>
                                                         @else

@@ -148,15 +148,21 @@
                                                     <td class="text-left tw-whitespace-nowrap tw-capitalize">{{ $row->nama_jabatan }}</td>
                                                     <td class="text-left tw-capitalize">{{ $row->status_aktif }}</td>
                                                         <td class="tw-whitespace-nowrap">
+                                                            @if($this->can('anggota.view_detail'))
                                                             <button wire:click.prevent="view({{ $row->id }})" class="btn btn-info" data-toggle="modal" data-target="#viewDataModal">
                                                                 <i class="fas fa-eye"></i>
                                                             </button>
+                                                            @endif
+                                                            @if($this->can('anggota.edit'))
                                                             <button wire:click.prevent="edit({{ $row->id }})" class="btn btn-primary" data-toggle="modal" data-target="#formDataModal">
                                                                 <i class="fas fa-edit"></i>
                                                             </button>
+                                                            @endif
+                                                            @if($this->can('anggota.delete'))
                                                             <button wire:click.prevent="deleteConfirm({{ $row->id }})" class="btn btn-danger">
                                                                 <i class="fas fa-trash"></i>
                                                             </button>
+                                                            @endif
                                                         </td>
                                                 </tr>
                                             @endforeach
@@ -249,15 +255,21 @@
                                                     <td class="text-left tw-whitespace-nowrap tw-capitalize">{{ $row->nama_jabatan }}</td>
                                                     <td class="text-left tw-capitalize">{{ $row->status_aktif }}</td>
                                                         <td class="tw-whitespace-nowrap">
+                                                            @if($this->can('anggota.view_detail'))
                                                             <button wire:click.prevent="view({{ $row->id }})" class="btn btn-info" data-toggle="modal" data-target="#viewDataModal">
                                                                 <i class="fas fa-eye"></i>
                                                             </button>
+                                                            @endif
+                                                            @if($this->can('anggota.edit'))
                                                             <button wire:click.prevent="edit({{ $row->id }})" class="btn btn-primary" data-toggle="modal" data-target="#formDataModal">
                                                                 <i class="fas fa-edit"></i>
                                                             </button>
+                                                            @endif
+                                                            @if($this->can('anggota.delete'))
                                                             <button wire:click.prevent="deleteConfirm({{ $row->id }})" class="btn btn-danger">
                                                                 <i class="fas fa-trash"></i>
                                                             </button>
+                                                            @endif
                                                         </td>
                                                 </tr>
                                             @endforeach
@@ -282,9 +294,11 @@
                 </div>
             </div>
         </div>
+        @if($this->can('anggota.create'))
         <button wire:click.prevent="isEditingMode(false)" class="btn-modal" data-toggle="modal" data-backdrop="static" data-keyboard="false" data-target="#formDataModal">
             <i class="far fa-plus"></i>
         </button>
+        @endif
     </section>
 
     <div class="modal fade" wire:ignore.self id="formDataModal" aria-labelledby="formDataModalLabel" aria-hidden="true">
@@ -452,6 +466,18 @@
 
                             <!-- Tab Pembuatan Akun -->
                             <div class="tab-pane fade" id="akun" role="tabpanel">
+                                <div class="form-group">
+                                    <label for="role">Role</label>
+                                    <select wire:model="role" id="role" class="form-control" {{ $status_anggota == 'anggota' ? 'disabled' : '' }}>
+                                        <option value="">-- Pilih Role --</option>
+                                        @foreach($roles as $r)
+                                            <option value="{{ $r }}">{{ $r }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error("role")
+                                        <span class="text-danger">{{ $message }}</span>
+                                    @enderror
+                                </div>
                                 <div class="row">
                                     <div class="col-6">
                                         <div class="form-group">
