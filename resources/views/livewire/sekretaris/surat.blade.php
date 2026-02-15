@@ -4,9 +4,9 @@
             <h1>Administrasi Surat & Dokumen</h1>
         </div>
 
-        <div class="section-body tw-mt-3">
+        <div class="section-body tw-mt-3 lg:-tw-mt-2">
             <!-- Tabs -->
-            <ul class="nav nav-pills" id="myTab3" role="tablist" style="display: flex; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; -ms-overflow-style: none; scrollbar-width: none">
+            <ul class="nav nav-pills tw-px-4 lg:tw-px-0" id="myTab3" role="tablist" style="display: flex; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; -ms-overflow-style: none; scrollbar-width: none">
                 <li class="nav-item">
                     <a class="nav-link {{ $activeTab === "surat-masuk" ? "active" : "" }} tw-whitespace-nowrap" wire:click.prevent="switchTab('surat-masuk')" href="#" role="tab">
                         <i class="fas fa-inbox tw-mr-2"></i>

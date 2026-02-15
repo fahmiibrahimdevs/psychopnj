@@ -30,8 +30,8 @@
                 font-family: 'Jetbrains Mono', monospace;
             }
         </style>
-        <link rel="icon" type="image/png" href="{{ asset("icons/NEXARYN.png") }}" />
-        <link rel="stylesheet" href="{{ asset("assets/fontawesome/all.css") }}" />
+        <link rel="icon" type="image/png" href="{{ asset("icons/logo-psychorobotic.png") }}" />
+        <link rel="stylesheet" href="{{ asset("assets/fontawesome-pro/css/all.css") }}" />
         <link rel="stylesheet" href="{{ asset("assets/katex/katex.min.css") }}" />
         <link rel="stylesheet" href="{{ asset("assets/flowbite/flowbite.min.css") }}" />
         <link rel="stylesheet" href="{{ asset("assets/lightbox/lightbox.min.css") }}" />
@@ -79,44 +79,51 @@
                     </li>
                     <li class="mid-nav-link">
                         <a href="{{ url("tentang") }}" class="mid-nav-link-child {{ request()->is("tentang") ? "tw-text-cyan-400" : "tw-text-white" }}">
-                            <i class="fas fa-blog"></i>
-                            <span class="tw-ml-3.5">Tentang</span>
+                            <i class="fas fa-info-circle"></i>
+                            <span class="tw-ml-3.5">Tentang Kami</span>
                         </a>
                     </li>
                     <li class="mid-nav-link">
-                        <a href="{{ url("department") }}" class="mid-nav-link-child {{ request()->is("department") ? "tw-text-cyan-400" : "tw-text-white" }}">
-                            <i class="fas fa-project-diagram"></i>
+                        <a href="{{ url("divisi") }}" class="mid-nav-link-child {{ request()->is("divisi") ? "tw-text-cyan-400" : "tw-text-white" }}">
+                            <i class="fas fa-sitemap"></i>
                             <span class="tw-ml-3">Divisi</span>
                         </a>
                     </li>
                     <li class="mid-nav-link">
-                        <a href="{{ url("project") }}" class="mid-nav-link-child {{ request()->is("project") ? "tw-text-cyan-400" : "tw-text-white" }}">
-                            <i class="fas fa-graduation-cap"></i>
-                            <span class="tw-ml-3">Project/Kegiatan</span>
+                        <a href="{{ url("projects") }}" class="mid-nav-link-child {{ request()->is("projects") ? "tw-text-cyan-400" : "tw-text-white" }}">
+                            <i class="fas fa-robot"></i>
+                            <span class="tw-ml-3">Project</span>
+                        </a>
+                    </li>
+                    <li class="mid-nav-link">
+                        <a href="{{ url("kegiatan") }}" class="mid-nav-link-child {{ request()->is("kegiatan") ? "tw-text-cyan-400" : "tw-text-white" }}">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span class="tw-ml-4">Kegiatan</span>
                         </a>
                     </li>
                     <li class="mid-nav-link">
                         <a href="{{ url("galeri") }}" class="mid-nav-link-child {{ request()->is("galeri") ? "tw-text-cyan-400" : "tw-text-white" }}">
-                            <i class="fas fa-quran"></i>
+                            <i class="fas fa-images"></i>
                             <span class="tw-ml-4">Galeri</span>
+                        </a>
+                    </li>
+                    <li class="mid-menu-header tw-text-yellow-300 tw-mt-4">LAYANAN</li>
+                    <li class="mid-nav-link">
+                        <a href="{{ url("recruitment") }}" class="mid-nav-link-child {{ request()->is("recruitment") ? "tw-text-cyan-400" : "tw-text-white" }}">
+                            <i class="fas fa-user-plus"></i>
+                            <span class="tw-ml-4">Open Recruitment</span>
                         </a>
                     </li>
                     <li class="mid-nav-link">
                         <a href="{{ url("cek-sertifikat") }}" class="mid-nav-link-child {{ request()->is("cek-sertifikat") ? "tw-text-cyan-400" : "tw-text-white" }}">
-                            <i class="fas fa-user-graduate"></i>
+                            <i class="fas fa-certificate"></i>
                             <span class="tw-ml-4">Cek Sertifikat</span>
                         </a>
                     </li>
                     <li class="mid-nav-link">
                         <a href="{{ url("kontak") }}" class="mid-nav-link-child {{ request()->is("kontak") ? "tw-text-cyan-400" : "tw-text-white" }}">
                             <i class="fas fa-envelope"></i>
-                            <span class="tw-ml-4">Kontak Kami</span>
-                        </a>
-                    </li>
-                    <li class="mid-nav-link">
-                        <a href="{{ url("kontak") }}" class="mid-nav-link-child {{ request()->is("kontak") ? "tw-text-cyan-400" : "tw-text-white" }}">
-                            <i class="fas fa-envelope"></i>
-                            <span class="tw-ml-4">Open Recruitment</span>
+                            <span class="tw-ml-4">Kontak</span>
                         </a>
                     </li>
                 </ul>
@@ -135,27 +142,27 @@
                         </div>
                     </div>
                 </a>
-                <ul class="tw-flex tw-text-sm tw-space-x-4 tw-list-none">
+                <ul class="tw-flex tw-text-sm tw-space-x-6 tw-list-none tw-items-center">
                     <li>
-                        <a href="{{ url("/") }}" class="{{ request()->is("/") ? "tw-text-cyan-400" : "tw-text-white" }}">Beranda</a>
+                        <a href="{{ url("/") }}" class="hover:tw-text-cyan-400 tw-transition {{ request()->is("/") ? "tw-text-cyan-400" : "tw-text-white" }}">Beranda</a>
                     </li>
                     <li>
-                        <a href="{{ url("tentang") }}" class="{{ request()->is("tentang") ? "tw-text-cyan-400" : "tw-text-white" }}">Tentang</a>
+                        <a href="{{ url("tentang") }}" class="hover:tw-text-cyan-400 tw-transition {{ request()->is("tentang") ? "tw-text-cyan-400" : "tw-text-white" }}">Tentang</a>
                     </li>
                     <li>
-                        <a href="{{ url("department") }}" class="{{ request()->is("department") ? "tw-text-cyan-400" : "tw-text-white" }}">Department</a>
+                        <a href="{{ url("divisi") }}" class="hover:tw-text-cyan-400 tw-transition {{ request()->is("divisi") ? "tw-text-cyan-400" : "tw-text-white" }}">Divisi</a>
                     </li>
                     <li>
-                        <a href="{{ url("project") }}" class="{{ request()->is("project") ? "tw-text-cyan-400" : "tw-text-white" }}">Project/Kegiatan</a>
+                        <a href="{{ url("projects") }}" class="hover:tw-text-cyan-400 tw-transition {{ request()->is("projects") ? "tw-text-cyan-400" : "tw-text-white" }}">Project</a>
                     </li>
                     <li>
-                        <a href="{{ url("galeri") }}" class="{{ request()->is("galeri") ? "tw-text-cyan-400" : "tw-text-white" }}">Galeri</a>
+                        <a href="{{ url("kegiatan") }}" class="hover:tw-text-cyan-400 tw-transition {{ request()->is("kegiatan") ? "tw-text-cyan-400" : "tw-text-white" }}">Kegiatan</a>
                     </li>
                     <li>
-                        <a href="{{ url("cek-sertifikat") }}" class="{{ request()->is("cek-sertifikat") ? "tw-text-cyan-400" : "tw-text-white" }}">Cek Sertifikat</a>
+                        <a href="{{ url("galeri") }}" class="hover:tw-text-cyan-400 tw-transition {{ request()->is("galeri") ? "tw-text-cyan-400" : "tw-text-white" }}">Galeri</a>
                     </li>
                     <li>
-                        <a href="{{ url("kontak") }}" class="{{ request()->is("kontak") ? "tw-text-cyan-400" : "tw-text-white" }}">Kontak Kami</a>
+                        <a href="{{ url("recruitment") }}" class="tw-bg-gradient-to-r tw-from-cyan-500 tw-to-blue-500 tw-px-4 tw-py-2 tw-rounded-full tw-text-white tw-font-semibold hover:tw-shadow-lg hover:tw-shadow-cyan-500/50 tw-transition">Join Us</a>
                     </li>
                 </ul>
             </div>
@@ -170,13 +177,13 @@
                 <div class="tw-container tw-mx-auto tw-text-center">
                     <div id="social-media" class="tw-hidden tw-justify-center tw-items-center tw-space-x-10 tw-mb-14 lg:tw-flex">
                         <ul class="tw-flex tw-space-x-10 tw-text-sm tw-text-gray-400 tw-font-semibold tw-list-none">
-                            <li class="tw-ml-[-40px]"><a href="{{ url("/") }}" class="">Beranda</a></li>
-                            <li><a href="{{ url("tentang") }}">Tentang</a></li>
-                            <li><a href="{{ url("department") }}">Department</a></li>
-                            <li><a href="{{ url("project") }}">Project/Kegiatan</a></li>
-                            <li><a href="{{ url("galeri") }}">Galeri</a></li>
-                            <li><a href="{{ url("cek-sertifikat") }}">Cek Sertifikat</a></li>
-                            <li><a href="{{ url("kontak") }}">Kontak Kami</a></li>
+                            <li class="tw-ml-[-40px]"><a href="{{ url("/") }}" class="hover:tw-text-cyan-400">Beranda</a></li>
+                            <li><a href="{{ url("tentang") }}" class="hover:tw-text-cyan-400">Tentang</a></li>
+                            <li><a href="{{ url("divisi") }}" class="hover:tw-text-cyan-400">Divisi</a></li>
+                            <li><a href="{{ url("projects") }}" class="hover:tw-text-cyan-400">Project</a></li>
+                            <li><a href="{{ url("kegiatan") }}" class="hover:tw-text-cyan-400">Kegiatan</a></li>
+                            <li><a href="{{ url("galeri") }}" class="hover:tw-text-cyan-400">Galeri</a></li>
+                            <li><a href="{{ url("kontak") }}" class="hover:tw-text-cyan-400">Kontak</a></li>
                         </ul>
                     </div>
                     <div id="social-media" class="tw-flex tw-justify-center tw-items-center tw-space-x-10 tw-mb-14">

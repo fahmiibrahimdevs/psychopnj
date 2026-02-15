@@ -5,7 +5,7 @@
         </div>
 
         <div class="section-body">
-            <ul class="nav nav-pills" id="myTab3" role="tablist">
+            <ul class="nav nav-pills tw-my-3" id="myTab3" role="tablist">
                 <li class="nav-item">
                     <a class="nav-link {{ $activeTab === "pengurus" ? "active" : "" }}" wire:click.prevent="switchTab('pengurus')" id="pengurus-tab3" data-toggle="tab" href="#pengurus" role="tab" aria-controls="pengurus" aria-selected="{{ $activeTab === "pengurus" ? "true" : "false" }}">Pengurus ({{ $countPengurus }})</a>
                 </li>
@@ -216,6 +216,30 @@
                     <div class="card">
                         <h3>Tabel Open Recruitment - Anggota</h3>
                         <div class="card-body">
+                            <!-- Import Excel Section -->
+                            <div class="tw-mb-4 tw-flex tw-gap-3 tw-items-end tw-px-6">
+                                <div class="tw-flex-1">
+                                    <label class="tw-block tw-text-sm tw-font-medium tw-text-gray-700 tw-mb-1">
+                                        <i class="fas fa-file-excel tw-text-green-600"></i>
+                                        Import Excel Anggota
+                                    </label>
+                                    <input type="file" wire:model="fileImport" accept=".xlsx,.xls,.csv" class="form-control" />
+                                    @error("fileImport")
+                                        <span class="tw-text-red-500 tw-text-sm">{{ $message }}</span>
+                                    @enderror
+
+                                    <small class="tw-text-gray-500">Format: .xlsx, .xls, .csv (Max: 10MB)</small>
+                                </div>
+                                <button wire:click="importExcel" wire:loading.attr="disabled" class="">
+                                    <i class="fas fa-upload"></i>
+                                    Import
+                                    <span wire:loading wire:target="importExcel">
+                                        <i class="fas fa-spinner fa-spin"></i>
+                                    </span>
+                                </button>
+                            </div>
+                            <hr class="tw-mb-4" />
+
                             <div class="show-entries">
                                 <p class="show-entries-show">Show</p>
                                 <select wire:model.live="lengthData" id="length-data">
@@ -242,72 +266,81 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @forelse ($dataAnggota as $row)
-                                            <tr class="text-center">
-                                                <td>{{ $loop->iteration }}</td>
-                                                <td class="text-left">
-                                                    <div class="tw-flex tw-items-center">
-                                                        <div class="tw-w-10 tw-h-10 tw-mr-3">
-                                                            <img src="{{ asset("assets/stisla/img/avatar/avatar-1.png") }}" alt="avatar" class="tw-rounded-full" />
-                                                        </div>
-                                                        <div>
-                                                            <p>{{ $row->nama_lengkap }}</p>
-                                                            <p class="tw-text-gray-500">{{ $row->jurusan_prodi_kelas }}</p>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td class="text-left">
-                                                    @if ($row->status_seleksi === "pending")
-                                                        <span class="tw-bg-yellow-100 tw-text-yellow-600 tw-font-semibold tw-px-3 tw-py-1 tw-rounded-full">
-                                                            <i class="far fa-clock"></i>
-                                                            Pending
-                                                        </span>
-                                                    @elseif ($row->status_seleksi === "lulus")
-                                                        <span class="tw-bg-green-100 tw-text-green-600 tw-tracking-wider tw-font-semibold tw-px-3 tw-py-1 tw-rounded-full">
-                                                            <i class="far fa-badge-check"></i>
-                                                            Lulus
-                                                        </span>
-                                                    @else
-                                                        <span class="tw-bg-red-100 tw-text-red-600 tw-tracking-wider tw-font-semibold tw-px-3 tw-py-1 tw-rounded-full">
-                                                            <i class="far fa-times-circle"></i>
-                                                            Gagal
-                                                        </span>
-                                                    @endif
-                                                </td>
-                                                <td class="tw-whitespace-nowrap">
-                                                    @if ($this->can("open_recruitment.view_detail"))
-                                                        <button wire:click.prevent="view({{ $row->id }})" class="btn btn-info" data-toggle="modal" data-target="#viewDataModal" title="Lihat Detail">
-                                                            <i class="fas fa-eye"></i>
-                                                        </button>
-                                                    @endif
+                                        @php
+                                            $counter = 1;
+                                        @endphp
 
-                                                    @if ($this->can("open_recruitment.update_status"))
-                                                        @if ($row->status_seleksi !== "lulus")
-                                                            <button wire:click.prevent="updateStatus({{ $row->id }}, 'lulus')" class="btn btn-success" title="Tandai Lulus">
-                                                                <i class="fas fa-check"></i>
-                                                            </button>
-                                                        @endif
-
-                                                        @if ($row->status_seleksi !== "gagal")
-                                                            <button wire:click.prevent="updateStatus({{ $row->id }}, 'gagal')" class="btn btn-danger" title="Tandai Gagal">
-                                                                <i class="fas fa-times"></i>
-                                                            </button>
-                                                        @endif
-                                                    @endif
-
-                                                    @if ($this->can("open_recruitment.edit"))
-                                                        <button wire:click.prevent="edit({{ $row->id }})" class="btn btn-primary" data-toggle="modal" data-target="#formDataModal" title="Edit">
-                                                            <i class="fas fa-edit"></i>
-                                                        </button>
-                                                    @endif
-
-                                                    @if ($this->can("open_recruitment.delete"))
-                                                        <button wire:click.prevent="deleteConfirm({{ $row->id }})" class="btn btn-secondary" title="Hapus">
-                                                            <i class="fas fa-trash"></i>
-                                                        </button>
-                                                    @endif
-                                                </td>
+                                        @forelse ($dataAnggota as $jurusanProdiKelas => $anggotaList)
+                                            <tr>
+                                                <td class="tw-font-semibold tw-tracking-wider tw-bg-gray-100" colspan="4">Jurusan/Prodi/Kelas: {{ $jurusanProdiKelas }} ({{ $anggotaList->count() }})</td>
                                             </tr>
+
+                                            @foreach ($anggotaList as $row)
+                                                <tr class="text-center">
+                                                    <td>{{ $counter++ }}</td>
+                                                    <td class="text-left">
+                                                        <div class="tw-flex tw-items-center">
+                                                            <div class="tw-w-10 tw-h-10 tw-mr-3">
+                                                                <img src="{{ asset("assets/stisla/img/avatar/avatar-1.png") }}" alt="avatar" class="tw-rounded-full" />
+                                                            </div>
+                                                            <div>
+                                                                <p>{{ $row->nama_lengkap }}</p>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td class="text-left">
+                                                        @if ($row->status_seleksi === "pending")
+                                                            <span class="tw-bg-yellow-100 tw-text-yellow-600 tw-font-semibold tw-px-3 tw-py-1 tw-rounded-full">
+                                                                <i class="far fa-clock"></i>
+                                                                Pending
+                                                            </span>
+                                                        @elseif ($row->status_seleksi === "lulus")
+                                                            <span class="tw-bg-green-100 tw-text-green-600 tw-tracking-wider tw-font-semibold tw-px-3 tw-py-1 tw-rounded-full">
+                                                                <i class="far fa-badge-check"></i>
+                                                                Lulus
+                                                            </span>
+                                                        @else
+                                                            <span class="tw-bg-red-100 tw-text-red-600 tw-tracking-wider tw-font-semibold tw-px-3 tw-py-1 tw-rounded-full">
+                                                                <i class="far fa-times-circle"></i>
+                                                                Gagal
+                                                            </span>
+                                                        @endif
+                                                    </td>
+                                                    <td class="tw-whitespace-nowrap">
+                                                        @if ($this->can("open_recruitment.view_detail"))
+                                                            <button wire:click.prevent="view({{ $row->id }})" class="btn btn-info" data-toggle="modal" data-target="#viewDataModal" title="Lihat Detail">
+                                                                <i class="fas fa-eye"></i>
+                                                            </button>
+                                                        @endif
+
+                                                        @if ($this->can("open_recruitment.update_status"))
+                                                            @if ($row->status_seleksi !== "lulus")
+                                                                <button wire:click.prevent="updateStatus({{ $row->id }}, 'lulus')" class="btn btn-success" title="Tandai Lulus">
+                                                                    <i class="fas fa-check"></i>
+                                                                </button>
+                                                            @endif
+
+                                                            @if ($row->status_seleksi !== "gagal")
+                                                                <button wire:click.prevent="updateStatus({{ $row->id }}, 'gagal')" class="btn btn-danger" title="Tandai Gagal">
+                                                                    <i class="fas fa-times"></i>
+                                                                </button>
+                                                            @endif
+                                                        @endif
+
+                                                        @if ($this->can("open_recruitment.edit"))
+                                                            <button wire:click.prevent="edit({{ $row->id }})" class="btn btn-primary" data-toggle="modal" data-target="#formDataModal" title="Edit">
+                                                                <i class="fas fa-edit"></i>
+                                                            </button>
+                                                        @endif
+
+                                                        @if ($this->can("open_recruitment.delete"))
+                                                            <button wire:click.prevent="deleteConfirm({{ $row->id }})" class="btn btn-secondary" title="Hapus">
+                                                                <i class="fas fa-trash"></i>
+                                                            </button>
+                                                        @endif
+                                                    </td>
+                                                </tr>
+                                            @endforeach
                                         @empty
                                             <tr>
                                                 <td colspan="4" class="text-center">No data available in the table</td>
@@ -481,20 +514,49 @@
                             <!-- Data Akademik -->
                             <div class="col-lg-6 tw-mb-4">
                                 <div class="tw-bg-gray-50 tw-rounded-lg tw-p-4 tw-h-full">
-                                    <h6 class="tw-text-sm tw-font-semibold tw-text-gray-700 tw-uppercase tw-tracking-wide tw-mb-4">Data Akademik</h6>
+                                    <h6 class="tw-text-sm tw-font-semibold tw-text-gray-700 tw-uppercase tw-tracking-wide tw-mb-4">
+                                        <i class="fas fa-graduation-cap tw-mr-2"></i>
+                                        Data Akademik
+                                    </h6>
                                     <div class="tw-space-y-3">
-                                        <div class="tw-flex tw-justify-between tw-items-center">
-                                            <span class="tw-text-sm tw-text-gray-600">Jurusan/Prodi/Kelas</span>
-                                            <span class="tw-text-sm tw-font-medium tw-text-gray-900 tw-text-right tw-max-w-xs">{{ $viewData->jurusan_prodi_kelas ?? "-" }}</span>
+                                        <div class="tw-flex tw-justify-between tw-items-start tw-gap-3">
+                                            <span class="tw-text-sm tw-text-gray-600 tw-flex-shrink-0">Jurusan/Prodi/Kelas</span>
+                                            <span class="tw-text-sm tw-font-medium tw-text-gray-900 tw-text-right tw-break-words">{{ $viewData->jurusan_prodi_kelas ?? "-" }}</span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Data Pendaftaran -->
+                            <!-- Data Kontak -->
                             <div class="col-lg-6 tw-mb-4">
                                 <div class="tw-bg-gray-50 tw-rounded-lg tw-p-4 tw-h-full">
-                                    <h6 class="tw-text-sm tw-font-semibold tw-text-gray-700 tw-uppercase tw-tracking-wide tw-mb-4">Data Pendaftaran</h6>
+                                    <h6 class="tw-text-sm tw-font-semibold tw-text-gray-700 tw-uppercase tw-tracking-wide tw-mb-4">
+                                        <i class="fas fa-address-book tw-mr-2"></i>
+                                        Data Kontak
+                                    </h6>
+                                    <div class="tw-space-y-3">
+                                        <div class="tw-flex tw-justify-between tw-items-start tw-gap-3">
+                                            <span class="tw-text-sm tw-text-gray-600 tw-flex-shrink-0">Email</span>
+                                            <span class="tw-text-sm tw-font-medium tw-text-gray-900 tw-text-right tw-break-all tw-overflow-wrap-anywhere">{{ $viewData->email ?? "-" }}</span>
+                                        </div>
+                                        <div class="tw-h-px tw-bg-gray-200"></div>
+                                        <div class="tw-flex tw-justify-between tw-items-start">
+                                            <span class="tw-text-sm tw-text-gray-600">No. WhatsApp</span>
+                                            <span class="tw-text-sm tw-font-medium tw-text-gray-900">{{ $viewData->no_hp ?? "-" }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Data Pendaftaran -->
+                        <div class="row tw-mb-6">
+                            <div class="col-lg-6 tw-mb-4">
+                                <div class="tw-bg-gray-50 tw-rounded-lg tw-p-4 tw-h-full">
+                                    <h6 class="tw-text-sm tw-font-semibold tw-text-gray-700 tw-uppercase tw-tracking-wide tw-mb-4">
+                                        <i class="fas fa-clipboard-list tw-mr-2"></i>
+                                        Data Pendaftaran
+                                    </h6>
                                     <div class="tw-space-y-3">
                                         <div class="tw-flex tw-justify-between tw-items-center">
                                             <span class="tw-text-sm tw-text-gray-600">Jenis Oprec</span>
@@ -508,7 +570,42 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Tautan Twibbon -->
+                            <div class="col-lg-6 tw-mb-4">
+                                <div class="tw-bg-gray-50 tw-rounded-lg tw-p-4 tw-h-full">
+                                    <h6 class="tw-text-sm tw-font-semibold tw-text-gray-700 tw-uppercase tw-tracking-wide tw-mb-4">
+                                        <i class="fas fa-link tw-mr-2"></i>
+                                        Bukti Pendaftaran
+                                    </h6>
+                                    <div class="tw-space-y-3">
+                                        <div>
+                                            <span class="tw-text-sm tw-text-gray-600 tw-block tw-mb-2">Tautan Twibbon</span>
+
+                                            @if (! empty($viewData->tautan_twibbon))
+                                                <a href="{{ $viewData->tautan_twibbon }}" target="_blank" class="tw-inline-block tw-text-sm tw-font-medium tw-text-blue-600 hover:tw-text-blue-800 tw-break-all tw-max-w-full tw-overflow-hidden">
+                                                    <i class="fas fa-external-link-alt tw-mr-1"></i>
+                                                    <span class="tw-break-all">{{ $viewData->tautan_twibbon }}</span>
+                                                </a>
+                                            @else
+                                                <span class="tw-text-sm tw-text-gray-400">Belum upload</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
+
+                        <!-- Alasan -->
+                        @if (! empty($viewData->alasan))
+                            <div class="tw-bg-gray-50 tw-rounded-lg tw-p-4 tw-mb-6">
+                                <h6 class="tw-text-sm tw-font-semibold tw-text-gray-700 tw-uppercase tw-tracking-wide tw-mb-3">
+                                    <i class="fas fa-comment-dots tw-mr-2"></i>
+                                    Alasan Mengikuti Psychorobotic
+                                </h6>
+                                <p class="tw-text-sm tw-text-gray-700 tw-leading-relaxed tw-break-words tw-whitespace-pre-wrap">{{ $viewData->alasan }}</p>
+                            </div>
+                        @endif
 
                         @if ($viewData->jenis_oprec === "pengurus")
                             <!-- Posisi yang Dilamar -->
@@ -539,6 +636,30 @@
             </div>
         </div>
     </div>
+</div>
+
+@push("general-css")
+    <link href="{{ asset("assets/midragon/select2/select2.min.css") }}" rel="stylesheet" />
+@endpush
+
+@push("js-libraries")
+    <script src="{{ asset("/assets/midragon/select2/select2.full.min.js") }}"></script>
+@endpush
+
+@push("scripts")
+    <script>
+        window.addEventListener('initSelect2', event => {
+            $(document).ready(function() {
+                $('.select2').select2();
+
+                $('.select2').on('change', function(e) {
+                    var id = $(this).attr('id');
+                    var data = $(this).select2("val");
+                    @this.set(id, data);
+                });
+            });
+        })
+    </script>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
@@ -729,29 +850,5 @@
                 });
             });
         }
-    </script>
-</div>
-
-@push("general-css")
-    <link href="{{ asset("assets/midragon/select2/select2.min.css") }}" rel="stylesheet" />
-@endpush
-
-@push("js-libraries")
-    <script src="{{ asset("/assets/midragon/select2/select2.full.min.js") }}"></script>
-@endpush
-
-@push("scripts")
-    <script>
-        window.addEventListener('initSelect2', event => {
-            $(document).ready(function() {
-                $('.select2').select2();
-
-                $('.select2').on('change', function(e) {
-                    var id = $(this).attr('id');
-                    var data = $(this).select2("val");
-                    @this.set(id, data);
-                });
-            });
-        })
     </script>
 @endpush

@@ -1,7 +1,9 @@
 <?php
 
 use App\Livewire\Galeri;
+use App\Livewire\Divisi;
 use App\Livewire\Welcome;
+use App\Livewire\TentangKami;
 use App\Livewire\KontakKami;
 use App\Livewire\CekSertifikat;
 use App\Livewire\Organisasi\Department;
@@ -20,6 +22,8 @@ use App\Livewire\Akademik\PresensiPertemuan;
 
 Route::get('/', Welcome::class);
 
+Route::get('/tentang', TentangKami::class);
+Route::get('/divisi', Divisi::class);
 Route::get('/cek-sertifikat', CekSertifikat::class)->middleware('guest');
 Route::get('/kontak', KontakKami::class);
 Route::get('/galeri', Galeri::class);

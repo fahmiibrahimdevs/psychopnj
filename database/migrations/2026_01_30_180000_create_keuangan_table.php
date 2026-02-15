@@ -23,15 +23,11 @@ return new class extends Migration
             $table->text('bukti')->nullable();
             $table->timestamps();
             
-            $table->index('id_tahun');
-            $table->index('id_user');
-            $table->index('tanggal');
-            $table->index('jenis');
-            $table->index('kategori');
-            $table->index('id_department');
-            $table->index('id_project');
-            $table->index(['id_tahun', 'jenis']);
-            $table->index(['id_tahun', 'kategori']);
+            // Optimized indexes based on actual query patterns
+            $table->index('id_tahun'); // Primary filter
+            $table->index(['id_tahun', 'tanggal', 'id']); // Transaksi.php ordering
+            $table->index(['id_tahun', 'jenis']); // Laporan.php aggregations
+            $table->index(['id_tahun', 'jenis', 'kategori']); // Transaksi.php filters
         });
     }
 

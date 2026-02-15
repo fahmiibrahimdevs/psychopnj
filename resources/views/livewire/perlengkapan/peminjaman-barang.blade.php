@@ -4,9 +4,9 @@
             <h1>Peminjaman Barang</h1>
         </div>
 
-        <div class="section-body tw-mt-4">
+        <div class="section-body tw-mt-4 lg:-tw-mt-2">
             {{-- Tabs --}}
-            <ul class="nav nav-pills mb-4 tw-px-4 lg:tw-px-0">
+            <ul class="nav nav-pills tw-mb-4 tw-px-4 lg:tw-px-0">
                 <li class="nav-item">
                     <a class="nav-link {{ $activeTab === "dipinjam" ? "active" : "" }}" href="#" wire:click.prevent="setTab('dipinjam')">Sedang Dipinjam</a>
                 </li>

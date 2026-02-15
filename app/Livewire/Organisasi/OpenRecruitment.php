@@ -5,15 +5,18 @@ namespace App\Livewire\Organisasi;
 use App\Models\Department as ModelsDepartment;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Livewire\WithFileUploads;
 use Livewire\Attributes\Title;
 use App\Models\TahunKepengurusan;
 use Illuminate\Support\Facades\DB;
 use App\Models\OpenRecruitment as ModelsOpenRecruitment;
 use App\Traits\WithPermissionCache;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Imports\OpenRecruitmentImport;
 
 class OpenRecruitment extends Component
 {
-    use WithPagination, WithPermissionCache;
+    use WithPagination, WithPermissionCache, WithFileUploads;
     #[Title('Open Recruitment')]
 
     protected $listeners = [
@@ -43,6 +46,9 @@ class OpenRecruitment extends Component
 
     public $id_tahun, $jenis_oprec, $nama_lengkap, $jurusan_prodi_kelas, $id_department, $nama_jabatan, $status_seleksi;
     public $departments;
+    
+    // Import Excel
+    public $fileImport;
 
     public function mount()
     {
@@ -136,7 +142,7 @@ class OpenRecruitment extends Component
                 ->where('open_recruitment.jenis_oprec', 'pengurus')
                 ->count();
 
-        // Get data anggota with load more
+        // Get data anggota with load more (grouped by jurusan_prodi_kelas)
         $dataAnggota = DB::table('open_recruitment')
                 ->select(
                     'open_recruitment.id',
@@ -153,9 +159,11 @@ class OpenRecruitment extends Component
                 })
                 ->where('tahun_kepengurusan.status', 'aktif')
                 ->where('open_recruitment.jenis_oprec', 'anggota')
+                ->orderBy('open_recruitment.jurusan_prodi_kelas', 'ASC')
                 ->orderBy('open_recruitment.id', 'ASC')
                 ->limit($this->perPageAnggota)
-                ->get();
+                ->get()
+                ->groupBy('jurusan_prodi_kelas');
 
         $countAnggota = DB::table('open_recruitment')
                 ->join('tahun_kepengurusan', 'open_recruitment.id_tahun', '=', 'tahun_kepengurusan.id')
@@ -208,7 +216,11 @@ class OpenRecruitment extends Component
                     'open_recruitment.id_tahun',
                     'open_recruitment.jenis_oprec',
                     'open_recruitment.nama_lengkap',
+                    'open_recruitment.email',
+                    'open_recruitment.no_hp',
                     'open_recruitment.jurusan_prodi_kelas',
+                    'open_recruitment.alasan',
+                    'open_recruitment.tautan_twibbon',
                     'open_recruitment.id_department',
                     'open_recruitment.nama_jabatan',
                     'open_recruitment.status_seleksi',
@@ -513,6 +525,29 @@ class OpenRecruitment extends Component
         
         // Format final: nama.lengkap.jurusan@stu.pnj.ac.id
         return $emailPrefix . '.' . $kodeJurusan . '@stu.pnj.ac.id';
+    }
+
+    public function importExcel()
+    {
+        $this->validate([
+            'fileImport' => 'required|file|mimes:xlsx,xls,csv|max:10240',
+        ]);
+
+        try {
+            DB::beginTransaction();
+            
+            $import = new OpenRecruitmentImport($this->id_tahun);
+            Excel::import($import, $this->fileImport->getRealPath());
+            
+            DB::commit();
+            
+            $this->fileImport = null;
+            $this->dispatchAlert('success', 'Success!', 'Data anggota berhasil diimport.');
+            
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatchAlert('error', 'Error!', 'Import gagal: ' . $e->getMessage());
+        }
     }
 
     public function updatingLengthData()

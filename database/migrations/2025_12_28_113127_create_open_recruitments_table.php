@@ -17,18 +17,20 @@ return new class extends Migration
             $table->unsignedBigInteger('id_department')->default(0); // 0 untuk anggota
             $table->enum('jenis_oprec', ['pengurus', 'anggota'])->default('anggota');
             $table->string('nama_lengkap');
+            $table->string('email')->nullable();
+            $table->string('no_hp')->nullable();
             $table->string('jurusan_prodi_kelas');
             $table->string('nama_jabatan')->nullable();
+            $table->text('alasan')->nullable();
+            $table->string('tautan_twibbon')->nullable();
             $table->enum('status_seleksi', ['pending', 'lulus', 'gagal'])->default('pending');
             
-            $table->index('id_user');
-            $table->index('id_anggota');
-            $table->index('id_tahun');
-            $table->index('id_department');
-            $table->index(['id_tahun', 'jenis_oprec']);
-            $table->index(['id_tahun', 'status_seleksi']);
-            $table->index('jenis_oprec');
-            $table->index('status_seleksi');
+            // Optimized indexes based on actual query patterns
+            $table->index('id_tahun'); // Primary filter
+            $table->index('email'); // Duplicate check in import
+            $table->index(['id_tahun', 'jenis_oprec']); // Main filtering pattern
+            $table->index(['id_tahun', 'jenis_oprec', 'id_department']); // Pengurus queries
+            $table->index(['id_tahun', 'jenis_oprec', 'jurusan_prodi_kelas']); // Anggota grouping
         });
     }
 

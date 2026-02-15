@@ -5,7 +5,7 @@
         </div>
 
         <div class="section-body">
-            <ul class="nav nav-pills" id="myTab3" role="tablist">
+            <ul class="nav nav-pills tw-my-3" id="myTab3" role="tablist">
                 <li class="nav-item">
                     <a class="nav-link {{ $activeTab === "pengurus" ? "active" : "" }}" wire:click.prevent="switchTab('pengurus')" id="pengurus-tab3" data-toggle="tab" href="#pengurus" role="tab" aria-controls="pengurus" aria-selected="{{ $activeTab === "pengurus" ? "true" : "false" }}">Pengurus ({{ $countPengurus }})</a>
                 </li>
@@ -221,12 +221,10 @@
                                             $counter = 1;
                                         @endphp
 
-                                        @forelse ($dataAnggota as $departmentName => $anggotaList)
-                                            @if ($departmentName)
-                                                <tr>
-                                                    <td class="tw-font-semibold tw-tracking-wider tw-bg-gray-100" colspan="6">Department: {{ $departmentName ?: "Tidak Ada Department" }}</td>
-                                                </tr>
-                                            @endif
+                                        @forelse ($dataAnggota as $jurusanProdiKelas => $anggotaList)
+                                            <tr>
+                                                <td class="tw-font-semibold tw-tracking-wider tw-bg-gray-100" colspan="6">Jurusan/Prodi/Kelas: {{ $jurusanProdiKelas ?: "Tidak Ada Data" }} ({{ $anggotaList->count() }})</td>
+                                            </tr>
 
                                             @foreach ($anggotaList as $row)
                                                 <tr class="text-center">
@@ -247,7 +245,6 @@
                                                                         <i class="fas fa-sign-out-alt text-warning"></i>
                                                                     @endif
                                                                 </span>
-                                                                <p class="tw-text-gray-400 tw-whitespace-nowrap">{{ $row->jurusan_prodi_kelas }}</p>
                                                             </div>
                                                         </div>
                                                     </td>
@@ -512,140 +509,144 @@
 
     <!-- View Data Modal -->
     <div class="modal fade" wire:ignore.self id="viewDataModal" aria-labelledby="viewDataModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg tw-w-full tw-m-0 sm:tw-w-auto sm:tw-m-[1.75rem_auto]">
-            <div class="modal-content tw-rounded-none lg:tw-rounded-md">
-                <div class="modal-header tw-px-4 lg:tw-px-6">
-                    <h5 class="modal-title" id="viewDataModalLabel">Detail Anggota</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;">
+            <div class="modal-content tw-border-0 tw-shadow-2xl tw-rounded-3xl tw-overflow-hidden">
+                <!-- Close Button -->
+                <div class="tw-absolute tw-top-4 tw-right-4 tw-z-10">
+                    <button type="button" class="tw-bg-white tw-bg-opacity-90 tw-backdrop-blur-sm tw-rounded-full tw-w-10 tw-h-10 tw-flex tw-items-center tw-justify-center tw-shadow-md hover:tw-shadow-lg tw-transition-all hover:tw-scale-110" data-dismiss="modal" aria-label="Close">
+                        <i class="fas fa-times tw-text-gray-700"></i>
                     </button>
                 </div>
-                <div class="modal-body tw-px-4 lg:tw-px-6">
-                    @if ($viewData)
-                        <div class="tw-flex tw-flex-col tw-items-center tw-mb-6">
-                            <img src="{{ asset($viewData->foto == "" ? "assets/stisla/img/avatar/avatar-1.png" : $viewData->foto) }}" alt="{{ $viewData->nama_lengkap }}" class="tw-w-32 tw-h-32 tw-rounded-full tw-object-cover tw-border-4 tw-border-gray-200 tw-shadow-lg" />
-                            <h3 class="tw-mt-4 tw-text-2xl tw-font-bold tw-text-gray-800">{{ $viewData->nama_lengkap }}</h3>
-                            <p class="tw-text-gray-500 tw-text-sm">{{ $viewData->nama_jabatan }} - {{ $viewData->nama_department ?: "-" }}</p>
-                            <div class="tw-mt-2">
+
+                @if ($viewData)
+                    <!-- Header Section -->
+                    <div class="tw-bg-gradient-to-br tw-from-indigo-600 tw-to-indigo-700 tw-px-8 tw-pt-10 tw-pb-8">
+                        <!-- Organization -->
+                        <div class="tw-text-center tw-mb-6">
+                            <h2 class="tw-text-white tw-font-bold tw-text-xl tw-tracking-widest tw-mb-1">PSYCHOROBOTIC</h2>
+                            <div class="tw-inline-block tw-bg-white tw-bg-opacity-20 tw-backdrop-blur-sm tw-px-4 tw-py-1 tw-rounded-full">
+                                <p class="tw-text-white tw-text-xs tw-font-medium tw-tracking-wide">MEMBER CARD</p>
+                            </div>
+                        </div>
+
+                        <!-- Photo & Name -->
+                        <div class="tw-text-center">
+                            <div class="tw-inline-block tw-relative tw-mb-5">
+                                <img src="{{ asset($viewData->foto == "" ? "assets/stisla/img/avatar/avatar-1.png" : $viewData->foto) }}" 
+                                     alt="{{ $viewData->nama_lengkap }}" 
+                                     class="tw-w-32 tw-h-32 tw-rounded-full tw-object-cover tw-border-4 tw-border-white tw-shadow-xl" />
                                 @if ($viewData->status_aktif == "aktif")
-                                    <span class="badge badge-success tw-px-3 tw-py-1">
-                                        <i class="fas fa-check"></i>
-                                        Aktif
-                                    </span>
-                                @elseif ($viewData->status_aktif == "nonaktif")
-                                    <span class="badge badge-secondary tw-px-3 tw-py-1">
-                                        <i class="fas fa-times"></i>
-                                        Nonaktif
-                                    </span>
-                                @elseif ($viewData->status_aktif == "diberhentikan")
-                                    <span class="badge badge-danger tw-px-3 tw-py-1">
-                                        <i class="fas fa-ban"></i>
-                                        Diberhentikan
-                                    </span>
-                                @else
-                                    <span class="badge badge-warning tw-px-3 tw-py-1">
-                                        <i class="fas fa-sign-out-alt"></i>
-                                        Mengundurkan Diri
-                                    </span>
+                                    <div class="tw-absolute tw-bottom-0 tw-right-0 tw-bg-green-500 tw-w-9 tw-h-9 tw-rounded-full tw-flex tw-items-center tw-justify-center tw-border-4 tw-border-white tw-shadow-lg">
+                                        <i class="fas fa-check tw-text-white tw-text-sm"></i>
+                                    </div>
                                 @endif
-                                <span class="badge badge-info tw-px-3 tw-py-1 tw-ml-1 tw-capitalize">
+                            </div>
+                            
+                            <h3 class="tw-text-white tw-text-2xl tw-font-bold tw-mb-2">{{ $viewData->nama_lengkap }}</h3>
+                            <p class="tw-text-white tw-text-sm tw-font-semibold tw-mb-1">{{ $viewData->nama_jabatan }}</p>
+                            @if($viewData->nama_department)
+                                <p class="tw-text-indigo-200 tw-text-sm">{{ $viewData->nama_department }}</p>
+                            @endif
+                            
+                            <div class="tw-flex tw-justify-center tw-gap-2 tw-mt-4">
+                                <span class="tw-bg-white tw-bg-opacity-20 tw-backdrop-blur-sm tw-px-4 tw-py-1.5 tw-rounded-full tw-text-white tw-text-xs tw-font-semibold tw-capitalize">
                                     {{ $viewData->status_anggota }}
+                                </span>
+                                <span class="tw-bg-white tw-bg-opacity-20 tw-backdrop-blur-sm tw-px-4 tw-py-1.5 tw-rounded-full tw-text-white tw-text-xs tw-font-semibold">
+                                    {{ $viewData->nama_tahun }}
                                 </span>
                             </div>
                         </div>
+                    </div>
 
-                        <div class="tw-grid tw-grid-cols-1 md:tw-grid-cols-2 tw-gap-4">
-                            <!-- Informasi Pribadi -->
-                            <div class="tw-bg-gray-50 tw-p-4 tw-rounded-lg">
-                                <h6 class="tw-font-bold tw-text-gray-700 tw-mb-3 tw-border-b tw-pb-2">
-                                    <i class="fas fa-user tw-mr-2"></i>
-                                    Informasi Pribadi
-                                </h6>
-                                <div class="tw-space-y-2">
-                                    <div class="tw-flex">
-                                        <span class="tw-font-semibold tw-text-gray-600 tw-w-32">Jurusan/Prodi/Kelas:</span>
-                                        <span class="tw-text-gray-800">{{ $viewData->jurusan_prodi_kelas }}</span>
+                    <!-- Content Section -->
+                    <div class="tw-bg-white tw-p-6">
+                        <!-- Info Cards -->
+                        <div class="tw-space-y-3">
+                            <!-- Jurusan -->
+                            <div class="tw-border tw-border-gray-200 tw-rounded-xl tw-p-4">
+                                <div class="tw-flex tw-items-start tw-gap-3">
+                                    <div class="tw-w-10 tw-h-10 tw-bg-indigo-100 tw-rounded-lg tw-flex tw-items-center tw-justify-center tw-flex-shrink-0">
+                                        <i class="fas fa-graduation-cap tw-text-indigo-600"></i>
                                     </div>
-                                    <div class="tw-flex">
-                                        <span class="tw-font-semibold tw-text-gray-600 tw-w-32">NIM:</span>
-                                        <span class="tw-text-gray-800">{{ $viewData->nim ?: "-" }}</span>
-                                    </div>
-                                    <div class="tw-flex">
-                                        <span class="tw-font-semibold tw-text-gray-600 tw-w-32">TTL:</span>
-                                        <span class="tw-text-gray-800">{{ $viewData->ttl ?: "-" }}</span>
-                                    </div>
-                                    <div class="tw-flex tw-items-start">
-                                        <span class="tw-font-semibold tw-text-gray-600 tw-w-32">Alamat:</span>
-                                        <span class="tw-text-gray-800">{{ $viewData->alamat ?: "-" }}</span>
+                                    <div class="tw-flex-1 tw-min-w-0">
+                                        <p class="tw-text-xs tw-text-gray-500 tw-font-medium tw-mb-1">Jurusan/Prodi/Kelas</p>
+                                        <p class="tw-text-sm tw-font-semibold tw-text-gray-900 tw-leading-tight">{{ $viewData->jurusan_prodi_kelas }}</p>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Informasi Kontak -->
-                            <div class="tw-bg-gray-50 tw-p-4 tw-rounded-lg">
-                                <h6 class="tw-font-bold tw-text-gray-700 tw-mb-3 tw-border-b tw-pb-2">
-                                    <i class="fas fa-address-book tw-mr-2"></i>
-                                    Informasi Kontak
-                                </h6>
-                                <div class="tw-space-y-2">
-                                    <div class="tw-flex">
-                                        <span class="tw-font-semibold tw-text-gray-600 tw-w-24">Email:</span>
-                                        <span class="tw-text-gray-800">{{ $viewData->email ?: "-" }}</span>
+                            <!-- NIM & Phone Row -->
+                            <div class="tw-grid tw-grid-cols-2 tw-gap-3">
+                                <div class="tw-border tw-border-gray-200 tw-rounded-xl tw-p-4">
+                                    <div class="tw-flex tw-items-center tw-gap-2 tw-mb-2">
+                                        <div class="tw-w-8 tw-h-8 tw-bg-gray-100 tw-rounded-lg tw-flex tw-items-center tw-justify-center">
+                                            <i class="fas fa-id-card tw-text-gray-600 tw-text-xs"></i>
+                                        </div>
+                                        <p class="tw-text-xs tw-text-gray-500 tw-font-medium">NIM</p>
                                     </div>
-                                    <div class="tw-flex">
-                                        <span class="tw-font-semibold tw-text-gray-600 tw-w-24">No. HP:</span>
-                                        <span class="tw-text-gray-800">{{ $viewData->no_hp ?: "-" }}</span>
+                                    <p class="tw-text-sm tw-font-semibold tw-text-gray-900">{{ $viewData->nim ?: "-" }}</p>
+                                </div>
+
+                                <div class="tw-border tw-border-gray-200 tw-rounded-xl tw-p-4">
+                                    <div class="tw-flex tw-items-center tw-gap-2 tw-mb-2">
+                                        <div class="tw-w-8 tw-h-8 tw-bg-gray-100 tw-rounded-lg tw-flex tw-items-center tw-justify-center">
+                                            <i class="fas fa-phone tw-text-gray-600 tw-text-xs"></i>
+                                        </div>
+                                        <p class="tw-text-xs tw-text-gray-500 tw-font-medium">Phone</p>
+                                    </div>
+                                    <p class="tw-text-sm tw-font-semibold tw-text-gray-900 tw-truncate">{{ $viewData->no_hp ?: "-" }}</p>
+                                </div>
+                            </div>
+
+                            <!-- Email -->
+                            <div class="tw-border tw-border-gray-200 tw-rounded-xl tw-p-4">
+                                <div class="tw-flex tw-items-start tw-gap-3">
+                                    <div class="tw-w-10 tw-h-10 tw-bg-gray-100 tw-rounded-lg tw-flex tw-items-center tw-justify-center tw-flex-shrink-0">
+                                        <i class="fas fa-envelope tw-text-gray-600"></i>
+                                    </div>
+                                    <div class="tw-flex-1 tw-min-w-0">
+                                        <p class="tw-text-xs tw-text-gray-500 tw-font-medium tw-mb-1">Email</p>
+                                        <p class="tw-text-sm tw-font-semibold tw-text-gray-900 tw-break-all tw-leading-tight">{{ $viewData->email ?: "-" }}</p>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Informasi Organisasi -->
-                            <div class="tw-bg-gray-50 tw-p-4 tw-rounded-lg">
-                                <h6 class="tw-font-bold tw-text-gray-700 tw-mb-3 tw-border-b tw-pb-2">
-                                    <i class="fas fa-sitemap tw-mr-2"></i>
-                                    Informasi Organisasi
-                                </h6>
-                                <div class="tw-space-y-2">
-                                    <div class="tw-flex">
-                                        <span class="tw-font-semibold tw-text-gray-600 tw-w-24">Department:</span>
-                                        <span class="tw-text-gray-800">{{ $viewData->nama_department ?: "-" }}</span>
+                            <!-- Additional Info -->
+                            @if($viewData->ttl || $viewData->alamat)
+                                <details class="tw-group tw-border tw-border-gray-200 tw-rounded-xl tw-overflow-hidden">
+                                    <summary class="tw-cursor-pointer tw-px-4 tw-py-3 tw-bg-gray-50 hover:tw-bg-gray-100 tw-transition-colors tw-flex tw-items-center tw-justify-between">
+                                        <span class="tw-text-sm tw-font-semibold tw-text-gray-700">
+                                            <i class="fas fa-info-circle tw-mr-2 tw-text-gray-400"></i>Informasi Lainnya
+                                        </span>
+                                        <i class="fas fa-chevron-down tw-text-xs tw-text-gray-400 group-open:tw-rotate-180 tw-transition-transform"></i>
+                                    </summary>
+                                    <div class="tw-p-4 tw-space-y-3 tw-border-t tw-border-gray-200">
+                                        @if($viewData->ttl)
+                                            <div>
+                                                <p class="tw-text-xs tw-text-gray-500 tw-font-medium tw-mb-1">Tempat, Tanggal Lahir</p>
+                                                <p class="tw-text-sm tw-font-semibold tw-text-gray-900">{{ $viewData->ttl }}</p>
+                                            </div>
+                                        @endif
+                                        @if($viewData->alamat)
+                                            <div>
+                                                <p class="tw-text-xs tw-text-gray-500 tw-font-medium tw-mb-1">Alamat</p>
+                                                <p class="tw-text-sm tw-font-semibold tw-text-gray-900 tw-leading-relaxed">{{ $viewData->alamat }}</p>
+                                            </div>
+                                        @endif
                                     </div>
-                                    <div class="tw-flex">
-                                        <span class="tw-font-semibold tw-text-gray-600 tw-w-24">Jabatan:</span>
-                                        <span class="tw-text-gray-800">{{ $viewData->nama_jabatan }}</span>
-                                    </div>
-                                    <div class="tw-flex">
-                                        <span class="tw-font-semibold tw-text-gray-600 tw-w-24">Status:</span>
-                                        <span class="tw-text-gray-800 tw-capitalize">{{ $viewData->status_anggota }}</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Informasi Kepengurusan -->
-                            <div class="tw-bg-gray-50 tw-p-4 tw-rounded-lg">
-                                <h6 class="tw-font-bold tw-text-gray-700 tw-mb-3 tw-border-b tw-pb-2">
-                                    <i class="fas fa-calendar-alt tw-mr-2"></i>
-                                    Periode Kepengurusan
-                                </h6>
-                                <div class="tw-space-y-2">
-                                    <div class="tw-flex">
-                                        <span class="tw-font-semibold tw-text-gray-600 tw-w-24">Tahun:</span>
-                                        <span class="tw-text-gray-800">{{ $viewData->nama_tahun }}</span>
-                                    </div>
-                                    <div class="tw-flex">
-                                        <span class="tw-font-semibold tw-text-gray-600 tw-w-24">Status:</span>
-                                        <span class="tw-text-gray-800 tw-capitalize">{{ $viewData->status_aktif }}</span>
-                                    </div>
-                                </div>
-                            </div>
+                                </details>
+                            @endif
                         </div>
+                    </div>
 
-                        {{-- Created at column removed from query --}}
-                    @endif
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary tw-bg-gray-300" data-dismiss="modal">Close</button>
-                </div>
+                    <!-- Footer -->
+                    <div class="tw-bg-white tw-px-6 tw-pb-6">
+                        <button type="button" class="tw-w-full tw-bg-gray-900 hover:tw-bg-gray-800 tw-text-white tw-font-semibold tw-py-3 tw-rounded-xl tw-transition-all hover:tw-shadow-lg" data-dismiss="modal">
+                            Tutup
+                        </button>
+                    </div>
+                @endif
             </div>
         </div>
     </div>
@@ -654,6 +655,8 @@
 @push("general-css")
     
 @endpush
+
+@push("scripts")
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <script>
@@ -842,4 +845,5 @@
             });
         }
     </script>
+    @endpush
 </div>

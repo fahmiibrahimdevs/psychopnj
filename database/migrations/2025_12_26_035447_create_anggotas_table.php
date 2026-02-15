@@ -29,14 +29,13 @@ return new class extends Migration
             $table->unsignedBigInteger('id_open_recruitment')->nullable()->index();
             $table->timestamps();
             
-            $table->index('id_user');
-            $table->index('id_tahun');
-            $table->index('id_department');
-            $table->index(['id_tahun', 'status_anggota']);
-            $table->index(['id_tahun', 'status_aktif']);
-            $table->index('nama_lengkap');
-            $table->index('status_anggota');
-            $table->index('status_aktif');
+            // Optimized indexes based on actual query patterns
+            $table->index('id_user'); // Dashboard single lookups
+            $table->index('id_tahun'); // Primary filter in all queries
+            $table->index(['id_tahun', 'status_anggota']); // Anggota.php filtering
+            $table->index(['id_tahun', 'status_aktif']); // IuranKas, TentangKami
+            $table->index(['id_tahun', 'id_department']); // Department filtering
+            $table->index(['id_tahun', 'status_aktif', 'nama_lengkap']); // IuranKas ordering
         });
     }
 

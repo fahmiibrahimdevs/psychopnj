@@ -20,7 +20,7 @@ class IuranKas extends Model
 
     protected $casts = [
         'tanggal_bayar' => 'date',
-        'nominal' => 'decimal:2',
+        'nominal' => 'integer',
     ];
 
     public function tahunKepengurusan()

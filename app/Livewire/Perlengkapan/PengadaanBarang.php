@@ -217,9 +217,9 @@ class PengadaanBarang extends Component
         $this->dataId = $id;
         $this->nama_barang = $data->nama_barang;
         $this->jumlah = $data->jumlah;
-        $this->harga = $data->harga;
-        $this->biaya_lainnya = $data->biaya_lainnya;
-        $this->total = $data->total;
+        $this->harga = (int) $data->harga;
+        $this->biaya_lainnya = (int) $data->biaya_lainnya;
+        $this->total = (int) $data->total;
         $this->prioritas = $data->prioritas;
         $this->keterangan = $data->keterangan;
         $this->nama_toko = $data->nama_toko;

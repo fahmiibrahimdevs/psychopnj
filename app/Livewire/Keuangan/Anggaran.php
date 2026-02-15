@@ -165,7 +165,7 @@ class Anggaran extends Component
         $this->id_department = $data->id_department;
         $this->id_project    = $data->id_project;
         $this->nama          = $data->nama;
-        $this->nominal       = $data->nominal;
+        $this->nominal       = (int) $data->nominal;
     }
 
     public function update()

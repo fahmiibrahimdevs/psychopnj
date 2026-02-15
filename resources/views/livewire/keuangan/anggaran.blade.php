@@ -4,10 +4,10 @@
             <h1>Anggaran</h1>
         </div>
 
-        <div class="section-body tw-mt-6">
+        <div class="section-body tw-mt-6 lg:tw-mt-0">
             <!-- Summary Cards -->
             <!-- Summary Cards -->
-            <div class="tw-flex tw-flex-nowrap lg:tw-grid lg:tw-grid-cols-3 tw-gap-4 tw-mb-4 tw-px-4 lg:tw-px-0 tw-overflow-x-auto tw-pb-2" style="-webkit-overflow-scrolling: touch; scrollbar-width: none">
+            <div class="tw-flex tw-flex-nowrap lg:tw-grid lg:tw-grid-cols-3 tw-gap-4 tw-mb-3 tw-px-4 lg:tw-px-0 tw-overflow-x-auto tw-pb-2" style="-webkit-overflow-scrolling: touch; scrollbar-width: none">
                 <div class="tw-bg-white tw-rounded-lg tw-p-4 tw-shadow-md tw-min-w-[85vw] sm:tw-min-w-[60vw] lg:tw-min-w-0 tw-flex-shrink-0">
                     <div class="tw-flex tw-items-center tw-justify-between">
                         <div>

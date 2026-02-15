@@ -31,11 +31,11 @@ return new class extends Migration
             $table->integer('tampil_esai')->default(0);
             
             // Weights per type
-            $table->decimal('bobot_pg', 8, 2)->default(0);
-            $table->decimal('bobot_kompleks', 8, 2)->default(0);
-            $table->decimal('bobot_jodohkan', 8, 2)->default(0);
-            $table->decimal('bobot_isian', 8, 2)->default(0);
-            $table->decimal('bobot_esai', 8, 2)->default(0);
+            $table->integer('bobot_pg')->default(0);
+            $table->integer('bobot_kompleks')->default(0);
+            $table->integer('bobot_jodohkan')->default(0);
+            $table->integer('bobot_isian')->default(0);
+            $table->integer('bobot_esai')->default(0);
             
             // Multiple choice options count (3, 4, or 5)
             $table->enum('opsi', ['3', '4', '5'])->default('5');

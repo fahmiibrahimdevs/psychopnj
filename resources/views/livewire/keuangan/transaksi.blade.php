@@ -20,7 +20,7 @@
             </div>
         </div>
 
-        <div class="section-body">
+        <div class="section-body tw-mt-5 lg:tw-mt-0">
             <!-- Summary Cards -->
             <div class="tw-overflow-x-auto tw-pb-4 tw-px-4 lg:tw-px-0" style="-webkit-overflow-scrolling: touch; scrollbar-width: none">
                 <div class="tw-grid tw-grid-flow-col tw-auto-cols-max tw-gap-4">
@@ -83,7 +83,7 @@
                 }
             </style>
 
-            <div class="card">
+            <div class="card tw-mt-2">
                 <h3>Buku Kas</h3>
                 <div class="card-body">
                     <div class="show-entries">
@@ -221,7 +221,7 @@
                                             @endif
 
                                             @if ($this->can("transaksi.delete"))
-                                                <button wire:click="confirmDelete({{ $row->id }})" class="btn btn-danger btn-icon">
+                                                <button wire:click="deleteConfirm({{ $row->id }})" class="btn btn-danger btn-icon">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             @endif

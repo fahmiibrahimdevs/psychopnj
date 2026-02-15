@@ -19,11 +19,11 @@ return new class extends Migration
             // Score fields per type
             $table->integer('pg_benar')->default(0);
             $table->integer('pg_salah')->default(0);
-            $table->decimal('nilai_pg', 8, 2)->default(0);
-            $table->decimal('nilai_pk', 8, 2)->default(0); // PG Kompleks
-            $table->decimal('nilai_jo', 8, 2)->default(0); // Jodohkan
-            $table->decimal('nilai_is', 8, 2)->default(0); // Isian
-            $table->decimal('nilai_es', 8, 2)->default(0); // Esai
+            $table->integer('nilai_pg')->default(0);
+            $table->integer('nilai_pk')->default(0); // PG Kompleks
+            $table->integer('nilai_jo')->default(0); // Jodohkan
+            $table->integer('nilai_is')->default(0); // Isian
+            $table->integer('nilai_es')->default(0); // Esai
             
             $table->enum('status', ['0', '1'])->default('0'); // 0=sedang mengerjakan, 1=selesai
             $table->enum('dikoreksi', ['0', '1'])->default('0'); // 0=belum, 1=sudah
@@ -59,10 +59,10 @@ return new class extends Migration
             $table->text('jawaban_anggota')->nullable(); // Student's answer
             $table->text('jawaban_benar')->nullable(); // Original correct answer
             
-            $table->decimal('point_soal', 8, 2)->default(0);
-            $table->decimal('point_essai', 8, 2)->default(0);
-            $table->decimal('nilai_koreksi', 8, 2)->default(0);
-            $table->decimal('nilai_otomatis', 8, 2)->default(0);
+            $table->integer('point_soal')->default(0);
+            $table->integer('point_essai')->default(0);
+            $table->integer('nilai_koreksi')->default(0);
+            $table->integer('nilai_otomatis')->default(0);
             
             $table->enum('ragu', ['0', '1'])->default('0');
             $table->enum('soal_end', ['0', '1'])->default('0');

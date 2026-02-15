@@ -4,9 +4,9 @@
             <h1>Pengadaan Barang (RAB)</h1>
         </div>
 
-        <div class="section-body tw-mt-4">
+        <div class="section-body tw-mt-4 lg:-tw-mt-2">
             <!-- Nav Pills -->
-            <ul class="nav nav-pills tw-mb-6 tw-px-4 lg:tw-px-0" id="rabTabs" role="tablist" style="display: flex; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; -ms-overflow-style: none; scrollbar-width: none">
+            <ul class="nav nav-pills tw-mb-4 tw-px-4 lg:tw-px-0" id="rabTabs" role="tablist" style="display: flex; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; -ms-overflow-style: none; scrollbar-width: none">
                 @foreach ($departments as $dept)
                     <li class="nav-item">
                         <a class="nav-link {{ $activeTab === "dept-" . $dept->id ? "active" : "" }} tw-whitespace-nowrap" wire:click.prevent="switchTab('dept-{{ $dept->id }}')" href="#" role="tab">

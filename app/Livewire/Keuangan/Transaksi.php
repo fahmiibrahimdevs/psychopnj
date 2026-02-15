@@ -237,7 +237,7 @@ class Transaksi extends Component
         $this->id_department = $data->id_department;
         $this->id_project    = $data->id_project;
         $this->deskripsi     = $data->deskripsi;
-        $this->nominal       = $data->nominal;
+        $this->nominal       = (int) $data->nominal;
         $this->bukti         = $data->bukti;
         
         // Load existing files

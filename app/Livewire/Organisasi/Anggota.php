@@ -195,7 +195,7 @@ class Anggota extends Component
                 ->where('anggota.status_anggota', 'pengurus')
                 ->count();
 
-        // Get data anggota with load more
+        // Get data anggota with load more (grouped by jurusan_prodi_kelas)
         $dataAnggota = DB::table('anggota')
                 ->select(
                     'anggota.id',
@@ -220,10 +220,11 @@ class Anggota extends Component
                           ->orWhere('anggota.nama_jabatan', 'LIKE', $search)
                           ->orWhere('anggota.jurusan_prodi_kelas', 'LIKE', $search);
                 })
+                ->orderBy('anggota.jurusan_prodi_kelas', 'ASC')
                 ->orderBy('anggota.id', 'ASC')
                 ->limit($this->perPageAnggota)
                 ->get()
-                ->groupBy('nama_department');
+                ->groupBy('jurusan_prodi_kelas');
 
         $countAnggota = DB::table('anggota')
                 ->join('tahun_kepengurusan', 'tahun_kepengurusan.id', '=', 'anggota.id_tahun')

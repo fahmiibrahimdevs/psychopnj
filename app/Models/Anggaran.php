@@ -20,7 +20,7 @@ class Anggaran extends Model
     ];
 
     protected $casts = [
-        'nominal' => 'decimal:2',
+        'nominal' => 'integer',
     ];
 
     public function tahunKepengurusan()

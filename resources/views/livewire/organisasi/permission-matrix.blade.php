@@ -8,14 +8,9 @@
             <div class="card">
                 <h3>Pengaturan Hak Akses (RBAC)</h3>
                 <div class="card-body">
-                    <div class="alert alert-info tw-mb-4">
-                        <i class="fas fa-info-circle tw-mr-2"></i>
-                        Klik toggle untuk mengaktifkan/menonaktifkan permission secara instan. Perubahan tersimpan otomatis.
-                    </div>
-
-                    <div class="search-column tw-mb-4">
-                        <p>Search Permission:</p>
-                        <input type="text" wire:model.live.debounce.500ms="search" id="search-data" placeholder="Cari module atau permission..." class="form-control" />
+                    <div class="search-column">
+                        <p>Search:</p>
+                        <input type="search" wire:model.live.debounce.750ms="searchTerm" id="search-data" placeholder="Search here..." class="form-control" />
                     </div>
 
                     <div class="table-responsive">
@@ -82,7 +77,9 @@
             </div>
         </div>
     </section>
+</div>
 
+@push("scripts")
     <!-- Simple Toast Notification Script -->
     <script>
         document.addEventListener('livewire:initialized', () => {
@@ -99,4 +96,4 @@
            });
         });
     </script>
-</div>
+@endpush
