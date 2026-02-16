@@ -71,7 +71,7 @@ class Profile extends Component
             $this->ttl = $this->anggota->ttl;
             $this->alamat = $this->anggota->alamat;
             $this->no_hp = $this->anggota->no_hp;
-            $this->foto_preview = $this->anggota->foto ? Storage::url($this->anggota->foto) : null;
+            $this->foto_preview = storageUrl($this->anggota->foto);
         }
     }
 
@@ -145,7 +145,7 @@ class Profile extends Component
                 $path = $this->foto->storeAs($year . '/anggota', $filename, 'public');
                 
                 $updateData['foto'] = $path;
-                $this->foto_preview = Storage::url($path);
+                $this->foto_preview = storageUrl($path);
             }
 
             $this->anggota->update($updateData);
