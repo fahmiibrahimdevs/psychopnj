@@ -349,7 +349,7 @@ class OpenRecruitment extends Component
         $this->dispatch('swal:confirm', [
             'type'      => 'warning',  
             'message'   => 'Are you sure?', 
-            'text'      => 'If you delete the data, it cannot be restored!'
+            'text'      => 'If you delete this, it will be gone forever.',
         ]);
     }
 

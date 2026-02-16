@@ -1326,7 +1326,7 @@ class OpenRecruitmentSeeder extends Seeder
                 'nama_jabatan' => 'Staff',
             ],
             [
-                'nama_lengkap' => 'lisya nur abika',
+                'nama_lengkap' => 'Ilsya nur abika',
                 'email' => '',
                 'no_hp' => '',
                 'jurusan_prodi_kelas' => 'TE/IKI/4B',

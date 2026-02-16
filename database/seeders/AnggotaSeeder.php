@@ -949,7 +949,7 @@ class AnggotaSeeder extends Seeder
             $user->assignRole('anggota');
 
             // Insert into anggota table
-            DB::table('anggota')->insert([
+            $anggotaId = DB::table('anggota')->insertGetId([
                 'id_user' => $user->id,
                 'id_tahun' => 1,
                 'id_department' => 0,
@@ -966,6 +966,27 @@ class AnggotaSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+
+            // Link dengan open_recruitment jika ada yang match (by email dan status lulus)
+            DB::table('open_recruitment')
+                ->where('email', $data['email'])
+                ->where('status_seleksi', 'lulus')
+                ->update([
+                    'id_user' => $user->id,
+                    'id_anggota' => $anggotaId,
+                ]);
+
+            // Update id_open_recruitment di anggota jika ada
+            $openRecruitmentId = DB::table('open_recruitment')
+                ->where('email', $data['email'])
+                ->where('status_seleksi', 'lulus')
+                ->value('id');
+
+            if ($openRecruitmentId) {
+                DB::table('anggota')
+                    ->where('id', $anggotaId)
+                    ->update(['id_open_recruitment' => $openRecruitmentId]);
+            }
         }
     }
 }

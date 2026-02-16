@@ -24,7 +24,7 @@ return new class extends Migration
             $table->string('no_hp')->nullable();
             $table->string('rfid_card')->nullable()->unique();
             $table->enum('status_anggota', ['pengurus', 'anggota'])->default('anggota');
-            $table->enum('status_aktif', ['aktif', 'nonaktif'])->default('aktif');
+            $table->enum('status_aktif', ['aktif', 'diberhentikan', 'mengundurkan diri', 'nonaktif'])->default('aktif');
             $table->text('foto')->nullable();
             $table->unsignedBigInteger('id_open_recruitment')->nullable()->index();
             $table->timestamps();

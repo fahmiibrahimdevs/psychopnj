@@ -462,177 +462,121 @@
         </div>
     </div>
 
+    <!-- Modal View Detail yang Cantik (Mirip Member Card) -->
     <div class="modal fade" wire:ignore.self id="viewDataModal" aria-labelledby="viewDataModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg tw-w-full tw-m-0 sm:tw-w-auto sm:tw-m-[1.75rem_auto]">
-            <div class="modal-content tw-rounded-lg tw-border-0 tw-shadow-lg">
-                <!-- Header -->
-                <div class="modal-header tw-bg-white tw-border-b tw-border-gray-200">
-                    <h5 class="modal-title tw-font-semibold tw-text-xl tw-text-gray-800" id="viewDataModalLabel">Detail Pendaftar</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
+        <div class="modal-dialog modal-dialog-centered" style="max-width: 420px">
+            <div class="modal-content tw-border-0 tw-shadow-2xl tw-rounded-3xl tw-overflow-hidden">
+                <!-- Close Button -->
+                <div class="tw-absolute tw-top-4 tw-right-4 tw-z-10">
+                    <button type="button" class="tw-bg-white tw-bg-opacity-90 tw-backdrop-blur-sm tw-rounded-full tw-w-10 tw-h-10 tw-flex tw-items-center tw-justify-center tw-shadow-md hover:tw-shadow-lg tw-transition-all hover:tw-scale-110" data-dismiss="modal" aria-label="Close">
+                        <i class="fas fa-times tw-text-gray-700"></i>
                     </button>
                 </div>
 
-                <div class="modal-body tw-p-6">
-                    @if ($viewData)
-                        <!-- Profile Section -->
-                        <div class="tw-flex tw-items-start tw-gap-6 tw-pb-6 tw-border-b tw-border-gray-200 tw-mb-6">
-                            <div class="tw-flex-shrink-0">
-                                <img src="{{ asset("assets/stisla/img/avatar/avatar-1.png") }}" alt="avatar" class="tw-w-24 tw-h-24 tw-rounded-full tw-border-2 tw-border-gray-200" />
-                            </div>
-                            <div class="tw-flex-1">
-                                <h3 class="tw-text-2xl tw-font-semibold tw-text-gray-900 tw-mb-2">{{ $viewData->nama_lengkap ?? "" }}</h3>
-                                <div class="tw-flex tw-flex-wrap tw-gap-3 tw-mb-3">
-                                    <span class="tw-text-sm tw-text-gray-600">
-                                        <i class="fas fa-graduation-cap tw-mr-1"></i>
-                                        {{ $viewData->jurusan_prodi_kelas ?? "-" }}
-                                    </span>
-                                </div>
-                                <div>
-                                    @if ($viewData->status_seleksi === "pending")
-                                        <span class="tw-inline-flex tw-items-center tw-px-3 tw-py-1 tw-rounded-md tw-text-sm tw-font-medium tw-bg-yellow-50 tw-text-yellow-700 tw-border tw-border-yellow-200">
-                                            <i class="fas fa-clock tw-mr-2"></i>
-                                            Menunggu Seleksi
-                                        </span>
-                                    @elseif ($viewData->status_seleksi === "lulus")
-                                        <span class="tw-inline-flex tw-items-center tw-px-3 tw-py-1 tw-rounded-md tw-text-sm tw-font-medium tw-bg-green-50 tw-text-green-700 tw-border tw-border-green-200">
-                                            <i class="fas fa-check-circle tw-mr-2"></i>
-                                            Lulus Seleksi
-                                        </span>
-                                    @else
-                                        <span class="tw-inline-flex tw-items-center tw-px-3 tw-py-1 tw-rounded-md tw-text-sm tw-font-medium tw-bg-red-50 tw-text-red-700 tw-border tw-border-red-200">
-                                            <i class="fas fa-times-circle tw-mr-2"></i>
-                                            Tidak Lulus
-                                        </span>
-                                    @endif
-                                </div>
+                @if ($viewData)
+                    <!-- Header Section -->
+                    <div class="tw-bg-gradient-to-br tw-from-indigo-600 tw-to-indigo-700 tw-px-8 tw-pt-10 tw-pb-8">
+                        <!-- Organization -->
+                        <div class="tw-text-center tw-mb-6">
+                            <h2 class="tw-text-white tw-font-bold tw-text-xl tw-tracking-widest tw-mb-1">PSYCHOROBOTIC</h2>
+                            <div class="tw-inline-block tw-bg-white tw-bg-opacity-20 tw-backdrop-blur-sm tw-px-4 tw-py-1 tw-rounded-full">
+                                <p class="tw-text-white tw-text-xs tw-font-medium tw-tracking-wide">CANDIDATE CARD</p>
                             </div>
                         </div>
 
-                        <!-- Information Grid -->
-                        <div class="row tw-mb-6">
-                            <!-- Data Akademik -->
-                            <div class="col-lg-6 tw-mb-4">
-                                <div class="tw-bg-gray-50 tw-rounded-lg tw-p-4 tw-h-full">
-                                    <h6 class="tw-text-sm tw-font-semibold tw-text-gray-700 tw-uppercase tw-tracking-wide tw-mb-4">
-                                        <i class="fas fa-graduation-cap tw-mr-2"></i>
-                                        Data Akademik
-                                    </h6>
-                                    <div class="tw-space-y-3">
-                                        <div class="tw-flex tw-justify-between tw-items-start tw-gap-3">
-                                            <span class="tw-text-sm tw-text-gray-600 tw-flex-shrink-0">Jurusan/Prodi/Kelas</span>
-                                            <span class="tw-text-sm tw-font-medium tw-text-gray-900 tw-text-right tw-break-words">{{ $viewData->jurusan_prodi_kelas ?? "-" }}</span>
-                                        </div>
+                        <!-- Photo & Name -->
+                        <div class="tw-text-center">
+                            <div class="tw-inline-block tw-relative tw-mb-5">
+                                <img src="{{ asset("assets/stisla/img/avatar/avatar-1.png") }}" alt="{{ $viewData->nama_lengkap }}" class="tw-w-32 tw-h-32 tw-rounded-full tw-object-cover tw-border-4 tw-border-white tw-shadow-xl" />
+                                @if ($viewData->status_seleksi == "lulus")
+                                    <div class="tw-absolute tw-bottom-0 tw-right-0 tw-bg-green-500 tw-w-9 tw-h-9 tw-rounded-full tw-flex tw-items-center tw-justify-center tw-border-4 tw-border-white tw-shadow-lg">
+                                        <i class="fas fa-check tw-text-white tw-text-sm"></i>
                                     </div>
-                                </div>
+                                @elseif ($viewData->status_seleksi == "gagal")
+                                    <div class="tw-absolute tw-bottom-0 tw-right-0 tw-bg-red-500 tw-w-9 tw-h-9 tw-rounded-full tw-flex tw-items-center tw-justify-center tw-border-4 tw-border-white tw-shadow-lg">
+                                        <i class="fas fa-times tw-text-white tw-text-sm"></i>
+                                    </div>
+                                @else
+                                    <div class="tw-absolute tw-bottom-0 tw-right-0 tw-bg-yellow-500 tw-w-9 tw-h-9 tw-rounded-full tw-flex tw-items-center tw-justify-center tw-border-4 tw-border-white tw-shadow-lg">
+                                        <i class="fas fa-clock tw-text-white tw-text-sm"></i>
+                                    </div>
+                                @endif
                             </div>
 
-                            <!-- Data Kontak -->
-                            <div class="col-lg-6 tw-mb-4">
-                                <div class="tw-bg-gray-50 tw-rounded-lg tw-p-4 tw-h-full">
-                                    <h6 class="tw-text-sm tw-font-semibold tw-text-gray-700 tw-uppercase tw-tracking-wide tw-mb-4">
-                                        <i class="fas fa-address-book tw-mr-2"></i>
-                                        Data Kontak
-                                    </h6>
-                                    <div class="tw-space-y-3">
-                                        <div class="tw-flex tw-justify-between tw-items-start tw-gap-3">
-                                            <span class="tw-text-sm tw-text-gray-600 tw-flex-shrink-0">Email</span>
-                                            <span class="tw-text-sm tw-font-medium tw-text-gray-900 tw-text-right tw-break-all tw-overflow-wrap-anywhere">{{ $viewData->email ?? "-" }}</span>
-                                        </div>
-                                        <div class="tw-h-px tw-bg-gray-200"></div>
-                                        <div class="tw-flex tw-justify-between tw-items-start">
-                                            <span class="tw-text-sm tw-text-gray-600">No. WhatsApp</span>
-                                            <span class="tw-text-sm tw-font-medium tw-text-gray-900">{{ $viewData->no_hp ?? "-" }}</span>
-                                        </div>
-                                    </div>
-                                </div>
+                            <h3 class="tw-text-white tw-text-2xl tw-font-bold tw-mb-2">{{ $viewData->nama_lengkap }}</h3>
+                            <p class="tw-text-white tw-text-sm tw-font-semibold tw-mb-1 tw-capitalize">{{ $viewData->nama_jabatan }}</p>
+                            @if ($viewData->nama_department)
+                                <p class="tw-text-indigo-200 tw-text-sm">{{ $viewData->nama_department }}</p>
+                            @endif
+
+                            <div class="tw-flex tw-justify-center tw-gap-2 tw-mt-4">
+                                <span class="tw-bg-white tw-bg-opacity-20 tw-backdrop-blur-sm tw-px-4 tw-py-1.5 tw-rounded-full tw-text-white tw-text-xs tw-font-semibold tw-capitalize">
+                                    {{ $viewData->jenis_oprec }}
+                                </span>
+                                <span class="tw-bg-white tw-bg-opacity-20 tw-backdrop-blur-sm tw-px-4 tw-py-1.5 tw-rounded-full tw-text-white tw-text-xs tw-font-semibold">
+                                    {{ $viewData->nama_tahun }}
+                                </span>
+                                @if ($viewData->status_seleksi === "pending")
+                                    <span class="tw-bg-yellow-500 tw-bg-opacity-90 tw-px-4 tw-py-1.5 tw-rounded-full tw-text-white tw-text-xs tw-font-semibold">Pending</span>
+                                @elseif ($viewData->status_seleksi === "lulus")
+                                    <span class="tw-bg-green-500 tw-bg-opacity-90 tw-px-4 tw-py-1.5 tw-rounded-full tw-text-white tw-text-xs tw-font-semibold">Lulus</span>
+                                @else
+                                    <span class="tw-bg-red-500 tw-bg-opacity-90 tw-px-4 tw-py-1.5 tw-rounded-full tw-text-white tw-text-xs tw-font-semibold">Gagal</span>
+                                @endif
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Data Pendaftaran -->
-                        <div class="row tw-mb-6">
-                            <div class="col-lg-6 tw-mb-4">
-                                <div class="tw-bg-gray-50 tw-rounded-lg tw-p-4 tw-h-full">
-                                    <h6 class="tw-text-sm tw-font-semibold tw-text-gray-700 tw-uppercase tw-tracking-wide tw-mb-4">
-                                        <i class="fas fa-clipboard-list tw-mr-2"></i>
-                                        Data Pendaftaran
-                                    </h6>
-                                    <div class="tw-space-y-3">
-                                        <div class="tw-flex tw-justify-between tw-items-center">
-                                            <span class="tw-text-sm tw-text-gray-600">Jenis Oprec</span>
-                                            <span class="tw-text-sm tw-font-medium tw-text-gray-900 tw-capitalize">{{ $viewData->jenis_oprec ?? "-" }}</span>
-                                        </div>
-                                        <div class="tw-h-px tw-bg-gray-200"></div>
-                                        <div class="tw-flex tw-justify-between tw-items-center">
-                                            <span class="tw-text-sm tw-text-gray-600">Tahun</span>
-                                            <span class="tw-text-sm tw-font-medium tw-text-gray-900">{{ $viewData->nama_tahun ?? "-" }}</span>
-                                        </div>
+                    <!-- Content Section -->
+                    <div class="tw-bg-white tw-p-6">
+                        <!-- Info Cards -->
+                        <div class="tw-space-y-3">
+                            <!-- Jurusan -->
+                            <div class="tw-border tw-border-gray-200 tw-rounded-xl tw-p-4">
+                                <div class="tw-flex tw-items-start tw-gap-3">
+                                    <div class="tw-w-10 tw-h-10 tw-bg-indigo-100 tw-rounded-lg tw-flex tw-items-center tw-justify-center tw-flex-shrink-0">
+                                        <i class="fas fa-graduation-cap tw-text-indigo-600"></i>
+                                    </div>
+                                    <div class="tw-flex-1 tw-min-w-0">
+                                        <p class="tw-text-xs tw-text-gray-500 tw-font-medium tw-mb-1">Jurusan/Prodi/Kelas</p>
+                                        <p class="tw-text-sm tw-font-semibold tw-text-gray-900 tw-leading-tight">{{ $viewData->jurusan_prodi_kelas }}</p>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Tautan Twibbon -->
-                            <div class="col-lg-6 tw-mb-4">
-                                <div class="tw-bg-gray-50 tw-rounded-lg tw-p-4 tw-h-full">
-                                    <h6 class="tw-text-sm tw-font-semibold tw-text-gray-700 tw-uppercase tw-tracking-wide tw-mb-4">
-                                        <i class="fas fa-link tw-mr-2"></i>
-                                        Bukti Pendaftaran
-                                    </h6>
-                                    <div class="tw-space-y-3">
-                                        <div>
-                                            <span class="tw-text-sm tw-text-gray-600 tw-block tw-mb-2">Tautan Twibbon</span>
+                            <!-- Phone -->
+                            <div class="tw-border tw-border-gray-200 tw-rounded-xl tw-p-4">
+                                <div class="tw-flex tw-items-center tw-gap-3">
+                                    <div class="tw-w-10 tw-h-10 tw-bg-gray-100 tw-rounded-lg tw-flex tw-items-center tw-justify-center">
+                                        <i class="fas fa-phone tw-text-gray-600"></i>
+                                    </div>
+                                    <div class="tw-flex-1">
+                                        <p class="tw-text-xs tw-text-gray-500 tw-font-medium tw-mb-1">No. HP</p>
+                                        <p class="tw-text-sm tw-font-semibold tw-text-gray-900">{{ $viewData->no_hp ?: "-" }}</p>
+                                    </div>
+                                </div>
+                            </div>
 
-                                            @if (! empty($viewData->tautan_twibbon))
-                                                <a href="{{ $viewData->tautan_twibbon }}" target="_blank" class="tw-inline-block tw-text-sm tw-font-medium tw-text-blue-600 hover:tw-text-blue-800 tw-break-all tw-max-w-full tw-overflow-hidden">
-                                                    <i class="fas fa-external-link-alt tw-mr-1"></i>
-                                                    <span class="tw-break-all">{{ $viewData->tautan_twibbon }}</span>
-                                                </a>
-                                            @else
-                                                <span class="tw-text-sm tw-text-gray-400">Belum upload</span>
-                                            @endif
-                                        </div>
+                            <!-- Email -->
+                            <div class="tw-border tw-border-gray-200 tw-rounded-xl tw-p-4">
+                                <div class="tw-flex tw-items-start tw-gap-3">
+                                    <div class="tw-w-10 tw-h-10 tw-bg-gray-100 tw-rounded-lg tw-flex tw-items-center tw-justify-center tw-flex-shrink-0">
+                                        <i class="fas fa-envelope tw-text-gray-600"></i>
+                                    </div>
+                                    <div class="tw-flex-1 tw-min-w-0">
+                                        <p class="tw-text-xs tw-text-gray-500 tw-font-medium tw-mb-1">Email</p>
+                                        <p class="tw-text-sm tw-font-semibold tw-text-gray-900 tw-break-all tw-leading-tight">{{ $viewData->email ?: "-" }}</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Alasan -->
-                        @if (! empty($viewData->alasan))
-                            <div class="tw-bg-gray-50 tw-rounded-lg tw-p-4 tw-mb-6">
-                                <h6 class="tw-text-sm tw-font-semibold tw-text-gray-700 tw-uppercase tw-tracking-wide tw-mb-3">
-                                    <i class="fas fa-comment-dots tw-mr-2"></i>
-                                    Alasan Mengikuti Psychorobotic
-                                </h6>
-                                <p class="tw-text-sm tw-text-gray-700 tw-leading-relaxed tw-break-words tw-whitespace-pre-wrap">{{ $viewData->alasan }}</p>
-                            </div>
-                        @endif
-
-                        @if ($viewData->jenis_oprec === "pengurus")
-                            <!-- Posisi yang Dilamar -->
-                            <div class="tw-bg-gray-50 tw-rounded-lg tw-p-4 tw-mb-6">
-                                <h6 class="tw-text-sm tw-font-semibold tw-text-gray-700 tw-uppercase tw-tracking-wide tw-mb-4">Posisi yang Dilamar</h6>
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="tw-flex tw-justify-between tw-items-center tw-mb-3">
-                                            <span class="tw-text-sm tw-text-gray-600">Divisi</span>
-                                            <span class="tw-text-sm tw-font-medium tw-text-gray-900">{{ $viewData->nama_department ?? "-" }}</span>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="tw-flex tw-justify-between tw-items-center">
-                                            <span class="tw-text-sm tw-text-gray-600">Jabatan</span>
-                                            <span class="tw-text-sm tw-font-medium tw-text-gray-900 tw-capitalize">{{ $viewData->nama_jabatan ?? "-" }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        @endif
-                    @endif
-                </div>
-
-                <div class="modal-footer tw-bg-gray-50 tw-border-t tw-border-gray-200">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
-                </div>
+                    <!-- Footer -->
+                    <div class="tw-bg-white tw-px-6 tw-pb-6">
+                        <button type="button" class="tw-w-full tw-bg-gray-900 hover:tw-bg-gray-800 tw-text-white tw-font-semibold tw-py-3 tw-rounded-xl tw-transition-all hover:tw-shadow-lg" data-dismiss="modal">Tutup</button>
+                    </div>
+                @endif
             </div>
         </div>
     </div>

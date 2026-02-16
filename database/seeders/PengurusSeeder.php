@@ -582,7 +582,7 @@ class PengurusSeeder extends Seeder
             $user->assignRole($role);
 
             // Create anggota record
-            Anggota::create([
+            $anggotaRecord = Anggota::create([
                 'id_user' => $user->id,
                 'id_tahun' => '1',
                 'id_department' => $anggota['id_department'] ?? '',
@@ -598,6 +598,44 @@ class PengurusSeeder extends Seeder
                 'status_aktif' => 'aktif',
                 'foto' => '',
             ]);
+
+            // Link dengan open_recruitment 
+            // Priority 1: Match by email (jika email tidak kosong di open_recruitment)
+            $openRecruitmentQuery = \Illuminate\Support\Facades\DB::table('open_recruitment')
+                ->where('status_seleksi', 'lulus')
+                ->where('jenis_oprec', 'pengurus');
+
+            if (!empty($anggota['email'])) {
+                $openRecruitmentQuery->where(function($q) use ($anggota) {
+                    $q->where('email', $anggota['email'])
+                      ->orWhere(function($q2) use ($anggota) {
+                          // Fallback: Match by nama_lengkap dan jurusan jika email kosong di oprec
+                          $q2->where('email', '')
+                             ->where('nama_lengkap', $anggota['nama_lengkap'])
+                             ->where('jurusan_prodi_kelas', $anggota['jurusan_prodi_kelas']);
+                      });
+                });
+            } else {
+                // Jika email pengurus kosong, match by nama_lengkap dan jurusan
+                $openRecruitmentQuery->where('nama_lengkap', $anggota['nama_lengkap'])
+                                    ->where('jurusan_prodi_kelas', $anggota['jurusan_prodi_kelas']);
+            }
+
+            $openRecruitment = $openRecruitmentQuery->first();
+
+            if ($openRecruitment) {
+                // Update open_recruitment dengan id_user dan id_anggota
+                \Illuminate\Support\Facades\DB::table('open_recruitment')
+                    ->where('id', $openRecruitment->id)
+                    ->update([
+                        'id_user' => $user->id,
+                        'id_anggota' => $anggotaRecord->id,
+                        'email' => $anggota['email'], // Update email di oprec juga
+                    ]);
+
+                // Update id_open_recruitment di anggota
+                $anggotaRecord->update(['id_open_recruitment' => $openRecruitment->id]);
+            }
         }
     }
 }

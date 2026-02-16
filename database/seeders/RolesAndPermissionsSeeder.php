@@ -302,15 +302,15 @@ class RolesAndPermissionsSeeder extends Seeder
 
 
         // 3. Create Default Users for Testing
-        $this->createUser('Super Admin', 'admin@app.com', $superAdmin);
-        $this->createUser('Chairman', 'chairman@app.com', $chairman);
-        $this->createUser('Admin Pengajaran', 'pengajaran@app.com', $adminPengajaran);
-        $this->createUser('Admin Keuangan', 'keuangan@app.com', $adminKeuangan);
-        $this->createUser('Admin Media', 'media@app.com', $adminMedia);
-        $this->createUser('Admin Inventaris', 'inventaris@app.com', $adminInventaris);
-        $this->createUser('Admin Sekretaris', 'sekretaris@app.com', $adminSekretaris);
-        $this->createUser('Admin Project', 'project@app.com', $adminProject);
-        $this->createUser('Anggota Biasa', 'anggota@app.com', $anggota);
+        // $this->createUser('Super Admin', 'admin@app.com', $superAdmin);
+        // $this->createUser('Chairman', 'chairman@app.com', $chairman);
+        // $this->createUser('Admin Pengajaran', 'pengajaran@app.com', $adminPengajaran);
+        // $this->createUser('Admin Keuangan', 'keuangan@app.com', $adminKeuangan);
+        // $this->createUser('Admin Media', 'media@app.com', $adminMedia);
+        // $this->createUser('Admin Inventaris', 'inventaris@app.com', $adminInventaris);
+        // $this->createUser('Admin Sekretaris', 'sekretaris@app.com', $adminSekretaris);
+        // $this->createUser('Admin Project', 'project@app.com', $adminProject);
+        // $this->createUser('Anggota Biasa', 'anggota@app.com', $anggota);
     }
 
     private function createUser($name, $email, $role)
