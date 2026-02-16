@@ -20,14 +20,14 @@ class Mengerjakan extends Component
 
     public $opsi, $ragu;
     public $size = 'base', $currentQuestionIndex = 0;
-    public $pertemuanId, $anggota;
+    public $partId, $anggota;
     public $soals;
     public $isian_singkat, $essai, $pg_kompleks = [], $jawaban_jodohkan = [];
 
-    public function mount($pertemuanId = '')
+    public function mount($partId = '')
     {
         try {
-            $this->pertemuanId = Crypt::decryptString($pertemuanId);
+            $this->partId = Crypt::decryptString($partId);
             $this->anggota = Anggota::where('id_user', Auth::user()->id)->first();
 
             if (!$this->anggota) {
@@ -74,7 +74,7 @@ class Mengerjakan extends Component
             ->leftJoin('soal_pertemuan', 'soal_anggota.id_soal', 'soal_pertemuan.id')
             ->leftJoin('nilai_soal_anggota', 'nilai_soal_anggota.id', 'soal_anggota.id_nilai_soal')
             ->where([
-                ['nilai_soal_anggota.id_pertemuan', $this->pertemuanId],
+                ['nilai_soal_anggota.id_part', $this->partId],
                 ['nilai_soal_anggota.id_anggota', $this->anggota->id],
             ])
             ->orderBy('soal_anggota.no_soal_alias', 'ASC')

@@ -189,47 +189,106 @@
                                         </div>
                                     </div>
 
-                                    @if ($pertemuan->total_soal > 0)
-                                        <div class="tw-mt-3 tw-pt-3 -tw-mb-3 tw-border-t tw-border-gray-200">
-                                            <div class="tw-flex tw-items-center tw-justify-between tw-text-sm">
-                                                <span class="tw-text-gray-600">
-                                                    <i class="fas fa-list-ol tw-mr-1"></i>
-                                                    {{ $pertemuan->total_soal }} Soal
-                                                </span>
-                                                @if ($pertemuan->status_ujian == "1")
-                                                    <span class="badge badge-success">
-                                                        <i class="fas fa-check-circle tw-mr-1"></i>
-                                                        Selesai
-                                                    </span>
-                                                @elseif ($pertemuan->status_ujian == "0")
-                                                    <span class="badge badge-warning">
-                                                        <i class="fas fa-hourglass-half tw-mr-1"></i>
-                                                        Dalam Proses
-                                                    </span>
-                                                @else
-                                                    @if ($pertemuan->bank_soal_status == "1")
-                                                        <span class="badge badge-primary">
-                                                            <i class="fas fa-play-circle tw-mr-1"></i>
-                                                            Belum Dimulai
-                                                        </span>
-                                                    @else
-                                                        <span class="badge badge-secondary">
-                                                            <i class="fas fa-lock tw-mr-1"></i>
-                                                            Belum Dibuka
-                                                        </span>
-                                                    @endif
-                                                @endif
+                                    {{-- Parts List --}}
+                                    @php
+                                        $pertemuanParts = $parts[$pertemuan->id] ?? collect();
+                                    @endphp
+
+                                    @if ($pertemuanParts->count() > 0)
+                                        <div class="tw-mt-4 tw-pt-3 tw-border-t tw-border-gray-200" x-data="{ expanded: false }">
+                                            <div class="tw-flex tw-justify-between tw-items-center tw-mb-3 tw-cursor-pointer" @click="expanded = !expanded">
+                                                <h6 class="tw-text-sm tw-font-semibold tw-text-gray-700 tw-mb-0">
+                                                    <i class="fas fa-puzzle-piece tw-mr-1 tw-text-blue-500"></i>
+                                                    Daftar Part ({{ $pertemuanParts->count() }})
+                                                </h6>
+                                                <button type="button" class="tw-flex tw-items-center tw-gap-2 tw-text-xs tw-font-medium tw-text-blue-600 hover:tw-text-blue-700 tw-transition-colors">
+                                                    <span x-show="!expanded">Lihat Part</span>
+                                                    <span x-show="expanded">Tutup</span>
+                                                    <i class="fas fa-chevron-down tw-transition-transform tw-duration-200" :class="{ 'tw-rotate-180': expanded }"></i>
+                                                </button>
+                                            </div>
+
+                                            <div x-show="expanded" x-collapse class="tw-space-y-2">
+                                                @foreach ($pertemuanParts as $part)
+                                                    <div class="tw-bg-gradient-to-r tw-from-blue-50 tw-to-indigo-50 tw-rounded-lg tw-p-3 tw-border tw-border-blue-100 hover:tw-shadow-sm tw-transition-all">
+                                                        <div class="tw-flex tw-justify-between tw-items-start tw-gap-3">
+                                                            <div class="tw-flex-1 tw-min-w-0">
+                                                                <div class="tw-flex tw-items-center tw-gap-2 tw-mb-1">
+                                                                    <span class="tw-inline-flex tw-items-center tw-px-2 tw-py-0.5 tw-rounded-full tw-text-xs tw-font-bold tw-bg-blue-500 tw-text-white">Part {{ $part->urutan }}</span>
+                                                                    <p class="tw-font-semibold tw-text-sm tw-text-gray-800 tw-truncate">
+                                                                        {{ $part->nama_part }}
+                                                                    </p>
+                                                                </div>
+
+                                                                @if ($part->deskripsi)
+                                                                    <p class="tw-text-xs tw-text-gray-600 tw-mb-2 tw-line-clamp-2">
+                                                                        {{ $part->deskripsi }}
+                                                                    </p>
+                                                                @endif
+
+                                                                <div class="tw-flex tw-flex-wrap tw-gap-2 tw-text-xs">
+                                                                    @if ($part->total_soal > 0)
+                                                                        <span class="tw-inline-flex tw-items-center tw-px-2 tw-py-1 tw-bg-white tw-rounded-md tw-text-gray-700 tw-border tw-border-gray-200">
+                                                                            <i class="fas fa-list-ol tw-mr-1 tw-text-blue-500"></i>
+                                                                            {{ $part->total_soal }} Soal
+                                                                        </span>
+                                                                    @endif
+
+                                                                    @if ($part->part_files_count > 0)
+                                                                        <span class="tw-inline-flex tw-items-center tw-px-2 tw-py-1 tw-bg-white tw-rounded-md tw-text-gray-700 tw-border tw-border-gray-200">
+                                                                            <i class="fas fa-file tw-mr-1 tw-text-green-500"></i>
+                                                                            {{ $part->part_files_count }} File
+                                                                        </span>
+                                                                    @endif
+                                                                </div>
+                                                            </div>
+
+                                                            <div class="tw-flex-shrink-0">
+                                                                @if ($part->total_soal > 0)
+                                                                    @if ($part->status_ujian == "1")
+                                                                        <span class="tw-inline-flex tw-items-center tw-px-3 tw-py-1.5 tw-rounded-lg tw-text-xs tw-font-semibold tw-bg-green-500 tw-text-white">
+                                                                            <i class="fas fa-check-circle tw-mr-1"></i>
+                                                                            Selesai
+                                                                        </span>
+                                                                    @elseif ($part->status_ujian == "0")
+                                                                        <a href="{{ url("/anggota/mengerjakan/" . Crypt::encryptString($part->id)) }}" class="tw-inline-flex tw-items-center tw-px-3 tw-py-1.5 tw-rounded-lg tw-text-xs tw-font-semibold tw-bg-yellow-500 hover:tw-bg-yellow-600 tw-text-white tw-transition-colors tw-no-underline" title="Lanjutkan Ujian">
+                                                                            <i class="fas fa-edit tw-mr-1"></i>
+                                                                            Lanjut
+                                                                        </a>
+                                                                    @else
+                                                                        @if ($part->bank_soal_status == "1")
+                                                                            <a href="{{ url("/anggota/konfirmasi/" . Crypt::encryptString($part->id)) }}" class="tw-inline-flex tw-items-center tw-px-3 tw-py-1.5 tw-rounded-lg tw-text-xs tw-font-semibold tw-bg-blue-500 hover:tw-bg-blue-600 tw-text-white tw-transition-colors tw-no-underline" title="Mulai Ujian">
+                                                                                <i class="fas fa-play-circle tw-mr-1"></i>
+                                                                                Mulai
+                                                                            </a>
+                                                                        @else
+                                                                            <span class="tw-inline-flex tw-items-center tw-px-3 tw-py-1.5 tw-rounded-lg tw-text-xs tw-font-semibold tw-bg-gray-400 tw-text-white">
+                                                                                <i class="fas fa-lock tw-mr-1"></i>
+                                                                                Terkunci
+                                                                            </span>
+                                                                        @endif
+                                                                    @endif
+                                                                @else
+                                                                    <span class="tw-inline-flex tw-items-center tw-px-3 tw-py-1.5 tw-rounded-lg tw-text-xs tw-font-medium tw-bg-gray-100 tw-text-gray-600">
+                                                                        <i class="fas fa-info-circle tw-mr-1"></i>
+                                                                        Belum Ada Soal
+                                                                    </span>
+                                                                @endif
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                @endforeach
                                             </div>
                                         </div>
                                     @else
-                                        <div class="tw-mt-3 tw-pt-3 -tw-mb-2 tw-border-t tw-border-gray-200">
-                                            <div class="tw-flex tw-items-center tw-justify-between tw-text-sm">
-                                                <span class="tw-text-gray-600">
-                                                    <i class="fas fa-tasks tw-mr-1"></i>
-                                                    Tidak ada soal
-                                                </span>
+                                        {{--
+                                            <div class="tw-mt-3 tw-pt-3 tw-border-t tw-border-gray-200">
+                                            <p class="tw-text-sm tw-text-gray-500 tw-text-center tw-py-2">
+                                            <i class="fas fa-info-circle tw-mr-1"></i>
+                                            Belum ada part untuk pertemuan ini
+                                            </p>
                                             </div>
-                                        </div>
+                                        --}}
                                     @endif
                                 </div>
 
@@ -246,28 +305,6 @@
                                             <button wire:click="openFiles({{ $pertemuan->id }})" class="btn tw-bg-indigo-500 hover:tw-bg-indigo-600 text-white" title="Lihat Files ({{ $pertemuan->files_count }})">
                                                 <i class="fas fa-file-download"></i>
                                             </button>
-                                        @endif
-
-                                        @if ($pertemuan->total_soal > 0)
-                                            @if ($pertemuan->status_ujian == "1")
-                                                <a href="#" class="btn btn-success disabled" title="Ujian Selesai">
-                                                    <i class="fas fa-check-circle"></i>
-                                                </a>
-                                            @elseif ($pertemuan->status_ujian == "0")
-                                                <a href="{{ url("/anggota/mengerjakan/" . Crypt::encryptString($pertemuan->id)) }}" class="btn btn-warning" title="Lanjutkan Ujian">
-                                                    <i class="fas fa-edit"></i>
-                                                </a>
-                                            @else
-                                                @if ($pertemuan->bank_soal_status == "1")
-                                                    <a href="{{ url("/anggota/konfirmasi/" . Crypt::encryptString($pertemuan->id)) }}" class="btn btn-primary" title="Mulai Ujian">
-                                                        <i class="fas fa-play-circle"></i>
-                                                    </a>
-                                                @else
-                                                    <button class="btn btn-secondary disabled" title="Ujian Belum Dibuka" disabled>
-                                                        <i class="fas fa-lock"></i>
-                                                    </button>
-                                                @endif
-                                            @endif
                                         @endif
                                     </div>
                                 </div>
@@ -375,26 +412,38 @@
                     </button>
                 </div>
                 <div class="modal-body">
-                    @if (count($files) > 0)
-                        <div class="tw-space-y-2">
-                            @foreach ($files as $file)
-                                <div class="tw-flex tw-flex-col md:tw-flex-row tw-items-start md:tw-items-center tw-justify-between tw-p-3 tw-bg-gray-50 tw-rounded-lg hover:tw-bg-gray-100 tw-transition tw-gap-3">
-                                    <div class="tw-flex tw-items-center tw-gap-3 tw-w-full md:tw-w-auto tw-min-w-0">
-                                        <div class="tw-w-10 tw-h-10 tw-bg-blue-500 tw-rounded-lg tw-flex tw-items-center tw-justify-center tw-flex-shrink-0">
-                                            <i class="fas fa-file tw-text-white"></i>
-                                        </div>
-                                        <div class="tw-min-w-0 tw-flex-1">
-                                            <p class="tw-font-semibold tw-text-gray-800 tw-mb-0 tw-text-sm md:tw-text-base tw-truncate" title="{{ basename($file->file_path) }}">{{ basename($file->file_path) }}</p>
-                                            <p class="tw-text-xs tw-text-gray-500 tw-mb-0">{{ $file->ukuran_file ? number_format($file->ukuran_file / 1024, 2) . " KB" : "Unknown size" }}</p>
-                                        </div>
+                    @if ($selectedPertemuan && $selectedPertemuan->parts->count() > 0)
+                        @foreach ($selectedPertemuan->parts as $part)
+                            <div class="tw-mb-4">
+                                <h6 class="tw-font-semibold tw-text-gray-700 tw-mb-3">
+                                    <span class="badge badge-info tw-mr-2">Part {{ $part->urutan }}</span>
+                                    {{ $part->nama_part }}
+                                </h6>
+                                @if ($part->files->count() > 0)
+                                    <div class="tw-space-y-2">
+                                        @foreach ($part->files as $file)
+                                            <div class="tw-flex tw-flex-col md:tw-flex-row tw-items-start md:tw-items-center tw-justify-between tw-p-3 tw-bg-gray-50 tw-rounded-lg hover:tw-bg-gray-100 tw-transition tw-gap-3">
+                                                <div class="tw-flex tw-items-center tw-gap-3 tw-w-full md:tw-w-auto tw-min-w-0">
+                                                    <div class="tw-w-10 tw-h-10 tw-bg-blue-500 tw-rounded-lg tw-flex tw-items-center tw-justify-center tw-flex-shrink-0">
+                                                        <i class="fas fa-file tw-text-white"></i>
+                                                    </div>
+                                                    <div class="tw-min-w-0 tw-flex-1">
+                                                        <p class="tw-font-semibold tw-text-gray-800 tw-mb-0 tw-text-sm md:tw-text-base tw-truncate" title="{{ $file->original_name }}">{{ $file->original_name }}</p>
+                                                        <p class="tw-text-xs tw-text-gray-500 tw-mb-0">{{ $file->ukuran_file ? number_format($file->ukuran_file / 1024, 2) . " KB" : "Unknown size" }}</p>
+                                                    </div>
+                                                </div>
+                                                <a href="{{ Storage::url($file->file_path) }}" download class="btn btn-sm btn-primary tw-w-full md:tw-w-auto tw-flex-shrink-0">
+                                                    <i class="fas fa-download tw-mr-1"></i>
+                                                    Download
+                                                </a>
+                                            </div>
+                                        @endforeach
                                     </div>
-                                    <a href="{{ Storage::url($file->file_path) }}" download class="btn btn-sm btn-primary tw-w-full md:tw-w-auto tw-flex-shrink-0">
-                                        <i class="fas fa-download tw-mr-1"></i>
-                                        Download
-                                    </a>
-                                </div>
-                            @endforeach
-                        </div>
+                                @else
+                                    <p class="tw-text-sm tw-text-gray-500 tw-ml-4">Tidak ada file</p>
+                                @endif
+                            </div>
+                        @endforeach
                     @else
                         <div class="tw-text-center tw-py-8">
                             <i class="fas fa-file-alt tw-text-5xl tw-text-gray-300 tw-mb-3"></i>

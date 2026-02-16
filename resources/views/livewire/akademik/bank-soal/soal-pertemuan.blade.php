@@ -2,7 +2,7 @@
     <section class="section custom-section">
         <div class="section-header">
             <a href="{{ route("pertemuan") }}" class="btn btn-muted"><i class="fas fa-angle-left"></i></a>
-            <h1>Kelola Bank Soal</h1>
+            <h1>Kelola Bank Soal - Part {{ $part->urutan }}</h1>
         </div>
 
         <div class="section-body">
@@ -29,21 +29,25 @@
                             <table>
                                 <tbody>
                                     <tr>
-                                        <td width="30%" class="">Judul Pertemuan</td>
-                                        <td class="text-right tw-tracking-wider tw-font-semibold tw-text-gray-800">{{ $pertemuan->judul_pertemuan }}</td>
+                                        <td width="30%" class="">Part</td>
+                                        <td class="text-right tw-tracking-wider tw-font-semibold tw-text-gray-800">Part {{ $part->urutan }}: {{ $part->nama_part }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Judul Pertemuan</td>
+                                        <td class="text-right tw-tracking-wider tw-font-semibold tw-text-gray-800">{{ $part->pertemuan->judul_pertemuan }}</td>
                                     </tr>
                                     <tr>
                                         <td>Program Kegiatan</td>
-                                        <td class="text-right tw-tracking-wider tw-font-semibold tw-text-gray-800">{{ $pertemuan->program->nama_program }}</td>
+                                        <td class="text-right tw-tracking-wider tw-font-semibold tw-text-gray-800">{{ $part->pertemuan->program->nama_program }}</td>
                                     </tr>
                                     <tr>
                                         <td>Pemateri</td>
-                                        <td class="text-right tw-tracking-wider tw-font-semibold tw-text-gray-800">{{ $pertemuan->nama_pemateri }}</td>
+                                        <td class="text-right tw-tracking-wider tw-font-semibold tw-text-gray-800">{{ $part->pertemuan->nama_pemateri }}</td>
                                     </tr>
                                     <tr>
                                         <td>Tanggal</td>
                                         <td class="text-right tw-tracking-wider tw-font-semibold tw-text-gray-800">
-                                            {{ \Carbon\Carbon::parse($pertemuan->tanggal)->format("d F Y") }}
+                                            {{ \Carbon\Carbon::parse($part->pertemuan->tanggal)->format("d F Y") }}
                                         </td>
                                     </tr>
                                 </tbody>

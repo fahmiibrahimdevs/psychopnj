@@ -5,7 +5,7 @@ namespace App\Livewire\Anggota\KerjakanSoal;
 use Livewire\Component;
 use Livewire\Attributes\Title;
 use App\Models\Anggota;
-use App\Models\Pertemuan;
+use App\Models\PartPertemuan;
 use App\Models\BankSoalPertemuan;
 use App\Models\SoalPertemuan;
 use App\Models\NilaiSoalAnggota;
@@ -18,16 +18,16 @@ class Konfirmasi extends Component
 {
     #[Title('Konfirmasi Soal')]
 
-    public $pertemuanId;
-    public $pertemuan;
+    public $partId;
+    public $part;
     public $bankSoal;
     public $anggota;
     public $totalSoal = 0;
 
-    public function mount($pertemuanId = '')
+    public function mount($partId = '')
     {
         try {
-            $this->pertemuanId = Crypt::decryptString($pertemuanId);
+            $this->partId = Crypt::decryptString($partId);
         } catch (\Throwable $th) {
             return redirect('/anggota/daftar-pertemuan');
         }
@@ -40,7 +40,7 @@ class Konfirmasi extends Component
 
         // Check if already completed
         $checkStatus = NilaiSoalAnggota::where([
-            ['id_pertemuan', $this->pertemuanId],
+            ['id_part', $this->partId],
             ['id_anggota', $this->anggota->id],
             ['status', '1']
         ])->exists();
@@ -49,10 +49,10 @@ class Konfirmasi extends Component
             return redirect('/anggota/daftar-pertemuan');
         }
 
-        $this->pertemuan = Pertemuan::with('program')
-            ->findOrFail($this->pertemuanId);
+        $this->part = PartPertemuan::with('pertemuan.program')
+            ->findOrFail($this->partId);
 
-        $this->bankSoal = BankSoalPertemuan::where('id_pertemuan', $this->pertemuanId)->first();
+        $this->bankSoal = BankSoalPertemuan::where('id_part', $this->partId)->first();
 
         if (!$this->bankSoal) {
             return redirect('/anggota/daftar-pertemuan');
@@ -65,7 +65,7 @@ class Konfirmasi extends Component
     {
         $checkAda = NilaiSoalAnggota::where([
             ['id_bank_soal', $this->bankSoal->id],
-            ['id_pertemuan', $this->pertemuanId],
+            ['id_part', $this->partId],
             ['id_anggota', $this->anggota->id],
         ])->exists();
 
@@ -83,7 +83,8 @@ class Konfirmasi extends Component
                 $nilaiSoal = NilaiSoalAnggota::create([
                     'tanggal'       => date('Y-m-d'),
                     'id_bank_soal'  => $this->bankSoal->id,
-                    'id_pertemuan'  => $this->pertemuanId,
+                    'id_part'       => $this->partId,
+                    'id_pertemuan'  => $this->part->id_pertemuan,
                     'id_anggota'    => $this->anggota->id,
                     'mulai'         => now(),
                 ]);
@@ -171,7 +172,7 @@ class Konfirmasi extends Component
             });
         }
 
-        return redirect('/anggota/mengerjakan/' . Crypt::encryptString($this->pertemuanId));
+        return redirect('/anggota/mengerjakan/' . Crypt::encryptString($this->partId));
     }
 
     public function render()

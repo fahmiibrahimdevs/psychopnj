@@ -4,24 +4,34 @@ namespace App\Livewire\Dashboard;
 
 use App\Models\User;
 use App\Models\Anggota;
+use App\Models\TahunKepengurusan;
 use Livewire\Component;
+use Livewire\WithPagination;
 use Livewire\Attributes\Title;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class Dashboard extends Component
 {
+    use WithPagination;
+
     #[Title('Dashboard')]
 
-    // Anggota dashboard properties
+    protected $paginationTheme = 'bootstrap';
+
     public $anggota;
-    public $totalPertemuan = 0;
-    public $persentaseHadir = 0;
-    public $ujianSelesai = 0;
-    public $iuranLunas = 0;
-    public $iuranTotal = 0;
-    public $pertemuanMendatang = [];
-    public $hasilUjianTerakhir = [];
+    public $searchTerm = '';
+    public $lengthData = 25;
+
+    public function updatedSearchTerm()
+    {
+        $this->resetPage();
+    }
+
+    public function updatedLengthData()
+    {
+        $this->resetPage();
+    }
     
     public function render()
     {
@@ -30,8 +40,10 @@ class Dashboard extends Component
         if($user->hasRole(['chairman', 'admin_media', 'admin_pengajaran', 'admin_keuangan', 'admin_inventaris', 'admin_sekretaris', 'admin_project', 'super_admin'])) {
             return view('livewire.dashboard.dashboard-pengurus');
         } else if ($user->hasRole('anggota')) {
-            $this->loadAnggotaDashboard();
-            return view('livewire.dashboard.dashboard-anggota');
+            $members = $this->loadAnggotaDashboard();
+            return view('livewire.dashboard.dashboard-anggota', [
+                'members' => $members
+            ]);
         }
 
         return view('livewire.dashboard.dashboard');
@@ -42,70 +54,112 @@ class Dashboard extends Component
         $this->anggota = Anggota::where('id_user', Auth::user()->id)->first();
 
         if (!$this->anggota) {
-            return;
+            return collect([]);
         }
 
-        // Total pertemuan yang sudah berlangsung
-        $this->totalPertemuan = DB::table('pertemuan')
-            ->join('program_pembelajaran', 'program_pembelajaran.id', 'pertemuan.id_program')
-            ->where('program_pembelajaran.id_tahun', $this->anggota->id_tahun)
-            ->where('program_pembelajaran.untuk_anggota', true)
+        $tahunAktif = TahunKepengurusan::where('status', 'aktif')->first();
+        
+        if (!$tahunAktif) {
+            return collect([]);
+        }
+
+        $search = '%' . $this->searchTerm . '%';
+
+        // Get all relevant meetings for the active year
+        $pertemuans = DB::table('pertemuan')
+            ->join('program_pembelajaran', 'pertemuan.id_program', '=', 'program_pembelajaran.id')
+            ->where('program_pembelajaran.id_tahun', $tahunAktif->id)
             ->where('pertemuan.tanggal', '<=', now()->toDateString())
-            ->count();
+            ->select('pertemuan.id', 'pertemuan.jenis_presensi')
+            ->get()
+            ->keyBy('id');
 
-        // Persentase kehadiran
-        $totalPresensi = DB::table('presensi_pertemuan')
-            ->where('id_anggota', $this->anggota->id)
-            ->count();
-        $hadirCount = DB::table('presensi_pertemuan')
-            ->where('id_anggota', $this->anggota->id)
-            ->where('status', 'hadir')
-            ->count();
-        $this->persentaseHadir = $totalPresensi > 0 ? round(($hadirCount / $totalPresensi) * 100) : 0;
+        // Calculate relevant meetings for anggota
+        $relevantPertemuans = $pertemuans->filter(function($p) {
+            $jenis = $p->jenis_presensi ? explode(',', $p->jenis_presensi) : ['pengurus', 'anggota'];
+            return in_array('anggota', $jenis);
+        });
+        $relevantMeetingIds = $relevantPertemuans->keys()->toArray();
 
-        // Ujian selesai
-        $this->ujianSelesai = DB::table('nilai_soal_anggota')
-            ->where('id_anggota', $this->anggota->id)
-            ->where('status', '1')
-            ->count();
-
-        // Iuran kas
-        $this->iuranTotal = DB::table('iuran_kas_periode')
-            ->where('id_tahun', $this->anggota->id_tahun)
-            ->count();
-        $this->iuranLunas = DB::table('iuran_kas')
-            ->where('id_anggota', $this->anggota->id)
-            ->where('id_tahun', $this->anggota->id_tahun)
-            ->where('status', 'lunas')
-            ->count();
-
-        // Pertemuan mendatang (max 5)
-        $this->pertemuanMendatang = DB::table('pertemuan')
-            ->select('pertemuan.judul_pertemuan', 'pertemuan.pertemuan_ke', 'pertemuan.tanggal', 'program_pembelajaran.nama_program')
-            ->join('program_pembelajaran', 'program_pembelajaran.id', 'pertemuan.id_program')
-            ->where('program_pembelajaran.id_tahun', $this->anggota->id_tahun)
-            ->where('program_pembelajaran.untuk_anggota', true)
-            ->where('pertemuan.tanggal', '>=', now()->toDateString())
-            ->orderBy('pertemuan.tanggal')
-            ->limit(5)
-            ->get();
-
-        // Hasil ujian terakhir (max 5)
-        $this->hasilUjianTerakhir = DB::table('nilai_soal_anggota')
+        // Query members with pagination and search
+        $membersQuery = DB::table('anggota')
             ->select(
-                'pertemuan.judul_pertemuan',
-                'pertemuan.pertemuan_ke',
-                'nilai_soal_anggota.nilai_pg',
-                'nilai_soal_anggota.nilai_pk',
-                'nilai_soal_anggota.nilai_jo',
-                'nilai_soal_anggota.nilai_is',
-                'nilai_soal_anggota.nilai_es',
-                'nilai_soal_anggota.status'
+                'anggota.id',
+                'anggota.nama_lengkap',
+                'anggota.status_anggota',
+                'anggota.foto',
+                'anggota.jurusan_prodi_kelas'
             )
-            ->join('pertemuan', 'pertemuan.id', 'nilai_soal_anggota.id_pertemuan')
-            ->where('nilai_soal_anggota.id_anggota', $this->anggota->id)
-            ->orderByDesc('nilai_soal_anggota.created_at')
-            ->limit(5)
-            ->get();
+            ->where('anggota.id_tahun', $tahunAktif->id)
+            ->where('anggota.status_aktif', 'aktif')
+            ->where('anggota.status_anggota', 'anggota')
+            ->where('anggota.nama_lengkap', 'LIKE', $search);
+
+        // Add subquery for attendance count to sort by it
+        if (!empty($relevantMeetingIds)) {
+            $placeholders = implode(',', array_fill(0, count($relevantMeetingIds), '?'));
+            $membersQuery->selectRaw(
+                "(SELECT COUNT(*) FROM presensi_pertemuan WHERE presensi_pertemuan.id_anggota = anggota.id AND presensi_pertemuan.status = 'hadir' AND presensi_pertemuan.id_pertemuan IN ($placeholders)) as attendance_count", 
+                $relevantMeetingIds
+            )
+            ->orderByDesc('attendance_count');
+        } else {
+            $membersQuery->selectRaw("0 as attendance_count");
+        }
+
+        $membersQuery->orderBy('anggota.nama_lengkap');
+
+        $members = $membersQuery->paginate($this->lengthData);
+
+        // Get member IDs from current page
+        $memberIds = $members->pluck('id')->toArray();
+
+        // Get presensi data for current page members only
+        $presensiData = DB::table('presensi_pertemuan')
+            ->whereIn('id_anggota', $memberIds)
+            ->select('id_anggota', 'status', 'id_pertemuan')
+            ->get()
+            ->groupBy('id_anggota');
+
+        // Process each member in current page
+        $members->getCollection()->transform(function ($member) use ($presensiData, $relevantPertemuans, $relevantMeetingIds) {
+            $memberPresensi = $presensiData->get($member->id, collect([]));
+
+            $totalPertemuanWajib = $relevantPertemuans->count();
+
+            // Filter presensi to only include relevant meetings
+            $filteredPresensi = $memberPresensi->whereIn('id_pertemuan', $relevantMeetingIds);
+
+            // Calculate stats
+            $totalHadir = $filteredPresensi->where('status', 'hadir')->count();
+            $totalIzin = $filteredPresensi->where('status', 'izin')->count();
+            $totalSakit = $filteredPresensi->where('status', 'sakit')->count();
+            $totalAlfa = $filteredPresensi->where('status', 'alfa')->count();
+
+            // Calculate missing meetings
+            $attendedMeetingIds = $filteredPresensi->pluck('id_pertemuan')->toArray();
+            $missingCount = 0;
+            foreach($relevantPertemuans as $rp) {
+                if (!in_array($rp->id, $attendedMeetingIds)) {
+                    $missingCount++;
+                }
+            }
+
+            $totalAlfaCombined = $totalAlfa + $missingCount;
+            $percentage = $totalPertemuanWajib > 0 ? ($totalHadir / $totalPertemuanWajib) * 100 : 0;
+
+            $member->stats = [
+                'hadir' => $totalHadir,
+                'izin' => $totalIzin,
+                'sakit' => $totalSakit,
+                'alfa' => $totalAlfaCombined,
+                'total_wajib' => $totalPertemuanWajib,
+                'percentage' => round($percentage, 0)
+            ];
+
+            return $member;
+        });
+
+        return $members;
     }
 }

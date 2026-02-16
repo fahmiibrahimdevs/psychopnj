@@ -17,17 +17,17 @@ class Koreksi extends Component
 
     protected $listeners = ['updatePoint' => 'updateP'];
 
-    public $id_pertemuan, $id_anggota;
+    public $id_part, $id_anggota;
     public $detail, $soals;
     public $point = [];
 
-    public function mount($id_pertemuan = '0', $id_anggota = '0')
+    public function mount($id_part = '0', $id_anggota = '0')
     {
         // Cache user permissions to avoid N+1 queries
         $this->cacheUserPermissions();
         
         try {
-            $this->id_pertemuan = $id_pertemuan;
+            $this->id_part = $id_part;
             $this->id_anggota = $id_anggota;
 
             $this->detailData();
@@ -102,7 +102,7 @@ class Koreksi extends Component
     {
         try {
             $nsa = NilaiSoalAnggota::where([
-                ['id_pertemuan', $this->id_pertemuan],
+                ['id_part', $this->id_part],
                 ['id_anggota', $this->id_anggota],
             ])->update(["dikoreksi" => "1"]);
 
@@ -138,6 +138,8 @@ class Koreksi extends Component
                 'pertemuan.judul_pertemuan',
                 'pertemuan.pertemuan_ke',
                 'pertemuan.nama_pemateri',
+                'part_pertemuan.urutan as part_urutan',
+                'part_pertemuan.nama_part',
                 'nilai_soal_anggota.nilai_pg',
                 'nilai_soal_anggota.nilai_pk',
                 'nilai_soal_anggota.nilai_jo',
@@ -146,11 +148,12 @@ class Koreksi extends Component
                 'nilai_soal_anggota.dikoreksi',
             )
             ->leftJoin('anggota', 'anggota.id', 'nilai_soal_anggota.id_anggota')
-            ->leftJoin('pertemuan', 'pertemuan.id', 'nilai_soal_anggota.id_pertemuan')
+            ->leftJoin('part_pertemuan', 'part_pertemuan.id', 'nilai_soal_anggota.id_part')
+            ->leftJoin('pertemuan', 'pertemuan.id', 'part_pertemuan.id_pertemuan')
             ->leftJoin('program_pembelajaran', 'program_pembelajaran.id', 'pertemuan.id_program')
-            ->leftJoin('bank_soal_pertemuan', 'bank_soal_pertemuan.id_pertemuan', 'pertemuan.id')
+            ->leftJoin('bank_soal_pertemuan', 'bank_soal_pertemuan.id_part', 'part_pertemuan.id')
             ->where([
-                ['nilai_soal_anggota.id_pertemuan', $this->id_pertemuan],
+                ['nilai_soal_anggota.id_part', $this->id_part],
                 ['nilai_soal_anggota.id_anggota', $this->id_anggota],
             ])
             ->first();

@@ -14,30 +14,42 @@ class HasilUjianPertemuan extends Component
     use WithPermissionCache;
     #[Title('Hasil Ujian Pertemuan')]
 
-    public $id_pertemuan = '0';
-    public $pertemuans = [];
+    public $id_part = '0';
+    public $parts = [];
     public $hasil_ujian = [];
-    public $pertemuanInfo;
+    public $partInfo;
     public $nilais = [], $inputan = [];
 
     public function mount()
     {
         $this->cacheUserPermissions();
         
-        $data = DB::table('pertemuan')
-            ->select('pertemuan.id', 'pertemuan.judul_pertemuan', 'pertemuan.pertemuan_ke', 'program_pembelajaran.nama_program')
+        $data = DB::table('part_pertemuan')
+            ->select(
+                'part_pertemuan.id',
+                'part_pertemuan.urutan',
+                'part_pertemuan.nama_part',
+                'pertemuan.judul_pertemuan',
+                'pertemuan.pertemuan_ke',
+                'program_pembelajaran.nama_program'
+            )
+            ->join('pertemuan', 'pertemuan.id', 'part_pertemuan.id_pertemuan')
             ->join('program_pembelajaran', 'program_pembelajaran.id', 'pertemuan.id_program')
-            ->join('bank_soal_pertemuan', 'bank_soal_pertemuan.id_pertemuan', 'pertemuan.id')
-            ->where('pertemuan.has_bank_soal', true)
+            ->join('bank_soal_pertemuan', 'bank_soal_pertemuan.id_part', 'part_pertemuan.id')
             ->orderBy('pertemuan.tanggal', 'DESC')
-            ->get();
+            ->orderBy('part_pertemuan.urutan', 'ASC')
+            ->get()
+            ->map(function($item) {
+                $item->display_name = "Pertemuan {$item->pertemuan_ke} - Part {$item->urutan}: {$item->nama_part}";
+                return $item;
+            });
 
-        $this->pertemuans = $data->groupBy('nama_program')->toArray();
+        $this->parts = $data->groupBy('nama_program')->toArray();
 
         $this->dispatch('initSelect2');
     }
 
-    public function updatedIdPertemuan()
+    public function updatedIdPart()
     {
         $this->loadHasil();
         $this->dispatch('initSelect2');
@@ -45,26 +57,29 @@ class HasilUjianPertemuan extends Component
 
     public function loadHasil()
     {
-        if ($this->id_pertemuan == '0') {
+        if ($this->id_part == '0') {
             $this->hasil_ujian = [];
-            $this->pertemuanInfo = null;
+            $this->partInfo = null;
             return;
         }
 
-        $this->pertemuanInfo = DB::table('pertemuan')
+        $this->partInfo = DB::table('part_pertemuan')
             ->select(
+                'part_pertemuan.urutan',
+                'part_pertemuan.nama_part',
                 'pertemuan.judul_pertemuan',
                 'pertemuan.nama_pemateri',
                 'pertemuan.pertemuan_ke',
                 DB::raw("(COALESCE(bank_soal_pertemuan.jml_pg, 0) + COALESCE(bank_soal_pertemuan.jml_kompleks, 0) + COALESCE(bank_soal_pertemuan.jml_jodohkan, 0) + COALESCE(bank_soal_pertemuan.jml_isian, 0) + COALESCE(bank_soal_pertemuan.jml_esai, 0)) as total_soal")
             )
-            ->join('bank_soal_pertemuan', 'bank_soal_pertemuan.id_pertemuan', 'pertemuan.id')
-            ->where('pertemuan.id', $this->id_pertemuan)
+            ->join('pertemuan', 'pertemuan.id', 'part_pertemuan.id_pertemuan')
+            ->join('bank_soal_pertemuan', 'bank_soal_pertemuan.id_part', 'part_pertemuan.id')
+            ->where('part_pertemuan.id', $this->id_part)
             ->first();
 
         $this->hasil_ujian = DB::table('nilai_soal_anggota')
             ->select(
-                'nilai_soal_anggota.id_pertemuan',
+                'nilai_soal_anggota.id_part',
                 'anggota.id as id_anggota',
                 'anggota.nama_lengkap',
                 'anggota.jurusan_prodi_kelas',
@@ -82,7 +97,7 @@ class HasilUjianPertemuan extends Component
                 'nilai_soal_anggota.dikoreksi',
             )
             ->leftJoin('anggota', 'anggota.id', 'nilai_soal_anggota.id_anggota')
-            ->where('nilai_soal_anggota.id_pertemuan', $this->id_pertemuan)
+            ->where('nilai_soal_anggota.id_part', $this->id_part)
             ->orderBy('anggota.nama_lengkap')
             ->get()
             ->map(function ($item) {
@@ -95,7 +110,7 @@ class HasilUjianPertemuan extends Component
     public function tandaiSemua()
     {
         try {
-            NilaiSoalAnggota::where('id_pertemuan', $this->id_pertemuan)->update(['dikoreksi' => '1']);
+            NilaiSoalAnggota::where('id_part', $this->id_part)->update(['dikoreksi' => '1']);
             $this->loadHasil();
             $this->dispatchAlert('success', 'Berhasil!', 'Semua anggota sudah ditandai sebagai dikoreksi.');
         } catch (\Exception $e) {
@@ -115,7 +130,7 @@ class HasilUjianPertemuan extends Component
                 'nilai_soal_anggota.nilai_es',
             )
             ->leftJoin('anggota', 'anggota.id', 'nilai_soal_anggota.id_anggota')
-            ->where('id_pertemuan', $this->id_pertemuan)
+            ->where('id_part', $this->id_part)
             ->get()
             ->map(function ($nilai) {
                 $this->inputan[$nilai->id] = [
@@ -134,7 +149,7 @@ class HasilUjianPertemuan extends Component
         try {
             foreach ($this->inputan as $anggotaId => $nilaiData) {
                 NilaiSoalAnggota::updateOrCreate(
-                    ['id_anggota' => $anggotaId, 'id_pertemuan' => $this->id_pertemuan],
+                    ['id_anggota' => $anggotaId, 'id_part' => $this->id_part],
                     $nilaiData
                 );
             }

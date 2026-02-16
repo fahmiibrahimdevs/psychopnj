@@ -159,14 +159,14 @@
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" id="files-tab" data-toggle="tab" href="#files" role="tab" aria-controls="files" aria-selected="false">
-                                    <i class="fas fa-file-upload"></i>
-                                    Thumbnail & Files
+                                    <i class="fas fa-image"></i>
+                                    Thumbnail
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" id="banksoal-tab" data-toggle="tab" href="#banksoal" role="tab" aria-controls="banksoal" aria-selected="false">
-                                    <i class="fas fa-folders"></i>
-                                    Bank Soal
+                                <a class="nav-link" id="parts-tab" data-toggle="tab" href="#parts" role="tab" aria-controls="parts" aria-selected="false">
+                                    <i class="fas fa-list-ol"></i>
+                                    Kelola Part
                                 </a>
                             </li>
                         </ul>
@@ -286,7 +286,7 @@
                                 </div>
                             </div>
 
-                            <!-- Tab 2: Thumbnail & Files -->
+                            <!-- Tab 2: Thumbnail -->
                             <div class="tab-pane fade" id="files" role="tabpanel" aria-labelledby="files-tab" wire:ignore.self>
                                 <div class="pt-3">
                                     <div class="form-group">
@@ -306,172 +306,125 @@
                                             </div>
                                         @endif
                                     </div>
-
-                                    <hr class="tw-my-4" />
-
-                                    <div class="form-group">
-                                        <label for="files">Upload Files (PPT, PDF, ZIP, Image)</label>
-                                        <input type="file" wire:model="files" id="files" class="form-control" multiple accept=".ppt,.pptx,.pdf,.zip,.jpg,.jpeg,.png" />
-                                        <small class="form-text text-muted">Max 10MB per file. Allowed: ppt, pptx, pdf, zip, jpg, png</small>
-                                        @error("files.*")
-                                            <span class="text-danger">{{ $message }}</span>
-                                        @enderror
-
-                                        @if ($isEditing && ! empty($existingFiles))
-                                            <div class="mt-3">
-                                                <strong>Existing Files:</strong>
-                                                <ul class="list-group mt-2">
-                                                    @foreach ($existingFiles as $file)
-                                                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                                                            <div>
-                                                                <i class="fas fa-file"></i>
-                                                                {{ basename($file["file_path"]) }}
-                                                                <small class="text-muted">({{ number_format($file["ukuran_file"] / 1024, 2) }} KB)</small>
-                                                            </div>
-                                                            <button type="button" wire:click="deleteFileConfirm({{ $file["id"] }})" class="btn btn-sm btn-danger">
-                                                                <i class="fas fa-trash"></i>
-                                                            </button>
-                                                        </li>
-                                                    @endforeach
-                                                </ul>
-                                            </div>
-                                        @endif
-                                    </div>
                                 </div>
                             </div>
 
-                            <!-- Tab 3: Bank Soal -->
-                            <div class="tab-pane fade" id="banksoal" role="tabpanel" aria-labelledby="banksoal-tab" wire:ignore.self>
+                            <!-- Tab 3: Kelola Part -->
+                            <div class="tab-pane fade" id="parts" role="tabpanel" aria-labelledby="parts-tab" wire:ignore.self>
                                 <div class="pt-3">
-                                    <div class="form-group">
-                                        <div class="custom-control custom-checkbox">
-                                            <input type="checkbox" wire:model="has_bank_soal" class="custom-control-input" id="has_bank_soal" />
-                                            <label class="custom-control-label" for="has_bank_soal">
-                                                <strong>Aktifkan Bank Soal</strong>
-                                            </label>
+                                    @if (! $isEditing)
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle"></i>
+                                            Simpan pertemuan terlebih dahulu sebelum menambah part.
                                         </div>
-                                        <small class="text-muted">Centang untuk mengaktifkan fitur bank soal pada pertemuan ini</small>
-                                    </div>
-
-                                    @if ($has_bank_soal)
-                                        <hr class="tw-my-4" />
-
-                                        <h6 class="tw-mb-3 tw-font-semibold">Konfigurasi Jumlah Soal</h6>
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label for="jml_pg">Pilihan Ganda</label>
-                                                    <input type="number" wire:model="jml_pg" id="jml_pg" class="form-control" min="0" />
-                                                    @error("jml_pg")
-                                                        <span class="text-danger">{{ $message }}</span>
-                                                    @enderror
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label for="bobot_pg">Bobot PG</label>
-                                                    <input type="number" wire:model="bobot_pg" id="bobot_pg" class="form-control" min="0" step="0.01" />
-                                                    @error("bobot_pg")
-                                                        <span class="text-danger">{{ $message }}</span>
-                                                    @enderror
-                                                </div>
-                                            </div>
+                                    @else
+                                        <!-- Tombol Tambah Part Baru -->
+                                        <div class="mb-3">
+                                            <button type="button" wire:click="cancelEditPart" class="btn btn-primary" data-toggle="modal" data-target="#partFormModal">
+                                                <i class="fas fa-plus-circle"></i>
+                                                Tambah Part Baru
+                                            </button>
                                         </div>
 
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label for="jml_kompleks">PG Kompleks</label>
-                                                    <input type="number" wire:model="jml_kompleks" id="jml_kompleks" class="form-control" min="0" />
-                                                    @error("jml_kompleks")
-                                                        <span class="text-danger">{{ $message }}</span>
-                                                    @enderror
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label for="bobot_kompleks">Bobot PG Kompleks</label>
-                                                    <input type="number" wire:model="bobot_kompleks" id="bobot_kompleks" class="form-control" min="0" step="0.01" />
-                                                    @error("bobot_kompleks")
-                                                        <span class="text-danger">{{ $message }}</span>
-                                                    @enderror
-                                                </div>
-                                            </div>
-                                        </div>
+                                        <!-- List Parts -->
+                                        <div class="tw-space-y-3">
+                                            @forelse ($parts as $index => $part)
+                                                <div class="tw-bg-white tw-border tw-border-gray-200 tw-rounded-lg tw-shadow-sm hover:tw-shadow-md tw-transition-shadow tw-duration-200 tw-mb-3 tw-overflow-hidden" wire:key="part-{{ $part["id"] }}">
+                                                    <!-- Header Part -->
+                                                    <div class="tw-bg-gradient-to-r tw-from-gray-50 tw-to-gray-100 tw-px-4 tw-py-3 tw-border-b tw-border-gray-200">
+                                                        <div class="tw-flex tw-justify-between tw-items-start">
+                                                            <div class="tw-flex-grow">
+                                                                <div class="tw-flex tw-items-center tw-gap-2 tw-mb-2">
+                                                                    <span class="tw-inline-flex tw-items-center tw-px-3 tw-py-1 tw-rounded-full tw-text-xs tw-font-bold tw-bg-blue-500 tw-text-white">Part {{ $part["urutan"] }}</span>
+                                                                    <h6 class="tw-mb-0 tw-font-semibold tw-text-gray-800 tw-text-base">
+                                                                        {{ $part["nama_part"] }}
+                                                                    </h6>
+                                                                </div>
+                                                                @if ($part["deskripsi"])
+                                                                    <p class="tw-text-gray-600 tw-text-sm tw-mb-0 tw-leading-relaxed">
+                                                                        <i class="fas fa-info-circle tw-text-gray-400 tw-mr-1"></i>
+                                                                        {{ $part["deskripsi"] }}
+                                                                    </p>
+                                                                @endif
+                                                            </div>
+                                                            <div class="tw-flex tw-gap-1 tw-ml-3 tw-flex-shrink-0">
+                                                                <a href="{{ route("part.soal", ["partId" => $part["id"]]) }}" class="tw-inline-flex tw-items-center tw-justify-center tw-w-9 tw-h-9 tw-rounded-lg tw-bg-yellow-500 hover:tw-bg-yellow-600 tw-text-white tw-transition-colors tw-duration-200" title="Kelola Bank Soal">
+                                                                    <i class="fas fa-folders tw-text-sm"></i>
+                                                                </a>
+                                                                <button type="button" wire:click="editPart({{ $part["id"] }})" class="tw-inline-flex tw-items-center tw-justify-center tw-w-9 tw-h-9 tw-rounded-lg tw-bg-cyan-500 hover:tw-bg-cyan-600 tw-text-white tw-transition-colors tw-duration-200" data-toggle="modal" data-target="#partFormModal" title="Edit Part">
+                                                                    <i class="fas fa-edit tw-text-sm"></i>
+                                                                </button>
+                                                                <button type="button" wire:click="deletePartConfirm({{ $part["id"] }})" class="tw-inline-flex tw-items-center tw-justify-center tw-w-9 tw-h-9 tw-rounded-lg tw-bg-red-500 hover:tw-bg-red-600 tw-text-white tw-transition-colors tw-duration-200" title="Hapus Part">
+                                                                    <i class="fas fa-trash tw-text-sm"></i>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
 
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label for="jml_jodohkan">Menjodohkan</label>
-                                                    <input type="number" wire:model="jml_jodohkan" id="jml_jodohkan" class="form-control" min="0" />
-                                                    @error("jml_jodohkan")
-                                                        <span class="text-danger">{{ $message }}</span>
-                                                    @enderror
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label for="bobot_jodohkan">Bobot Jodohkan</label>
-                                                    <input type="number" wire:model="bobot_jodohkan" id="bobot_jodohkan" class="form-control" min="0" step="0.01" />
-                                                    @error("bobot_jodohkan")
-                                                        <span class="text-danger">{{ $message }}</span>
-                                                    @enderror
-                                                </div>
-                                            </div>
-                                        </div>
+                                                    <!-- Files Section -->
+                                                    <div class="tw-px-4 tw-py-3">
+                                                        <div class="tw-flex tw-items-center tw-justify-between tw-mb-3">
+                                                            <h6 class="tw-text-sm tw-font-semibold tw-text-gray-700 tw-mb-0">
+                                                                <i class="fas fa-paperclip tw-text-gray-400 tw-mr-1"></i>
+                                                                Files ({{ count($part["files"] ?? []) }})
+                                                            </h6>
+                                                        </div>
 
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label for="jml_isian">Isian</label>
-                                                    <input type="number" wire:model="jml_isian" id="jml_isian" class="form-control" min="0" />
-                                                    @error("jml_isian")
-                                                        <span class="text-danger">{{ $message }}</span>
-                                                    @enderror
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label for="bobot_isian">Bobot Isian</label>
-                                                    <input type="number" wire:model="bobot_isian" id="bobot_isian" class="form-control" min="0" step="0.01" />
-                                                    @error("bobot_isian")
-                                                        <span class="text-danger">{{ $message }}</span>
-                                                    @enderror
-                                                </div>
-                                            </div>
-                                        </div>
+                                                        @if (! empty($part["files"]))
+                                                            <div class="tw-space-y-2 tw-mb-3">
+                                                                @foreach ($part["files"] as $file)
+                                                                    <div class="tw-flex tw-items-center tw-justify-between tw-p-2.5 tw-bg-gray-50 hover:tw-bg-gray-100 tw-rounded-lg tw-border tw-border-gray-200 tw-transition-colors tw-duration-150">
+                                                                        <div class="tw-flex tw-items-center tw-gap-2 tw-flex-1 tw-min-w-0">
+                                                                            <div class="tw-flex-shrink-0 tw-w-8 tw-h-8 tw-bg-blue-100 tw-rounded-lg tw-flex tw-items-center tw-justify-center">
+                                                                                <i class="fas fa-file tw-text-blue-600 tw-text-sm"></i>
+                                                                            </div>
+                                                                            <div class="tw-flex-1 tw-min-w-0">
+                                                                                <p class="tw-text-sm tw-font-medium tw-text-gray-800 tw-truncate">
+                                                                                    {{ $file["original_name"] }}
+                                                                                </p>
+                                                                                <p class="tw-text-xs tw-text-gray-500">{{ number_format($file["ukuran_file"] / 1024, 1) }} KB</p>
+                                                                            </div>
+                                                                        </div>
+                                                                        <button type="button" wire:click="deletePartFileConfirm({{ $file["id"] }})" class="tw-flex-shrink-0 tw-w-8 tw-h-8 tw-flex tw-items-center tw-justify-center tw-rounded-lg tw-bg-red-500 hover:tw-bg-red-600 tw-text-white tw-transition-colors tw-duration-200">
+                                                                            <i class="fas fa-trash tw-text-xs"></i>
+                                                                        </button>
+                                                                    </div>
+                                                                @endforeach
+                                                            </div>
+                                                        @else
+                                                            <div class="tw-text-center tw-py-4 tw-mb-3">
+                                                                <i class="fas fa-folder-open tw-text-3xl tw-text-gray-300 tw-mb-2"></i>
+                                                                <p class="tw-text-sm tw-text-gray-500">Belum ada file</p>
+                                                            </div>
+                                                        @endif
 
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label for="jml_esai">Esai</label>
-                                                    <input type="number" wire:model="jml_esai" id="jml_esai" class="form-control" min="0" />
-                                                    @error("jml_esai")
-                                                        <span class="text-danger">{{ $message }}</span>
-                                                    @enderror
+                                                        <!-- Upload Files -->
+                                                        <div class="tw-border-t tw-border-gray-200 tw-pt-3">
+                                                            <label class="tw-block tw-text-sm tw-font-medium tw-text-gray-700 tw-mb-2">
+                                                                <i class="fas fa-upload tw-mr-1"></i>
+                                                                Upload File Baru
+                                                            </label>
+                                                            <div class="tw-flex tw-flex-col sm:tw-flex-row tw-gap-2">
+                                                                <input type="file" wire:model="partFilesToUpload" class="tw-flex-1 tw-text-sm tw-text-gray-600 file:tw-mr-4 file:tw-py-2 file:tw-px-4 file:tw-rounded-lg file:tw-border-0 file:tw-text-sm file:tw-font-semibold file:tw-bg-blue-50 file:tw-text-blue-700 hover:file:tw-bg-blue-100 file:tw-cursor-pointer tw-cursor-pointer" multiple accept=".ppt,.pptx,.pdf,.zip,.jpg,.jpeg,.png" />
+                                                                @if (! empty($partFilesToUpload))
+                                                                    <button type="button" wire:click="uploadPartFiles({{ $part["id"] }})" class="tw-flex-shrink-0 tw-px-4 tw-py-2 tw-bg-blue-500 hover:tw-bg-blue-600 tw-text-white tw-text-sm tw-font-medium tw-rounded-lg tw-transition-colors tw-duration-200 tw-flex tw-items-center tw-justify-center tw-gap-2 tw-whitespace-nowrap">
+                                                                        <i class="fas fa-cloud-upload-alt"></i>
+                                                                        Upload ({{ count($partFilesToUpload) }})
+                                                                    </button>
+                                                                @endif
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="form-group">
-                                                    <label for="bobot_esai">Bobot Esai</label>
-                                                    <input type="number" wire:model="bobot_esai" id="bobot_esai" class="form-control" min="0" step="0.01" />
-                                                    @error("bobot_esai")
-                                                        <span class="text-danger">{{ $message }}</span>
-                                                    @enderror
+                                            @empty
+                                                <div class="tw-text-center tw-py-12">
+                                                    <div class="tw-inline-flex tw-items-center tw-justify-center tw-w-16 tw-h-16 tw-bg-gray-100 tw-rounded-full tw-mb-4">
+                                                        <i class="fas fa-inbox tw-text-3xl tw-text-gray-400"></i>
+                                                    </div>
+                                                    <h6 class="tw-text-base tw-font-semibold tw-text-gray-700 tw-mb-1">Belum Ada Part</h6>
+                                                    <p class="tw-text-sm tw-text-gray-500">Klik tombol "Tambah Part Baru" untuk membuat part pertama</p>
                                                 </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="form-group">
-                                            <label for="opsi">Jumlah Opsi Pilihan Ganda</label>
-                                            <select wire:model="opsi" id="opsi" class="form-control">
-                                                <option value="3">3 Opsi (A, B, C)</option>
-                                                <option value="4">4 Opsi (A, B, C, D)</option>
-                                                <option value="5">5 Opsi (A, B, C, D, E)</option>
-                                            </select>
-                                            @error("opsi")
-                                                <span class="text-danger">{{ $message }}</span>
-                                            @enderror
+                                            @endforelse
                                         </div>
                                     @endif
                                 </div>
@@ -486,6 +439,166 @@
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Part Form Modal -->
+    <div class="modal fade" wire:ignore.self id="partFormModal" tabindex="-1" aria-labelledby="partFormModalLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="partFormModalLabel">
+                        <i class="fas fa-{{ $isEditingPart ? "edit" : "plus-circle" }}"></i>
+                        {{ $isEditingPart ? "Edit Part" : "Tambah Part Baru" }}
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="nama_part">
+                            Nama Part
+                            <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" wire:model="nama_part" id="nama_part" class="form-control" placeholder="Contoh: Hukum Ohm" />
+                        @error("nama_part")
+                            <span class="text-danger">{{ $message }}</span>
+                        @enderror
+                    </div>
+                    <div class="form-group">
+                        <label for="deskripsi_part">Deskripsi</label>
+                        <textarea wire:model="deskripsi_part" id="deskripsi_part" class="form-control" rows="2" placeholder="Deskripsi singkat tentang part ini"></textarea>
+                    </div>
+
+                    <!-- Bank Soal Configuration (Collapsible) -->
+                    <div class="card bg-light mb-3">
+                        <div class="card-header py-2" style="cursor: pointer" data-toggle="collapse" data-target="#bankSoalConfig">
+                            <h6 class="mb-0">
+                                <i class="fas fa-clipboard-list"></i>
+                                Konfigurasi Bank Soal (Opsional)
+                                <i class="fas fa-chevron-down float-right"></i>
+                            </h6>
+                        </div>
+                        <div class="collapse" id="bankSoalConfig">
+                            <div class="card-body">
+                                <small class="text-muted d-block mb-3">Isi jika ingin langsung membuat bank soal untuk part ini</small>
+
+                                <!-- Pilihan Ganda -->
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Pilihan Ganda</label>
+                                            <input type="number" wire:model="jml_pg" class="form-control form-control-sm" placeholder="Contoh: 10" min="0" />
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Bobot PG (%)</label>
+                                            <input type="number" wire:model="bobot_pg" class="form-control form-control-sm" placeholder="Contoh: 30" min="0" max="100" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- PG Kompleks -->
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>PG Kompleks</label>
+                                            <input type="number" wire:model="jml_kompleks" class="form-control form-control-sm" placeholder="Contoh: 5" min="0" />
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Bobot PG Kompleks (%)</label>
+                                            <input type="number" wire:model="bobot_kompleks" class="form-control form-control-sm" placeholder="Contoh: 20" min="0" max="100" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Menjodohkan -->
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Menjodohkan</label>
+                                            <input type="number" wire:model="jml_jodohkan" class="form-control form-control-sm" placeholder="Contoh: 5" min="0" />
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Bobot Jodohkan (%)</label>
+                                            <input type="number" wire:model="bobot_jodohkan" class="form-control form-control-sm" placeholder="Contoh: 15" min="0" max="100" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Isian -->
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Isian</label>
+                                            <input type="number" wire:model="jml_isian" class="form-control form-control-sm" placeholder="Contoh: 5" min="0" />
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Bobot Isian (%)</label>
+                                            <input type="number" wire:model="bobot_isian" class="form-control form-control-sm" placeholder="Contoh: 20" min="0" max="100" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Esai -->
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Esai</label>
+                                            <input type="number" wire:model="jml_esai" class="form-control form-control-sm" placeholder="Contoh: 3" min="0" />
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Bobot Esai (%)</label>
+                                            <input type="number" wire:model="bobot_esai" class="form-control form-control-sm" placeholder="Contoh: 15" min="0" max="100" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Jumlah Opsi -->
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Jumlah Opsi Pilihan Ganda</label>
+                                            <select wire:model="opsi" class="form-control form-control-sm">
+                                                <option value="3">3 Opsi (A, B, C)</option>
+                                                <option value="4">4 Opsi (A, B, C, D)</option>
+                                                <option value="5">5 Opsi (A, B, C, D, E)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" wire:click="cancelEditPart" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times"></i>
+                        Batal
+                    </button>
+                    @if ($isEditingPart)
+                        <button type="button" wire:click="updatePart" class="btn btn-primary">
+                            <i class="fas fa-save"></i>
+                            Update Part
+                        </button>
+                    @else
+                        <button type="button" wire:click="addPart" class="btn btn-primary">
+                            <i class="fas fa-plus"></i>
+                            Tambah Part
+                        </button>
+                    @endif
+                </div>
             </div>
         </div>
     </div>
@@ -795,6 +908,143 @@
                     navigateLightbox(1);
                 }
             }
+        });
+
+        // SweetAlert Delete Confirmations
+        window.addEventListener('swal:confirmPart', event => {
+            Swal.fire({
+                title: '<strong>Hapus Part?</strong>',
+                html: `<div style="text-align: left;">
+                    <p class="mb-2"><i class="fas fa-exclamation-triangle text-warning"></i> Tindakan ini akan menghapus:</p>
+                    <ul style="text-align: left;">
+                        <li>Part dan semua konfigurasinya</li>
+                        <li>Bank soal dan semua soalnya</li>
+                        <li>File-file yang terlampir</li>
+                    </ul>
+                    <p class="mt-2 text-danger"><strong>Data tidak dapat dikembalikan!</strong></p>
+                </div>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="fas fa-trash"></i> Ya, Hapus!',
+                cancelButtonText: '<i class="fas fa-times"></i> Batal',
+                customClass: {
+                    popup: 'animated fadeIn faster',
+                    confirmButton: 'btn btn-danger btn-lg mr-2',
+                    cancelButton: 'btn btn-secondary btn-lg'
+                },
+                buttonsStyling: false,
+                focusCancel: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    @this.call('deletePart');
+                }
+            });
+        });
+
+        window.addEventListener('swal:confirmPartFile', event => {
+            const fileName = event.detail[0]?.text || event.detail.text || 'file ini';
+            Swal.fire({
+                title: '<strong>Hapus File?</strong>',
+                html: `<div style="text-align: center;">
+                    <p class="mb-3"><i class="fas fa-file-pdf fa-3x text-danger mb-2"></i></p>
+                    <p class="mb-2">File: <strong>${fileName.replace('Menghapus file: ', '')}</strong></p>
+                    <p class="text-muted">File akan dihapus permanen dari server</p>
+                </div>`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: '<i class="fas fa-trash"></i> Hapus',
+                cancelButtonText: '<i class="fas fa-times"></i> Batal',
+                customClass: {
+                    popup: 'animated fadeIn faster',
+                    confirmButton: 'btn btn-danger mr-2',
+                    cancelButton: 'btn btn-secondary'
+                },
+                buttonsStyling: false,
+                focusCancel: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    @this.call('deletePartFile');
+                }
+            });
+        });
+
+        // Success notifications for Part operations
+        window.addEventListener('swal:partAdded', event => {
+            $('#partFormModal').modal('hide');
+            // Fix scroll issue when modal is closed
+            setTimeout(() => {
+                if ($('#formDataModal').hasClass('show')) {
+                    $('body').addClass('modal-open').css('overflow', 'hidden');
+                }
+            }, 100);
+            Swal.fire({
+                title: '<strong>Berhasil!</strong>',
+                html: '<i class="fas fa-check-circle fa-3x text-success mb-3"></i><br>Part berhasil ditambahkan',
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false,
+                customClass: {
+                    popup: 'animated fadeIn faster'
+                }
+            });
+        });
+
+        window.addEventListener('swal:partUpdated', event => {
+            $('#partFormModal').modal('hide');
+            // Fix scroll issue when modal is closed
+            setTimeout(() => {
+                if ($('#formDataModal').hasClass('show')) {
+                    $('body').addClass('modal-open').css('overflow', 'hidden');
+                }
+            }, 100);
+            Swal.fire({
+                title: '<strong>Berhasil!</strong>',
+                html: '<i class="fas fa-check-circle fa-3x text-success mb-3"></i><br>Part berhasil diupdate',
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false,
+                customClass: {
+                    popup: 'animated fadeIn faster'
+                }
+            });
+        });
+
+        window.addEventListener('swal:partDeleted', event => {
+            Swal.fire({
+                title: '<strong>Terhapus!</strong>',
+                html: '<i class="fas fa-trash-alt fa-3x text-success mb-3"></i><br>Part berhasil dihapus',
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false,
+                customClass: {
+                    popup: 'animated fadeIn faster'
+                }
+            });
+        });
+
+        // Fix scroll issue when part modal is closed manually
+        $('#partFormModal').on('hidden.bs.modal', function () {
+            if ($('#formDataModal').hasClass('show')) {
+                $('body').addClass('modal-open').css('overflow', 'hidden');
+            }
+        });
+
+        // Success notification for file deletion
+        window.addEventListener('swal:fileDeleted', event => {
+            Swal.fire({
+                title: '<strong>Terhapus!</strong>',
+                html: '<i class="fas fa-check-circle fa-3x text-success mb-3"></i><br>File berhasil dihapus',
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false,
+                customClass: {
+                    popup: 'animated fadeIn faster'
+                }
+            });
         });
     </script>
 @endpush

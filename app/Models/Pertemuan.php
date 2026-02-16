@@ -21,6 +21,11 @@ class Pertemuan extends Model
         return $this->belongsTo(ProgramKegiatan::class, 'id_program');
     }
 
+    public function parts()
+    {
+        return $this->hasMany(PartPertemuan::class, 'id_pertemuan')->orderBy('urutan');
+    }
+
     public function bankSoal()
     {
         return $this->hasOne(BankSoalPertemuan::class, 'id_pertemuan');

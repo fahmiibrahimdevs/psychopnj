@@ -5,11 +5,11 @@
                 <h1 class="tw-text-lg">Status Anggota Ujian</h1>
                 @if ($this->can("ujian.view_status"))
                     <div class="ml-auto">
-                        <button wire:click.prevent="refresh()" class="btn btn-info mr-2" @if ($id_pertemuan == '0') disabled @endif>
-                            <i class="fas fa-sync mr-1"></i>
+                        <button wire:click.prevent="refresh()" class="btn btn-info mr-2" @if ($id_part == '0') disabled @endif>
+                            <i class="fas fa-sync-alt"></i>
                             Refresh
                         </button>
-                        <button wire:click.prevent="terapkanAksiConfirm()" class="btn btn-primary" @if (!((int) $id_pertemuan > 0 && (!empty($paksa_selesai) || !empty($ulang)))) disabled @endif>
+                        <button wire:click.prevent="terapkanAksiConfirm()" class="btn btn-primary" @if (!((int) $id_part > 0 && (!empty($paksa_selesai) || !empty($ulang)))) disabled @endif>
                             <i class="fas fa-check mr-1"></i>
                             Terapkan Aksi
                         </button>
@@ -24,13 +24,15 @@
                     <div class="row mt-4">
                         <div class="col-lg-6">
                             <div class="form-group">
-                                <label for="id_pertemuan">Pertemuan</label>
-                                <select wire:model="id_pertemuan" id="id_pertemuan" class="form-control select2" style="width: 100%">
-                                    <option value="0">-- Pilih Pertemuan --</option>
-                                    @foreach ($pertemuans as $program => $items)
+                                <label for="id_part">Part</label>
+                                <select wire:model="id_part" id="id_part" class="form-control select2" style="width: 100%">
+                                    <option value="0">-- Pilih Part --</option>
+                                    @foreach ($parts as $program => $items)
                                         <optgroup label="{{ $program }}">
                                             @foreach ($items as $item)
-                                                <option value="{{ $item->id }}">Pertemuan {{ $item->pertemuan_ke }}: {{ $item->judul_pertemuan }}</option>
+                                                <option value="{{ is_array($item) ? $item["id"] : $item->id }}">
+                                                    {{ is_array($item) ? $item["display_name"] : $item->display_name }}
+                                                </option>
                                             @endforeach
                                         </optgroup>
                                     @endforeach
@@ -70,7 +72,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @if ($id_pertemuan != "0")
+                                @if ($id_part != "0")
                                     @forelse ($data as $row)
                                         <tr class="tw-whitespace-nowrap text-center">
                                             <td class="tw-py-3">{{ $loop->index + 1 }}</td>

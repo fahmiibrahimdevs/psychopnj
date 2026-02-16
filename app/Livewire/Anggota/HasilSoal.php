@@ -153,17 +153,26 @@ class HasilSoal extends Component
                 'pertemuan.pertemuan_ke',
                 'pertemuan.tanggal',
                 'program_pembelajaran.nama_program',
+                'part_pertemuan.urutan as part_urutan',
+                'part_pertemuan.nama_part',
                 DB::raw("(COALESCE(nilai_pg, 0) + COALESCE(nilai_pk, 0) + COALESCE(nilai_jo, 0) + COALESCE(nilai_is, 0) + COALESCE(nilai_es, 0)) as total_nilai"),
                 DB::raw("(COALESCE(bank_soal_pertemuan.bobot_pg, 0) + COALESCE(bank_soal_pertemuan.bobot_kompleks, 0) + COALESCE(bank_soal_pertemuan.bobot_jodohkan, 0) + COALESCE(bank_soal_pertemuan.bobot_isian, 0) + COALESCE(bank_soal_pertemuan.bobot_esai, 0)) as total_bobot")
             )
-            ->leftJoin('pertemuan', 'pertemuan.id', 'nilai_soal_anggota.id_pertemuan')
+            ->leftJoin('part_pertemuan', 'part_pertemuan.id', 'nilai_soal_anggota.id_part')
+            ->leftJoin('pertemuan', 'pertemuan.id', 'part_pertemuan.id_pertemuan')
             ->leftJoin('program_pembelajaran', 'program_pembelajaran.id', 'pertemuan.id_program')
             ->leftJoin('bank_soal_pertemuan', 'bank_soal_pertemuan.id', 'nilai_soal_anggota.id_bank_soal')
             ->where('nilai_soal_anggota.id_anggota', $this->anggota->id)
             ->where('nilai_soal_anggota.status', '1')
             ->orderBy('nilai_soal_anggota.tanggal', 'DESC')
             ->get()
-            ->groupBy('nama_program');
+            ->groupBy(function($item) {
+                return $item->nama_program . '|' . $item->pertemuan_ke . '|' . $item->judul_pertemuan . '|' . $item->tanggal;
+            })
+            ->groupBy(function($item, $key) {
+                // Extract nama_program from the key
+                return explode('|', $key)[0];
+            });
 
         return view('livewire.anggota.hasil-soal', [
             'hasilList' => $hasilList

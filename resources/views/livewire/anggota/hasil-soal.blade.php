@@ -13,8 +13,8 @@
                             <thead>
                                 <tr class="tw-text-gray-700 text-center">
                                     <th width="5%">No</th>
-                                    <th class="text-left" style="min-width: 200px">Pertemuan</th>
-                                    <th>Tanggal</th>
+                                    <th class="text-left" style="min-width: 120px">Part</th>
+                                    <th class="text-left" style="min-width: 150px">Nama Part</th>
                                     <th>PG</th>
                                     <th>PK</th>
                                     <th>JO</th>
@@ -27,46 +27,60 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse ($hasilList as $programName => $items)
+                                @forelse ($hasilList as $programName => $pertemuanGroups)
                                     <tr class="tw-bg-gray-100">
                                         <td colspan="12" class="text-left tw-px-4 tw-py-2 tw-font-bold tw-text-gray-700 tw-tracking-wider">
                                             {{ $programName }}
                                         </td>
                                     </tr>
-                                    @foreach ($items as $index => $hasil)
-                                        <tr class="text-center tw-border-b tw-border-gray-100 hover:tw-bg-gray-50">
-                                            <td>{{ $loop->iteration }}</td>
-                                            <td class="text-left tw-align-middle">
-                                                <div class="tw-flex tw-flex-col">
-                                                    <span class="tw-font-semibold tw-text-gray-700 tw-tracking-wider">Pertemuan {{ $hasil->pertemuan_ke }}</span>
-                                                    <span class="tw-text-sm tw-text-gray-500 tw-tracking-wider">{{ Str::limit($hasil->judul_pertemuan, 50) }}</span>
-                                                </div>
-                                            </td>
-                                            <td class="tw-whitespace-nowrap tw-text-sm tw-tracking-wider">{{ \Carbon\Carbon::parse($hasil->tanggal)->format("d M Y") }}</td>
-                                            <td class="tw-text-sm tw-tracking-wider">{{ number_format($hasil->nilai_pg, 1) }}</td>
-                                            <td class="tw-text-sm tw-tracking-wider">{{ number_format($hasil->nilai_pk, 1) }}</td>
-                                            <td class="tw-text-sm tw-tracking-wider">{{ number_format($hasil->nilai_jo, 1) }}</td>
-                                            <td class="tw-text-sm tw-tracking-wider">{{ number_format($hasil->nilai_is, 1) }}</td>
-                                            <td class="tw-text-sm tw-tracking-wider">{{ number_format($hasil->nilai_es, 1) }}</td>
-                                            <td class="tw-text-sm tw-tracking-wider">
-                                                <span class="tw-font-bold tw-text-lg {{ $hasil->total_nilai >= $hasil->total_bobot * 0.7 ? "tw-text-green-600" : "tw-text-red-600" }}">
-                                                    {{ number_format($hasil->total_nilai, 1) }}
-                                                </span>
-                                            </td>
-                                            <td class="tw-whitespace-nowrap tw-text-sm tw-tracking-wider">{{ $hasil->lama_ujian ?? "-" }}</td>
-                                            <td>
-                                                @if ($hasil->dikoreksi == "1")
-                                                    <span class="tw-bg-green-50 tw-text-xs tw-text-green-600 tw-px-2 tw-py-1 tw-rounded-lg tw-font-semibold">Dikoreksi</span>
-                                                @else
-                                                    <span class="tw-bg-yellow-50 tw-text-xs tw-text-yellow-600 tw-px-2 tw-py-1 tw-rounded-lg tw-font-semibold">Menunggu</span>
-                                                @endif
-                                            </td>
-                                            <td>
-                                                <button wire:click="showDetail({{ $hasil->id }})" class="btn btn-primary btn-sm rounded-circle" data-toggle="modal" data-target="#detailSoalModal" title="Lihat Detail">
-                                                    <i class="fas fa-eye"></i>
-                                                </button>
+                                    @foreach ($pertemuanGroups as $pertemuanKey => $items)
+                                        @php
+                                            // Get first item to extract pertemuan info
+                                            $firstItem = $items->first();
+                                            $pertemuanKe = $firstItem->pertemuan_ke ?? "";
+                                            $judulPertemuan = $firstItem->judul_pertemuan ?? "";
+                                            $tanggal = $firstItem->tanggal ?? "";
+                                        @endphp
+
+                                        <tr class="tw-bg-gray-50">
+                                            <td colspan="12" class="text-left tw-px-8 tw-py-2 tw-font-semibold tw-text-gray-600 tw-tracking-wider tw-text-sm">
+                                                Pertemuan {{ $pertemuanKe }} - {{ Str::limit($judulPertemuan, 50) }} • {{ \Carbon\Carbon::parse($tanggal)->format("d M Y") }}
                                             </td>
                                         </tr>
+                                        @foreach ($items as $index => $hasil)
+                                            <tr class="text-center tw-border-b tw-border-gray-100 hover:tw-bg-gray-50">
+                                                <td>{{ $loop->iteration }}</td>
+                                                <td class="text-left tw-align-middle tw-pl-12">
+                                                    <span class="badge badge-info">Part {{ $hasil->part_urutan }}</span>
+                                                </td>
+                                                <td class="text-left tw-align-middle">
+                                                    <span class="tw-text-sm tw-text-gray-600">{{ Str::limit($hasil->nama_part, 40) }}</span>
+                                                </td>
+                                                <td class="tw-text-sm tw-tracking-wider">{{ number_format($hasil->nilai_pg, 1) }}</td>
+                                                <td class="tw-text-sm tw-tracking-wider">{{ number_format($hasil->nilai_pk, 1) }}</td>
+                                                <td class="tw-text-sm tw-tracking-wider">{{ number_format($hasil->nilai_jo, 1) }}</td>
+                                                <td class="tw-text-sm tw-tracking-wider">{{ number_format($hasil->nilai_is, 1) }}</td>
+                                                <td class="tw-text-sm tw-tracking-wider">{{ number_format($hasil->nilai_es, 1) }}</td>
+                                                <td class="tw-text-sm tw-tracking-wider">
+                                                    <span class="tw-font-bold tw-text-lg {{ $hasil->total_nilai >= $hasil->total_bobot * 0.7 ? "tw-text-green-600" : "tw-text-red-600" }}">
+                                                        {{ number_format($hasil->total_nilai, 1) }}
+                                                    </span>
+                                                </td>
+                                                <td class="tw-whitespace-nowrap tw-text-sm tw-tracking-wider">{{ $hasil->lama_ujian ?? "-" }}</td>
+                                                <td>
+                                                    @if ($hasil->dikoreksi == "1")
+                                                        <span class="tw-bg-green-50 tw-text-xs tw-text-green-600 tw-px-2 tw-py-1 tw-rounded-lg tw-font-semibold">Dikoreksi</span>
+                                                    @else
+                                                        <span class="tw-bg-yellow-50 tw-text-xs tw-text-yellow-600 tw-px-2 tw-py-1 tw-rounded-lg tw-font-semibold">Menunggu</span>
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    <button wire:click="showDetail({{ $hasil->id }})" class="btn btn-primary btn-sm rounded-circle" data-toggle="modal" data-target="#detailSoalModal" title="Lihat Detail">
+                                                        <i class="fas fa-eye"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        @endforeach
                                     @endforeach
                                 @empty
                                     <tr>

@@ -17,6 +17,11 @@ class NilaiSoalAnggota extends Model
         return $this->belongsTo(BankSoalPertemuan::class, 'id_bank_soal');
     }
 
+    public function part()
+    {
+        return $this->belongsTo(PartPertemuan::class, 'id_part');
+    }
+
     public function pertemuan()
     {
         return $this->belongsTo(Pertemuan::class, 'id_pertemuan');

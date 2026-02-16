@@ -26,19 +26,23 @@
                                 </tr>
                                 <tr>
                                     <td class="tw-border tw-tracking-wide" width="30%">Program</td>
-                                    <td class="tw-border tw-tracking-wide">{{ $pertemuan->program->nama_program ?? "-" }}</td>
+                                    <td class="tw-border tw-tracking-wide">{{ $part->pertemuan->program->nama_program ?? "-" }}</td>
                                 </tr>
                                 <tr>
                                     <td class="tw-border tw-tracking-wide" width="30%">Pertemuan</td>
-                                    <td class="tw-border tw-tracking-wide">Pertemuan {{ $pertemuan->pertemuan_ke }}</td>
+                                    <td class="tw-border tw-tracking-wide">Pertemuan {{ $part->pertemuan->pertemuan_ke }} - Part {{ $part->urutan }}</td>
                                 </tr>
                                 <tr>
                                     <td class="tw-border tw-tracking-wide" width="30%">Judul</td>
-                                    <td class="tw-border tw-tracking-wide">{{ $pertemuan->judul_pertemuan }}</td>
+                                    <td class="tw-border tw-tracking-wide">{{ $part->pertemuan->judul_pertemuan }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="tw-border tw-tracking-wide" width="30%">Part</td>
+                                    <td class="tw-border tw-tracking-wide">{{ $part->nama_part }}</td>
                                 </tr>
                                 <tr>
                                     <td class="tw-border tw-tracking-wide" width="30%">Pemateri</td>
-                                    <td class="tw-border tw-tracking-wide">{{ $pertemuan->nama_pemateri ?? "-" }}</td>
+                                    <td class="tw-border tw-tracking-wide">{{ $part->pertemuan->nama_pemateri ?? "-" }}</td>
                                 </tr>
                                 <tr>
                                     <td class="tw-border tw-tracking-wide" width="30%">Jumlah Soal</td>
@@ -46,7 +50,7 @@
                                 </tr>
                                 <tr>
                                     <td class="tw-border tw-tracking-wide" width="30%">Tanggal</td>
-                                    <td class="tw-border tw-tracking-wide">{{ $pertemuan->tanggal ? \Carbon\Carbon::parse($pertemuan->tanggal)->format("d M Y") : "-" }}</td>
+                                    <td class="tw-border tw-tracking-wide">{{ $part->pertemuan->tanggal ? \Carbon\Carbon::parse($part->pertemuan->tanggal)->format("d M Y") : "-" }}</td>
                                 </tr>
                             </table>
                         </div>

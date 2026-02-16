@@ -13,6 +13,7 @@ return new class extends Migration
             $table->id();
             $table->date('tanggal');
             $table->foreignId('id_bank_soal')->constrained('bank_soal_pertemuan')->onDelete('cascade');
+            $table->foreignId('id_part')->constrained('part_pertemuan')->onDelete('cascade');
             $table->foreignId('id_pertemuan')->constrained('pertemuan')->onDelete('cascade');
             $table->foreignId('id_anggota')->constrained('anggota')->onDelete('cascade');
             
@@ -35,8 +36,9 @@ return new class extends Migration
             $table->timestamps();
             
             $table->index(['id_bank_soal', 'id_anggota']);
+            $table->index(['id_part', 'id_anggota']);
             $table->index(['id_pertemuan', 'id_anggota']);
-            $table->unique(['id_pertemuan', 'id_anggota']);
+            $table->unique(['id_part', 'id_anggota']);
         });
 
         // Soal Anggota - stores individual answers per question

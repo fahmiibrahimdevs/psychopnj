@@ -3,7 +3,7 @@
 namespace App\Livewire\Akademik\BankSoal;
 
 use Livewire\Component;
-use App\Models\Pertemuan;
+use App\Models\PartPertemuan;
 use App\Models\BankSoalPertemuan;
 use App\Models\SoalPertemuan as SoalPertemuanModel;
 use Livewire\Attributes\Title;
@@ -18,7 +18,7 @@ class SoalPertemuan extends Component
 
     protected $listeners = ['delete'];
 
-    public $pertemuanId, $pertemuan, $bankSoal;
+    public $partId, $part, $bankSoal;
     public $selectedJenis = '1';
     public $dataId, $isEditing = false;
 
@@ -33,26 +33,24 @@ class SoalPertemuan extends Component
     public $opsi_benar_kompleks = [];
     public $jawaban_jodohkan = [];
 
-    public function mount($pertemuanId)
+    public function mount($partId)
     {
         // Cache user permissions to avoid N+1 queries
         $this->cacheUserPermissions();
         
-
-
-        $this->pertemuanId = $pertemuanId;
-        $this->loadPertemuanData();
+        $this->partId = $partId;
+        $this->loadPartData();
     }
 
-    private function loadPertemuanData()
+    private function loadPartData()
     {
-        $this->pertemuan = Pertemuan::with('program.tahunKepengurusan', 'bankSoal')
-            ->findOrFail($this->pertemuanId);
+        $this->part = PartPertemuan::with(['pertemuan.program.tahunKepengurusan', 'bankSoal'])
+            ->findOrFail($this->partId);
 
-        $this->bankSoal = $this->pertemuan->bankSoal;
+        $this->bankSoal = $this->part->bankSoal;
 
         if (!$this->bankSoal) {
-            abort(404, 'Bank soal belum dibuat untuk pertemuan ini.');
+            abort(404, 'Bank soal belum dibuat untuk part ini.');
         }
     }
 
@@ -427,7 +425,7 @@ class SoalPertemuan extends Component
         Cache::forget("bank_soal_stats_{$this->bankSoal->id}");
 
         // Refresh data
-        $this->loadPertemuanData();
+        $this->loadPartData();
     }
 
     public function updateStatus($status)
@@ -444,7 +442,7 @@ class SoalPertemuan extends Component
         $this->dispatchAlert('success', 'Berhasil!', $message);
         
         // Refresh data
-        $this->loadPertemuanData();
+        $this->loadPartData();
     }
 
     private function dispatchAlert($type, $message, $text)

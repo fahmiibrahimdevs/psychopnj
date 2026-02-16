@@ -48,14 +48,14 @@ Route::group(['middleware' => ['auth', 'role:super_admin|chairman|admin_pengajar
     // Akademik Routes
     Route::get('program-kegiatan', ProgramKegiatan::class)->name('program-kegiatan')->middleware('can:program_kegiatan.view');
     Route::get('pertemuan', Pertemuan::class)->name('pertemuan')->middleware('can:pertemuan.view');
-    Route::get('pertemuan/{pertemuanId}/soal', \App\Livewire\Akademik\BankSoal\SoalPertemuan::class)->name('pertemuan.soal')->middleware('can:pertemuan.bank_soal');
+    Route::get('part/{partId}/soal', \App\Livewire\Akademik\BankSoal\SoalPertemuan::class)->name('part.soal')->middleware('can:pertemuan.bank_soal');
     Route::get('projects', \App\Livewire\Akademik\Project::class)->name('projects')->middleware('can:project.view');
     Route::get('project/{projectId}/teams', \App\Livewire\Akademik\ProjectTeams::class)->name('project.teams')->middleware('can:project_team.view');
     Route::get('presensi-kehadiran', PresensiPertemuan::class)->name('presensi-kehadiran')->middleware('can:presensi.view');
     Route::get('statistik-kehadiran', \App\Livewire\Akademik\StatistikKehadiran::class)->name('statistik-kehadiran')->middleware('can:statistik_kehadiran.view');
     Route::get('status-anggota-ujian', \App\Livewire\Akademik\StatusAnggotaUjian::class)->name('status-anggota-ujian')->middleware('can:ujian.view');
     Route::get('hasil-ujian-pertemuan', \App\Livewire\Akademik\HasilUjianPertemuan::class)->name('hasil-ujian-pertemuan')->middleware('can:ujian.view');
-    Route::get('hasil-ujian-pertemuan/koreksi/{id_pertemuan}/{id_anggota}', \App\Livewire\Akademik\HasilUjian\Koreksi::class)->name('koreksi-hasil-ujian')->middleware('can:ujian.koreksi');
+    Route::get('hasil-ujian-pertemuan/koreksi/{id_part}/{id_anggota}', \App\Livewire\Akademik\HasilUjian\Koreksi::class)->name('koreksi-hasil-ujian')->middleware('can:ujian.koreksi');
     
     // Keuangan Routes
     Route::get('anggaran', \App\Livewire\Keuangan\Anggaran::class)->name('anggaran')->middleware('can:anggaran.view');
@@ -84,12 +84,13 @@ Route::group(['middleware' => ['auth', 'role:super_admin|chairman|admin_pengajar
 
 Route::group(['middleware' => ['auth', 'role:anggota'], 'prefix' => 'anggota'], function () {
     Route::get('daftar-pertemuan', \App\Livewire\Anggota\DaftarPertemuan::class)->name('daftar-pertemuan');
-    Route::get('konfirmasi/{pertemuanId}', \App\Livewire\Anggota\KerjakanSoal\Konfirmasi::class)->name('konfirmasi-soal');
-    Route::get('mengerjakan/{pertemuanId}', \App\Livewire\Anggota\KerjakanSoal\Mengerjakan::class)->name('mengerjakan-soal');
+    Route::get('konfirmasi/{partId}', \App\Livewire\Anggota\KerjakanSoal\Konfirmasi::class)->name('konfirmasi-soal');
+    Route::get('mengerjakan/{partId}', \App\Livewire\Anggota\KerjakanSoal\Mengerjakan::class)->name('mengerjakan-soal');
     Route::get('hasil-soal', \App\Livewire\Anggota\HasilSoal::class)->name('hasil-soal');
     Route::get('riwayat-presensi', \App\Livewire\Anggota\RiwayatPresensi::class)->name('riwayat-presensi');
     Route::get('iuran-kas-saya', \App\Livewire\Anggota\IuranKasSaya::class)->name('iuran-kas-saya');
     Route::get('lihat-project', \App\Livewire\Anggota\LihatProject::class)->name('lihat-project');
+    Route::get('statistik-kehadiran', \App\Livewire\Dashboard\AnggotaStatistikKehadiran::class)->name('anggota.statistik-kehadiran');
 });
 
 // Route::middleware('auth')->group(function () {

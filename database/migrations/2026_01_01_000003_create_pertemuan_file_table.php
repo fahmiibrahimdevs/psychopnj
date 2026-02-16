@@ -8,20 +8,12 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Pertemuan Files (WITH timestamps)
-        Schema::create('pertemuan_file', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('id_pertemuan')->constrained('pertemuan')->onDelete('cascade');
-            $table->string('file_path');
-            $table->bigInteger('ukuran_file')->nullable();
-            $table->timestamps();
-            
-            $table->index('id_pertemuan');
-        });
+        // Table pertemuan_file sudah tidak digunakan, diganti dengan part_file
+        // Skip migration ini karena menggunakan sistem part
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('pertemuan_file');
+        // Skip
     }
 };

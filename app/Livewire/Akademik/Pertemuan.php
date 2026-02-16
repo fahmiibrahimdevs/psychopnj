@@ -8,7 +8,8 @@ use Livewire\WithFileUploads;
 use Livewire\Attributes\Title;
 use App\Models\ProgramKegiatan;
 use App\Models\Pertemuan as ModelsPertemuan;
-use App\Models\PertemuanFile;
+use App\Models\PartPertemuan;
+use App\Models\PartFile;
 use App\Models\PertemuanGaleri;
 use App\Models\BankSoalPertemuan;
 use Illuminate\Support\Facades\Storage;
@@ -23,7 +24,8 @@ class Pertemuan extends Component
 
     protected $listeners = [
         'delete',
-        'deleteFile',
+        'deletePart',
+        'deletePartFile',
         'deleteGalleryItem'
     ];
 
@@ -38,19 +40,6 @@ class Pertemuan extends Component
         'thumbnail'         => 'nullable|image|max:2048',
         'status'            => 'required',
         'jenis_presensi'    => 'required|array',
-        'files.*'           => 'nullable|file|mimes:ppt,pptx,pdf,zip,jpg,jpeg,png|max:102400',
-        'has_bank_soal'     => 'boolean',
-        'jml_pg'            => 'required_if:has_bank_soal,true|integer|min:0',
-        'jml_esai'          => 'required_if:has_bank_soal,true|integer|min:0',
-        'jml_kompleks'      => 'required_if:has_bank_soal,true|integer|min:0',
-        'jml_jodohkan'      => 'required_if:has_bank_soal,true|integer|min:0',
-        'jml_isian'         => 'required_if:has_bank_soal,true|integer|min:0',
-        'bobot_pg'          => 'required_if:has_bank_soal,true|numeric|min:0',
-        'bobot_esai'        => 'required_if:has_bank_soal,true|numeric|min:0',
-        'bobot_kompleks'    => 'required_if:has_bank_soal,true|numeric|min:0',
-        'bobot_jodohkan'    => 'required_if:has_bank_soal,true|numeric|min:0',
-        'bobot_isian'       => 'required_if:has_bank_soal,true|numeric|min:0',
-        'opsi'              => 'required_if:has_bank_soal,true|in:3,4,5',
     ];
 
     public $lengthData = 25;
@@ -64,17 +53,21 @@ class Pertemuan extends Component
     public $programs;
     public $oldThumbnail;
     
-    // Bank Soal fields
-    public $has_bank_soal = false;
-    public $jml_pg = 0, $jml_esai = 0, $jml_kompleks = 0, $jml_jodohkan = 0, $jml_isian = 0;
-    public $bobot_pg = 0, $bobot_esai = 0, $bobot_kompleks = 0, $bobot_jodohkan = 0, $bobot_isian = 0;
-    public $opsi = '5';
+    // Part management
+    public $parts = [];
+    public $partId, $nama_part, $deskripsi_part;
+    public $isEditingPart = false;
+    public $partFiles = [];
+    public $partFilesToUpload = [];
+    public $fileIdToDelete; // Add this for file deletion
+    
+    // Bank Soal configuration for part
+    public $jml_pg = 0, $jml_kompleks = 0, $jml_jodohkan = 0, $jml_isian = 0, $jml_esai = 0;
+    public $bobot_pg = 0, $bobot_kompleks = 0, $bobot_jodohkan = 0, $bobot_isian = 0, $bobot_esai = 0;
+    public $opsi = '4';
+    
     public $activeTab = 'info'; // Track active tab
     public $filterProgram = null; // Filter by program, null = show nothing
-    
-    // Multiple file upload
-    public $files = [];
-    public $existingFiles = [];
     
     // Gallery management
     public $galleryPertemuanId;
@@ -188,37 +181,7 @@ class Pertemuan extends Component
                 'thumbnail'         => $thumbnailPath,
                 'status'            => $this->status,
                 'jenis_presensi'    => implode(',', $this->jenis_presensi),
-                'has_bank_soal'     => $this->has_bank_soal,
             ]);
-
-            // Create bank soal if enabled
-            if ($this->has_bank_soal) {
-                BankSoalPertemuan::create([
-                    'id_pertemuan'      => $pertemuan->id,
-                    'id_tahun'          => $program->id_tahun,
-                    'jml_pg'            => $this->jml_pg,
-                    'jml_kompleks'      => $this->jml_kompleks,
-                    'jml_jodohkan'      => $this->jml_jodohkan,
-                    'jml_isian'         => $this->jml_isian,
-                    'jml_esai'          => $this->jml_esai,
-                    'tampil_pg'         => 0,
-                    'tampil_kompleks'   => 0,
-                    'tampil_jodohkan'   => 0,
-                    'tampil_isian'      => 0,
-                    'tampil_esai'       => 0,
-                    'bobot_pg'          => $this->bobot_pg,
-                    'bobot_kompleks'    => $this->bobot_kompleks,
-                    'bobot_jodohkan'    => $this->bobot_jodohkan,
-                    'bobot_isian'       => $this->bobot_isian,
-                    'bobot_esai'        => $this->bobot_esai,
-                    'opsi'              => $this->opsi,
-                ]);
-            }
-
-            // Upload multiple files
-            if (!empty($this->files)) {
-                $this->uploadMultipleFiles($pertemuan->id);
-            }
 
             \Illuminate\Support\Facades\DB::commit();
             $this->dispatchAlert('success', 'Success!', 'Data created successfully.');
@@ -245,25 +208,12 @@ class Pertemuan extends Component
         $this->jenis_presensi   = $data->jenis_presensi ? explode(',', $data->jenis_presensi) : ['pengurus', 'anggota'];
         $this->thumbnail        = null;
         
-        // Load existing files
-        $this->existingFiles = PertemuanFile::where('id_pertemuan', $id)->get()->toArray();
-        
-        // Load bank soal data if exists
-        $this->has_bank_soal = $data->has_bank_soal;
-        if ($this->has_bank_soal && $data->bankSoal) {
-            $bankSoal = $data->bankSoal;
-            $this->jml_pg = $bankSoal->jml_pg;
-            $this->jml_kompleks = $bankSoal->jml_kompleks;
-            $this->jml_jodohkan = $bankSoal->jml_jodohkan;
-            $this->jml_isian = $bankSoal->jml_isian;
-            $this->jml_esai = $bankSoal->jml_esai;
-            $this->bobot_pg = $bankSoal->bobot_pg;
-            $this->bobot_kompleks = $bankSoal->bobot_kompleks;
-            $this->bobot_jodohkan = $bankSoal->bobot_jodohkan;
-            $this->bobot_isian = $bankSoal->bobot_isian;
-            $this->bobot_esai = $bankSoal->bobot_esai;
-            $this->opsi = $bankSoal->opsi;
-        }
+        // Load parts dengan files
+        $this->parts = PartPertemuan::where('id_pertemuan', $id)
+            ->with('files', 'bankSoal')
+            ->orderBy('urutan')
+            ->get()
+            ->toArray();
     }
 
     public function update()
@@ -320,37 +270,7 @@ class Pertemuan extends Component
                     'thumbnail'         => $thumbnailPath,
                     'status'            => $this->status,
                     'jenis_presensi'    => implode(',', $this->jenis_presensi),
-                    'has_bank_soal'     => $this->has_bank_soal,
                 ]);
-
-                // Update or create bank soal if enabled
-                if ($this->has_bank_soal) {
-                    BankSoalPertemuan::updateOrCreate(
-                        ['id_pertemuan' => $this->dataId],
-                        [
-                            'id_tahun'          => $program->id_tahun,
-                            'jml_pg'            => $this->jml_pg,
-                            'jml_kompleks'      => $this->jml_kompleks,
-                            'jml_jodohkan'      => $this->jml_jodohkan,
-                            'jml_isian'         => $this->jml_isian,
-                            'jml_esai'          => $this->jml_esai,
-                            'bobot_pg'          => $this->bobot_pg,
-                            'bobot_kompleks'    => $this->bobot_kompleks,
-                            'bobot_jodohkan'    => $this->bobot_jodohkan,
-                            'bobot_isian'       => $this->bobot_isian,
-                            'bobot_esai'        => $this->bobot_esai,
-                            'opsi'              => $this->opsi,
-                        ]
-                    );
-                } else {
-                    // Delete bank soal if checkbox unchecked
-                    BankSoalPertemuan::where('id_pertemuan', $this->dataId)->delete();
-                }
-
-                // Upload additional files
-                if (!empty($this->files)) {
-                    $this->uploadMultipleFiles($this->dataId);
-                }
 
                 \Illuminate\Support\Facades\DB::commit();
                 $this->dispatchAlert('success', 'Success!', 'Data updated successfully.');
@@ -360,123 +280,6 @@ class Pertemuan extends Component
                 $this->dispatchAlert('error', 'Error!', 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. ' . $e->getMessage());
             }
         }
-    }
-
-    private function uploadMultipleFiles($pertemuanId)
-    {
-        // Ambil data pertemuan untuk mendapatkan pertemuan_ke
-        $pertemuan = ModelsPertemuan::findOrFail($pertemuanId);
-        $pertemuanKe = $pertemuan->pertemuan_ke;
-        
-        // Get active tahun kepengurusan name
-        $activeTahun = \App\Models\TahunKepengurusan::where('status', 'aktif')->first();
-        $tahunFolder = $activeTahun ? $activeTahun->nama_tahun : 'default';
-        
-        // Get program name
-        $program = ProgramKegiatan::findOrFail($pertemuan->id_program);
-        $programFolder = $program->nama_program;
-        
-        foreach ($this->files as $file) {
-            $extension = $file->getClientOriginalExtension();
-            $fileSize = $file->getSize();
-            $originalName = $file->getClientOriginalName();
-            
-            // Generate nama file yang aman dengan random 2 char
-            $fileName = pathinfo($originalName, PATHINFO_FILENAME);
-            $randomChar = strtoupper(substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 2));
-            $finalFileName = $fileName . '_' . $randomChar . '.' . $extension;
-            
-            // Path file yang akan disimpan dengan pertemuan_ke
-            $filePath = "{$tahunFolder}/Dept. PRE/{$programFolder}/Pertemuan {$pertemuanKe}/FILES/{$finalFileName}";
-            
-            // Cek apakah file dengan nama sama sudah ada
-            $existingFile = PertemuanFile::where('id_pertemuan', $pertemuanId)
-                                         ->where('file_path', $filePath)
-                                         ->first();
-            
-            if ($existingFile) {
-                // Hapus file lama dari storage
-                if (Storage::disk('public')->exists($existingFile->file_path)) {
-                    Storage::disk('public')->delete($existingFile->file_path);
-                }
-                
-                // Upload file baru
-                $file->storeAs(
-                    "{$tahunFolder}/Dept. PRE/{$programFolder}/Pertemuan {$pertemuanKe}/FILES",
-                    $finalFileName,
-                    'public'
-                );
-                
-                // Update metadata
-                $existingFile->update([
-                    'ukuran_file' => $fileSize,
-                ]);
-            } else {
-                // Upload file baru
-                $file->storeAs(
-                    "{$tahunFolder}/Dept. PRE/{$programFolder}/Pertemuan {$pertemuanKe}/FILES",
-                    $finalFileName,
-                    'public'
-                );
-                
-                // Simpan metadata ke database
-                PertemuanFile::create([
-                    'id_pertemuan' => $pertemuanId,
-                    'file_path'    => $filePath,
-                    'ukuran_file'  => $fileSize,
-                ]);
-            }
-        }
-    }
-
-    private function determineFolder($extension)
-    {
-        $extension = strtolower($extension);
-        
-        if (in_array($extension, ['ppt', 'pptx'])) {
-            return 'ppt';
-        } elseif ($extension === 'pdf') {
-            return 'pdf';
-        } elseif ($extension === 'zip') {
-            return 'zip';
-        } elseif (in_array($extension, ['jpg', 'jpeg', 'png'])) {
-            return 'image';
-        }
-        
-        return 'other';
-    }
-
-    public $fileIdToDelete = null;
-
-    public function deleteFileConfirm($fileId)
-    {
-        $this->fileIdToDelete = $fileId;
-        $file = PertemuanFile::findOrFail($fileId);
-        $fileName = basename($file->file_path);
-        
-        $this->dispatch('swal:confirmFile', [
-            'type'      => 'warning',  
-            'message'   => 'Are you sure?', 
-            'text'      => 'You are about to delete file: <strong>' . $fileName . '</strong>'
-        ]);
-    }
-
-    public function deleteFile()
-    {
-        $file = PertemuanFile::findOrFail($this->fileIdToDelete);
-        
-        // Hapus file dari storage
-        if (Storage::disk('public')->exists($file->file_path)) {
-            Storage::disk('public')->delete($file->file_path);
-        }
-        
-        // Hapus record dari database
-        $file->delete();
-        
-        // Refresh existing files
-        $this->existingFiles = PertemuanFile::where('id_pertemuan', $this->dataId)->get()->toArray();
-        
-        $this->fileIdToDelete = null;
     }
 
     public function deleteConfirm($id)
@@ -504,17 +307,17 @@ class Pertemuan extends Component
                 Storage::disk('public')->delete($data->thumbnail);
             }
             
-            // Hapus semua file dari storage berdasarkan record di database
-            $files = PertemuanFile::where('id_pertemuan', $this->dataId)->get();
-            foreach ($files as $file) {
-                if (Storage::disk('public')->exists($file->file_path)) {
-                    Storage::disk('public')->delete($file->file_path);
+            // Hapus semua parts (cascade akan handle files dan bank soal)
+            $parts = PartPertemuan::where('id_pertemuan', $this->dataId)->get();
+            foreach ($parts as $part) {
+                // Hapus files dari storage
+                foreach ($part->files as $file) {
+                    if (Storage::disk('public')->exists($file->file_path)) {
+                        Storage::disk('public')->delete($file->file_path);
+                    }
                 }
             }
             
-            // Hapus semua record file dari database
-            PertemuanFile::where('id_pertemuan', $this->dataId)->delete();
-
             // Hapus semua file galeri dari storage (DB record akan terhapus via cascade)
             $galeriFiles = PertemuanGaleri::where('id_pertemuan', $this->dataId)->get();
             foreach ($galeriFiles as $galeri) {
@@ -576,8 +379,13 @@ class Pertemuan extends Component
         $this->thumbnail           = null;
         $this->status              = '';
         $this->oldThumbnail        = null;
-        $this->files               = [];
-        $this->existingFiles       = [];
+        $this->parts               = [];
+        $this->partId              = null;
+        $this->nama_part           = '';
+        $this->deskripsi_part      = '';
+        $this->isEditingPart       = false;
+        $this->partFiles           = [];
+        $this->partFilesToUpload   = [];
         $this->activeTab           = 'info';
     }
 
@@ -585,6 +393,30 @@ class Pertemuan extends Component
     {
         $this->isEditing       = false;
         $this->resetInputFields();
+    }
+
+    public function cancelEditPart()
+    {
+        $this->partId = null;
+        $this->nama_part = '';
+        $this->deskripsi_part = '';
+        $this->isEditingPart = false;
+        $this->resetBankSoalFields();
+    }
+    
+    private function resetBankSoalFields()
+    {
+        $this->jml_pg = 0;
+        $this->jml_kompleks = 0;
+        $this->jml_jodohkan = 0;
+        $this->jml_isian = 0;
+        $this->jml_esai = 0;
+        $this->bobot_pg = 0;
+        $this->bobot_kompleks = 0;
+        $this->bobot_jodohkan = 0;
+        $this->bobot_isian = 0;
+        $this->bobot_esai = 0;
+        $this->opsi = '4';
     }
 
     // Gallery Management Methods
@@ -744,5 +576,384 @@ class Pertemuan extends Component
     public function redirectToSoal($pertemuanId)
     {
         return redirect()->route('pertemuan.soal', ['pertemuanId' => $pertemuanId]);
+    }
+    
+    // ========== PART MANAGEMENT METHODS ==========
+    
+    public function addPart()
+    {
+        $this->validate([
+            'nama_part' => 'required|string|max:255',
+        ]);
+        
+        if (!$this->dataId) {
+            $this->dispatchAlert('error', 'Error!', 'Simpan pertemuan terlebih dahulu sebelum menambah part.');
+            return;
+        }
+        
+        DB::beginTransaction();
+        try {
+            // Get max urutan
+            $maxUrutan = PartPertemuan::where('id_pertemuan', $this->dataId)->max('urutan') ?? 0;
+            
+            $part = PartPertemuan::create([
+                'id_pertemuan' => $this->dataId,
+                'urutan' => $maxUrutan + 1,
+                'nama_part' => $this->nama_part,
+                'deskripsi' => $this->deskripsi_part,
+            ]);
+            
+            // Create bank soal if at least one jumlah soal is set
+            if ($this->jml_pg > 0 || $this->jml_kompleks > 0 || $this->jml_jodohkan > 0 || $this->jml_isian > 0 || $this->jml_esai > 0) {
+                $pertemuan = ModelsPertemuan::with('program')->findOrFail($this->dataId);
+                
+                BankSoalPertemuan::create([
+                    'id_part' => $part->id,
+                    'id_tahun' => $pertemuan->program->id_tahun,
+                    'jml_pg' => $this->jml_pg,
+                    'jml_kompleks' => $this->jml_kompleks,
+                    'jml_jodohkan' => $this->jml_jodohkan,
+                    'jml_isian' => $this->jml_isian,
+                    'jml_esai' => $this->jml_esai,
+                    'tampil_pg' => 0,
+                    'tampil_kompleks' => 0,
+                    'tampil_jodohkan' => 0,
+                    'tampil_isian' => 0,
+                    'tampil_esai' => 0,
+                    'bobot_pg' => $this->bobot_pg,
+                    'bobot_kompleks' => $this->bobot_kompleks,
+                    'bobot_jodohkan' => $this->bobot_jodohkan,
+                    'bobot_isian' => $this->bobot_isian,
+                    'bobot_esai' => $this->bobot_esai,
+                    'opsi' => $this->opsi,
+                    'status' => '0', // Inactive by default
+                ]);
+            }
+            
+            // Reload parts
+            $this->parts = PartPertemuan::where('id_pertemuan', $this->dataId)
+                ->with('files', 'bankSoal')
+                ->orderBy('urutan')
+                ->get()
+                ->toArray();
+            
+            // Reset form
+            $this->nama_part = '';
+            $this->deskripsi_part = '';
+            $this->resetBankSoalFields();
+            
+            DB::commit();
+            $this->dispatch('swal:partAdded');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatch('swal:modal', [
+                'type' => 'error',
+                'message' => 'Error!',
+                'text' => 'Gagal menambah part: ' . $e->getMessage()
+            ]);
+        }
+    }
+    
+    public function editPart($partId)
+    {
+        $part = PartPertemuan::with('bankSoal')->findOrFail($partId);
+        $this->partId = $partId;
+        $this->nama_part = $part->nama_part;
+        $this->deskripsi_part = $part->deskripsi;
+        
+        // Load bank soal data if exists
+        if ($part->bankSoal) {
+            $bs = $part->bankSoal;
+            $this->jml_pg = $bs->jml_pg;
+            $this->jml_kompleks = $bs->jml_kompleks;
+            $this->jml_jodohkan = $bs->jml_jodohkan;
+            $this->jml_isian = $bs->jml_isian;
+            $this->jml_esai = $bs->jml_esai;
+            $this->bobot_pg = $bs->bobot_pg;
+            $this->bobot_kompleks = $bs->bobot_kompleks;
+            $this->bobot_jodohkan = $bs->bobot_jodohkan;
+            $this->bobot_isian = $bs->bobot_isian;
+            $this->bobot_esai = $bs->bobot_esai;
+            $this->opsi = $bs->opsi;
+        } else {
+            $this->resetBankSoalFields();
+        }
+        
+        $this->isEditingPart = true;
+    }
+    
+    public function updatePart()
+    {
+        $this->validate([
+            'nama_part' => 'required|string|max:255',
+        ]);
+        
+        DB::beginTransaction();
+        try {
+            $part = PartPertemuan::with('bankSoal')->findOrFail($this->partId);
+            $part->update([
+                'nama_part' => $this->nama_part,
+                'deskripsi' => $this->deskripsi_part,
+            ]);
+            
+            // Update or create bank soal
+            if ($this->jml_pg > 0 || $this->jml_kompleks > 0 || $this->jml_jodohkan > 0 || $this->jml_isian > 0 || $this->jml_esai > 0) {
+                $pertemuan = ModelsPertemuan::with('program')->findOrFail($this->dataId);
+                
+                $bankSoalData = [
+                    'id_tahun' => $pertemuan->program->id_tahun,
+                    'jml_pg' => $this->jml_pg,
+                    'jml_kompleks' => $this->jml_kompleks,
+                    'jml_jodohkan' => $this->jml_jodohkan,
+                    'jml_isian' => $this->jml_isian,
+                    'jml_esai' => $this->jml_esai,
+                    'tampil_pg' => 0,
+                    'tampil_kompleks' => 0,
+                    'tampil_jodohkan' => 0,
+                    'tampil_isian' => 0,
+                    'tampil_esai' => 0,
+                    'bobot_pg' => $this->bobot_pg,
+                    'bobot_kompleks' => $this->bobot_kompleks,
+                    'bobot_jodohkan' => $this->bobot_jodohkan,
+                    'bobot_isian' => $this->bobot_isian,
+                    'bobot_esai' => $this->bobot_esai,
+                    'opsi' => $this->opsi,
+                ];
+                
+                if ($part->bankSoal) {
+                    $part->bankSoal->update($bankSoalData);
+                } else {
+                    BankSoalPertemuan::create(array_merge($bankSoalData, [
+                        'id_part' => $part->id,
+                        'status' => '0',
+                    ]));
+                }
+            }
+            
+            // Reload parts
+            $this->parts = PartPertemuan::where('id_pertemuan', $this->dataId)
+                ->with('files', 'bankSoal')
+                ->orderBy('urutan')
+                ->get()
+                ->toArray();
+            
+            $this->partId = null;
+            $this->nama_part = '';
+            $this->deskripsi_part = '';
+            $this->isEditingPart = false;
+            
+            DB::commit();
+            $this->dispatch('swal:partUpdated');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatch('swal:modal', [
+                'type' => 'error',
+                'message' => 'Error!',
+                'text' => 'Gagal update part: ' . $e->getMessage()
+            ]);
+        }
+    }
+    
+    public function deletePartConfirm($partId)
+    {
+        $this->partId = $partId;
+        $part = PartPertemuan::findOrFail($partId);
+        
+        $this->dispatch('swal:confirmPart', [
+            'type' => 'warning',
+            'message' => 'Are you sure?',
+            'text' => 'Menghapus part "' . $part->nama_part . '" akan menghapus semua bank soal dan file di dalamnya!'
+        ]);
+    }
+    
+    public function deletePart()
+    {
+        DB::beginTransaction();
+        try {
+            $part = PartPertemuan::findOrFail($this->partId);
+            
+            // Hapus semua files dari storage
+            foreach ($part->files as $file) {
+                if (Storage::disk('public')->exists($file->file_path)) {
+                    Storage::disk('public')->delete($file->file_path);
+                }
+            }
+            
+            // Delete part (cascade akan handle bank soal dan files di DB)
+            $part->delete();
+            
+            // Reorder remaining parts
+            $remainingParts = PartPertemuan::where('id_pertemuan', $this->dataId)
+                ->orderBy('urutan')
+                ->get();
+            
+            $urutan = 1;
+            foreach ($remainingParts as $p) {
+                $p->update(['urutan' => $urutan++]);
+            }
+            
+            // Reload parts
+            $this->parts = PartPertemuan::where('id_pertemuan', $this->dataId)
+                ->with('files', 'bankSoal')
+                ->orderBy('urutan')
+                ->get()
+                ->toArray();
+            
+            $this->partId = null;
+            
+            DB::commit();
+            $this->dispatch('swal:partDeleted');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatch('swal:modal', [
+                'type' => 'error',
+                'message' => 'Error!',
+                'text' => 'Gagal menghapus part: ' . $e->getMessage()
+            ]);
+        }
+    }
+    
+    public function reorderParts($orderedIds)
+    {
+        DB::beginTransaction();
+        try {
+            $urutan = 1;
+            foreach ($orderedIds as $id) {
+                PartPertemuan::where('id', $id)->update(['urutan' => $urutan++]);
+            }
+            
+            // Reload parts
+            $this->parts = PartPertemuan::where('id_pertemuan', $this->dataId)
+                ->with('files', 'bankSoal')
+                ->orderBy('urutan')
+                ->get()
+                ->toArray();
+            
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatch('swal:modal', [
+                'type' => 'error',
+                'message' => 'Error!',
+                'text' => 'Gagal reorder parts: ' . $e->getMessage()
+            ]);
+        }
+    }
+    
+    public function uploadPartFiles($partId)
+    {
+        $this->validate([
+            'partFilesToUpload.*' => 'required|file|mimes:ppt,pptx,pdf,zip,jpg,jpeg,png|max:102400',
+        ]);
+        
+        DB::beginTransaction();
+        try {
+            $part = PartPertemuan::with('pertemuan.program.tahunKepengurusan')->findOrFail($partId);
+            $pertemuan = $part->pertemuan;
+            
+            // Get path info
+            $activeTahun = \App\Models\TahunKepengurusan::where('status', 'aktif')->first();
+            $tahunFolder = $activeTahun ? $activeTahun->nama_tahun : 'default';
+            $program = $pertemuan->program;
+            $programFolder = $program->nama_program;
+            $pertemuanKe = $pertemuan->pertemuan_ke;
+            $partUrutan = $part->urutan;
+            
+            // Path: {tahun}/Dept. PRE/{program}/Pertemuan {ke}/Part {urutan}/
+            $basePath = "{$tahunFolder}/Dept. PRE/{$programFolder}/Pertemuan {$pertemuanKe}/Part {$partUrutan}";
+            
+            foreach ($this->partFilesToUpload as $file) {
+                $extension = $file->getClientOriginalExtension();
+                $originalName = $file->getClientOriginalName();
+                $fileSize = $file->getSize();
+                $mimeType = $file->getMimeType();
+                
+                // Generate safe filename
+                $fileName = pathinfo($originalName, PATHINFO_FILENAME);
+                $randomChar = strtoupper(substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 2));
+                $finalFileName = $fileName . '_' . $randomChar . '.' . $extension;
+                
+                // Upload file
+                $filePath = $file->storeAs($basePath, $finalFileName, 'public');
+                
+                // Save to database
+                PartFile::create([
+                    'id_part' => $partId,
+                    'file_path' => $filePath,
+                    'original_name' => $originalName,
+                    'ukuran_file' => $fileSize,
+                    'mime_type' => $mimeType,
+                ]);
+            }
+            
+            // Reload parts
+            $this->parts = PartPertemuan::where('id_pertemuan', $this->dataId)
+                ->with('files', 'bankSoal')
+                ->orderBy('urutan')
+                ->get()
+                ->toArray();
+            
+            $this->partFilesToUpload = [];
+            
+            DB::commit();
+            $this->dispatch('swal:modal', [
+                'type' => 'success',
+                'message' => 'Success!',
+                'text' => 'Files berhasil diupload.'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatch('swal:modal', [
+                'type' => 'error',
+                'message' => 'Error!',
+                'text' => 'Gagal upload files: ' . $e->getMessage()
+            ]);
+        }
+    }
+    
+    public function deletePartFileConfirm($fileId)
+    {
+        $this->fileIdToDelete = $fileId;
+        $file = PartFile::findOrFail($fileId);
+        
+        $this->dispatch('swal:confirmPartFile', [
+            'type' => 'warning',
+            'message' => 'Are you sure?',
+            'text' => 'Menghapus file: ' . $file->original_name
+        ]);
+    }
+    
+    public function deletePartFile()
+    {
+        DB::beginTransaction();
+        try {
+            $file = PartFile::findOrFail($this->fileIdToDelete);
+            
+            // Delete from storage
+            if (Storage::disk('public')->exists($file->file_path)) {
+                Storage::disk('public')->delete($file->file_path);
+            }
+            
+            $file->delete();
+            
+            // Reload parts
+            $this->parts = PartPertemuan::where('id_pertemuan', $this->dataId)
+                ->with('files', 'bankSoal')
+                ->orderBy('urutan')
+                ->get()
+                ->toArray();
+            
+            $this->fileIdToDelete = null;
+            
+            DB::commit();
+            $this->dispatch('swal:fileDeleted');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatch('swal:modal', [
+                'type' => 'error',
+                'message' => 'Error!',
+                'text' => 'Gagal menghapus file: ' . $e->getMessage()
+            ]);
+        }
     }
 }

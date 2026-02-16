@@ -43,11 +43,9 @@ class LihatProject extends Component
         $this->viewData = DB::table('projects')
             ->select(
                 'projects.*',
-                'tahun_kepengurusan.nama_tahun',
-                'anggota.nama_lengkap as nama_leader'
+                'tahun_kepengurusan.nama_tahun'
             )
             ->leftJoin('tahun_kepengurusan', 'tahun_kepengurusan.id', 'projects.id_tahun')
-            ->leftJoin('anggota', 'anggota.id', 'projects.id_leader')
             ->where('projects.id', $id)
             ->first();
 
@@ -78,11 +76,9 @@ class LihatProject extends Component
         $projects = DB::table('projects')
             ->select(
                 'projects.*',
-                'tahun_kepengurusan.nama_tahun',
-                'anggota.nama_lengkap as nama_leader'
+                'tahun_kepengurusan.nama_tahun'
             )
             ->leftJoin('tahun_kepengurusan', 'tahun_kepengurusan.id', 'projects.id_tahun')
-            ->leftJoin('anggota', 'anggota.id', 'projects.id_leader')
             ->where('projects.id_tahun', $this->anggota->id_tahun);
 
         if ($this->searchTerm) {

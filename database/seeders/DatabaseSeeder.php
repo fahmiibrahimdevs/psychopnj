@@ -25,6 +25,10 @@ class DatabaseSeeder extends Seeder
             ProfilOrganisasiSeeder::class,
             JenisAnggaranSeeder::class,
             KategoriDokumenSeeder::class,
+            // Part & Exam Demo Seeders (uncomment if needed for testing)
+            // PertemuanDemoSeeder::class,
+            // PartPertemuanDemoSeeder::class,
+            // NilaiSoalAnggotaDemoSeeder::class,
         ]);
         // User::factory()->create([
         //     'name' => 'Test User',

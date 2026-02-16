@@ -17,8 +17,8 @@ class StatusAnggotaUjian extends Component
 
     protected $listeners = ['terapkanAksi'];
 
-    public $id_pertemuan = '0';
-    public $pertemuans = [];
+    public $id_part = '0';
+    public $parts = [];
     public $data = [];
     public $paksa_selesai = [], $ulang = [];
 
@@ -26,20 +26,32 @@ class StatusAnggotaUjian extends Component
     {
         $this->cacheUserPermissions();
         
-        $data = DB::table('pertemuan')
-            ->select('pertemuan.id', 'pertemuan.judul_pertemuan', 'pertemuan.pertemuan_ke', 'program_pembelajaran.nama_program')
+        $data = DB::table('part_pertemuan')
+            ->select(
+                'part_pertemuan.id',
+                'part_pertemuan.urutan',
+                'part_pertemuan.nama_part',
+                'pertemuan.judul_pertemuan',
+                'pertemuan.pertemuan_ke',
+                'program_pembelajaran.nama_program'
+            )
+            ->join('pertemuan', 'pertemuan.id', 'part_pertemuan.id_pertemuan')
             ->join('program_pembelajaran', 'program_pembelajaran.id', 'pertemuan.id_program')
-            ->join('bank_soal_pertemuan', 'bank_soal_pertemuan.id_pertemuan', 'pertemuan.id')
-            ->where('pertemuan.has_bank_soal', true)
+            ->join('bank_soal_pertemuan', 'bank_soal_pertemuan.id_part', 'part_pertemuan.id')
             ->orderBy('pertemuan.tanggal', 'DESC')
-            ->get();
+            ->orderBy('part_pertemuan.urutan', 'ASC')
+            ->get()
+            ->map(function($item) {
+                $item->display_name = "Pertemuan {$item->pertemuan_ke} - Part {$item->urutan}: {$item->nama_part}";
+                return $item;
+            });
 
-        $this->pertemuans = $data->groupBy('nama_program')->toArray();
+        $this->parts = $data->groupBy('nama_program')->toArray();
 
         $this->dispatch('initSelect2');
     }
 
-    public function updatedIdPertemuan()
+    public function updatedIdPart()
     {
         $this->loadData();
         $this->dispatch('initSelect2');
@@ -47,7 +59,7 @@ class StatusAnggotaUjian extends Component
 
     public function loadData()
     {
-        if ($this->id_pertemuan == '0') {
+        if ($this->id_part == '0') {
             $this->data = [];
             return;
         }
@@ -65,7 +77,7 @@ class StatusAnggotaUjian extends Component
             )
             ->leftJoin('anggota', 'anggota.id', 'nilai_soal_anggota.id_anggota')
             ->leftJoin('sessions', 'sessions.user_id', 'anggota.id_user')
-            ->where('nilai_soal_anggota.id_pertemuan', $this->id_pertemuan)
+            ->where('nilai_soal_anggota.id_part', $this->id_part)
             ->distinct()
             ->get()
             ->map(function ($item) {
@@ -114,7 +126,7 @@ class StatusAnggotaUjian extends Component
     {
         $nssIds = NilaiSoalAnggota::whereIn('id_anggota', $this->paksa_selesai)
             ->where([
-                ['id_pertemuan', $this->id_pertemuan],
+                ['id_part', $this->id_part],
                 ['status', '0'],
             ])
             ->pluck('id')
@@ -167,7 +179,7 @@ class StatusAnggotaUjian extends Component
     private function ulangUjian()
     {
         $nss = NilaiSoalAnggota::whereIn('id_anggota', $this->ulang)
-            ->where('id_pertemuan', $this->id_pertemuan);
+            ->where('id_part', $this->id_part);
 
         $idNss = $nss->pluck('id')->toArray();
 

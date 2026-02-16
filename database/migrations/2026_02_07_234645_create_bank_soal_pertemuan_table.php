@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('bank_soal_pertemuan', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('id_pertemuan');
+            $table->foreignId('id_part')->constrained('part_pertemuan')->onDelete('cascade');
             $table->unsignedBigInteger('id_tahun'); // from program_kegiatan.id_tahun
             
             // Question counts per type
@@ -44,7 +44,7 @@ return new class extends Migration
             
             $table->timestamps();
             
-            $table->foreign('id_pertemuan')->references('id')->on('pertemuan')->onDelete('cascade');
+            $table->index('id_part');
         });
     }
 

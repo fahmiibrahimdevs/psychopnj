@@ -301,7 +301,7 @@
                             @endhasanyrole
 
                             @if (Auth::user()->hasRole("anggota"))
-                                <li class="nav-item dropdown {{ request()->is("anggota/daftar-pertemuan") || request()->is("anggota/hasil-soal") ? "active" : "" }}">
+                                <li class="nav-item dropdown {{ request()->is("anggota/daftar-pertemuan") || request()->is("anggota/hasil-soal") || request()->is("anggota/riwayat-presensi") || request()->is("anggota/iuran-kas-saya") ? "active" : "" }}">
                                     <a href="#" data-toggle="dropdown" class="nav-link has-dropdown">
                                         <i class="far fa-book-open"></i>
                                         <span>Akademik</span>
@@ -313,26 +313,27 @@
                                         <li class="nav-item {{ request()->is("anggota/hasil-soal") ? "active" : "" }}">
                                             <a href="/anggota/hasil-soal" class="nav-link">Hasil Ujian</a>
                                         </li>
+                                        <li class="nav-item {{ request()->is("anggota/riwayat-presensi") ? "active" : "" }}">
+                                            <a href="/anggota/riwayat-presensi" class="nav-link">
+                                                <span>Riwayat Presensi</span>
+                                            </a>
+                                        </li>
+                                        <li class="nav-item {{ request()->is("anggota/iuran-kas-saya") ? "active" : "" }}">
+                                            <a href="/anggota/iuran-kas-saya" class="nav-link">
+                                                <span>Iuran Kas</span>
+                                            </a>
+                                        </li>
                                     </ul>
                                 </li>
-                                <li class="nav-item {{ request()->is("anggota/riwayat-presensi") ? "active" : "" }}">
-                                    <a href="/anggota/riwayat-presensi" class="nav-link">
-                                        <i class="far fa-clipboard-list"></i>
-                                        <span>Riwayat Presensi</span>
-                                    </a>
-                                </li>
-                                <li class="nav-item {{ request()->is("anggota/iuran-kas-saya") ? "active" : "" }}">
-                                    <a href="/anggota/iuran-kas-saya" class="nav-link">
-                                        <i class="far fa-money-bill-wave"></i>
-                                        <span>Iuran Kas</span>
-                                    </a>
-                                </li>
-                                <li class="nav-item {{ request()->is("anggota/lihat-project") ? "active" : "" }}">
+
+                                {{--
+                                    <li class="nav-item {{ request()->is("anggota/lihat-project") ? "active" : "" }}">
                                     <a href="/anggota/lihat-project" class="nav-link">
-                                        <i class="far fa-project-diagram"></i>
-                                        <span>Project/Kegiatan</span>
+                                    <i class="far fa-project-diagram"></i>
+                                    <span>Project/Kegiatan</span>
                                     </a>
-                                </li>
+                                    </li>
+                                --}}
                             @endif
                         </ul>
                     </div>

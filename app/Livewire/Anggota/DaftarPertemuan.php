@@ -85,11 +85,7 @@ class DaftarPertemuan extends Component
 
     public function openFiles($pertemuanId)
     {
-        $this->selectedPertemuan = Pertemuan::findOrFail($pertemuanId);
-        $this->files = DB::table('pertemuan_file')
-            ->where('id_pertemuan', $pertemuanId)
-            ->orderBy('created_at', 'DESC')
-            ->get();
+        $this->selectedPertemuan = Pertemuan::with('parts.files')->findOrFail($pertemuanId);
         $this->showFilesModal = true;
         $this->dispatch('open-modal', modal: 'filesModal');
     }
@@ -121,20 +117,10 @@ class DaftarPertemuan extends Component
                     'pertemuan.nama_pemateri',
                     'pertemuan.minggu_ke',
                     'program_pembelajaran.nama_program',
-                    'bank_soal_pertemuan.id as bank_soal_id',
-                    'bank_soal_pertemuan.status as bank_soal_status',
-                    DB::raw("(COALESCE(bank_soal_pertemuan.jml_pg, 0) + COALESCE(bank_soal_pertemuan.jml_kompleks, 0) + COALESCE(bank_soal_pertemuan.jml_jodohkan, 0) + COALESCE(bank_soal_pertemuan.jml_isian, 0) + COALESCE(bank_soal_pertemuan.jml_esai, 0)) as total_soal"),
-                    'nilai_soal_anggota.status as status_ujian',
-                    'nilai_soal_anggota.id as nilai_id',
                     DB::raw("(SELECT COUNT(*) FROM pertemuan_galeri WHERE pertemuan_galeri.id_pertemuan = pertemuan.id) as gallery_count"),
-                    DB::raw("(SELECT COUNT(*) FROM pertemuan_file WHERE pertemuan_file.id_pertemuan = pertemuan.id) as files_count")
+                    DB::raw("(SELECT COUNT(*) FROM part_file INNER JOIN part_pertemuan ON part_file.id_part = part_pertemuan.id WHERE part_pertemuan.id_pertemuan = pertemuan.id) as files_count")
                 )
                 ->leftJoin('program_pembelajaran', 'program_pembelajaran.id', '=', 'pertemuan.id_program')
-                ->leftJoin('bank_soal_pertemuan', 'bank_soal_pertemuan.id_pertemuan', '=', 'pertemuan.id')
-                ->leftJoin('nilai_soal_anggota', function ($join) {
-                    $join->on('nilai_soal_anggota.id_pertemuan', '=', 'pertemuan.id')
-                        ->where('nilai_soal_anggota.id_anggota', '=', $this->anggota->id);
-                })
                 ->where('program_pembelajaran.id_tahun', $this->anggota->id_tahun)
                 ->where('pertemuan.id_program', $this->selectedProgramId)
                 ->where('pertemuan.status', 'visible')
@@ -144,8 +130,36 @@ class DaftarPertemuan extends Component
                 ->orderBy('pertemuan.tanggal', 'DESC')
                 ->paginate($this->lengthData);
 
+            // Load parts with bank soal and nilai for each pertemuan
+            $pertemuanIds = $pertemuans->pluck('id')->toArray();
+            
+            $parts = DB::table('part_pertemuan')
+                ->select(
+                    'part_pertemuan.id',
+                    'part_pertemuan.id_pertemuan',
+                    'part_pertemuan.urutan',
+                    'part_pertemuan.nama_part',
+                    'part_pertemuan.deskripsi',
+                    'bank_soal_pertemuan.id as bank_soal_id',
+                    'bank_soal_pertemuan.status as bank_soal_status',
+                    DB::raw("(COALESCE(bank_soal_pertemuan.jml_pg, 0) + COALESCE(bank_soal_pertemuan.jml_kompleks, 0) + COALESCE(bank_soal_pertemuan.jml_jodohkan, 0) + COALESCE(bank_soal_pertemuan.jml_isian, 0) + COALESCE(bank_soal_pertemuan.jml_esai, 0)) as total_soal"),
+                    'nilai_soal_anggota.status as status_ujian',
+                    'nilai_soal_anggota.id as nilai_id',
+                    DB::raw("(SELECT COUNT(*) FROM part_file WHERE part_file.id_part = part_pertemuan.id) as part_files_count")
+                )
+                ->leftJoin('bank_soal_pertemuan', 'bank_soal_pertemuan.id_part', '=', 'part_pertemuan.id')
+                ->leftJoin('nilai_soal_anggota', function ($join) {
+                    $join->on('nilai_soal_anggota.id_part', '=', 'part_pertemuan.id')
+                        ->where('nilai_soal_anggota.id_anggota', '=', $this->anggota->id);
+                })
+                ->whereIn('part_pertemuan.id_pertemuan', $pertemuanIds)
+                ->orderBy('part_pertemuan.urutan', 'ASC')
+                ->get()
+                ->groupBy('id_pertemuan');
+
             return view('livewire.anggota.daftar-pertemuan', [
                 'pertemuans' => $pertemuans,
+                'parts' => $parts,
                 'isProgramView' => false
             ]);
         } else {
