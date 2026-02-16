@@ -138,11 +138,15 @@ class Profile extends Component
                     Storage::disk('public')->delete($this->anggota->foto);
                 }
 
-                // Upload foto baru
+                // Upload foto baru dengan path: {tahun_aktif}/Anggota/{jurusan_prodi_kelas}_{nama_lengkap}_{randomchar2digit}.{ext}
                 $extension = $this->foto->getClientOriginalExtension();
-                $filename = 'anggota_' . $this->anggota->id . '_' . time() . '.' . $extension;
-                $year = date('Y');
-                $path = $this->foto->storeAs($year . '/anggota', $filename, 'public');
+                $tahunAktif = $this->anggota->tahunKepengurusan->nama_tahun ?? date('Y');
+                $jurusan = str_replace(['/', ' '], '_', $this->jurusan_prodi_kelas);
+                $nama = str_replace(' ', '_', $this->nama_lengkap);
+                $randomChar = strtoupper(substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 2));
+                $filename = $jurusan . '_' . $nama . '_' . $randomChar . '.' . $extension;
+                
+                $path = $this->foto->storeAs($tahunAktif . '/Anggota', $filename, 'public');
                 
                 $updateData['foto'] = $path;
                 $this->foto_preview = storageUrl($path);

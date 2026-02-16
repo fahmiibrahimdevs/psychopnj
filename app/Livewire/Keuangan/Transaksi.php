@@ -470,19 +470,11 @@ class Transaksi extends Component
         // Jenis transaksi (Pemasukan/Pengeluaran)
         $jenis = ucfirst($transaksi->jenis);
         
-        // Bulan (format: 01, 02, 03, etc.)
-        $bulan = $transaksi->tanggal->format('m');
+        // Bulan dengan nama (format: Februari 2026)
+        setlocale(LC_TIME, 'id_ID.UTF-8', 'Indonesian_Indonesia.1252', 'id_ID', 'IND');
+        $bulanTahun = ucfirst($transaksi->tanggal->locale('id')->isoFormat('MMMM YYYY'));
         
-        // Determine kategori folder name
-        if ($transaksi->kategori === 'Departemen' && $transaksi->department) {
-            $kategoriFolder = 'Dept. ' . $transaksi->department->nama_department;
-        } elseif ($transaksi->kategori === 'Project' && $transaksi->project) {
-            $kategoriFolder = 'Project ' . $transaksi->project->nama_project;
-        } else {
-            $kategoriFolder = $transaksi->kategori;
-        }
-        
-        return "{$tahun}/Bendahara/{$jenis}/{$bulan}/{$kategoriFolder}";
+        return "{$tahun}/Dept. Bendahara/{$jenis}/{$bulanTahun}";
     }
 
     /**
@@ -492,16 +484,55 @@ class Transaksi extends Component
     {
         $transaksi = ModelsKeuangan::findOrFail($transaksiId);
         
+        // Get counter for files with same type
+        $existingCount = DB::table('transaksi_files')
+            ->where('id_transaksi', $transaksiId)
+            ->where('tipe', $tipe)
+            ->count();
+        
+        $counter = $existingCount + 1;
+        
         foreach ($files as $file) {
             // Security: Validate mime type
             $mimeType = $file->getMimeType();
             $extension = $file->getClientOriginalExtension();
             $originalName = $file->getClientOriginalName();
             
-            // Generate safe filename
+            // Allowed MIME types based on file type
+            $allowedNotaReimburseMimes = [
+                'application/pdf',
+                'image/jpeg',
+                'image/jpg',
+                'image/png',
+            ];
+            
+            $allowedFotoMimes = [
+                'image/jpeg',
+                'image/jpg',
+                'image/png',
+                'video/mp4',
+                'video/quicktime', // mov
+                'video/x-msvideo', // avi
+                'video/x-matroska', // mkv
+            ];
+            
+            // Validate MIME type based on tipe
+            if ($tipe === 'foto') {
+                if (!in_array($mimeType, $allowedFotoMimes)) {
+                    continue; // Skip invalid file
+                }
+            } else {
+                if (!in_array($mimeType, $allowedNotaReimburseMimes)) {
+                    continue; // Skip invalid file
+                }
+            }
+            
+            // Generate safe filename: {tanggal}_{Nota/Reimburse/Barang}_{deskripsi}_{counter2digit}.{ext}
             $tanggal = $transaksi->tanggal->format('Y-m-d');
-            $random = substr(str_shuffle('abcdefghijklmnopqrstuvwxyz0123456789'), 0, 2);
-            $safeFilename = "{$tipe}_{$tanggal}-{$random}.{$extension}";
+            $deskripsi = preg_replace('/[^a-zA-Z0-9\s]/', '', $transaksi->deskripsi);
+            $deskripsi = str_replace('  ', ' ', $deskripsi); // Remove double spaces
+            $tipeLabel = ($tipe === 'nota') ? 'Nota' : (($tipe === 'reimburse') ? 'Reimburse' : 'Barang');
+            $safeFilename = "{$tanggal}_{$tipeLabel}_{$deskripsi}_" . sprintf('%02d', $counter) . ".{$extension}";
             
             // Store file
             $filePath = $file->storeAs($basePath, $safeFilename, 'public');
@@ -531,12 +562,14 @@ class Transaksi extends Component
             // Save to database
             TransaksiFile::create([
                 'id_transaksi' => $transaksiId,
-                'tipe' => $tipe,
+                'jenis_file' => $tipe,
                 'file_path' => $filePath,
                 'original_name' => $originalName,
                 'file_size' => $fileSize,
                 'mime_type' => $mimeType,
             ]);
+            
+            $counter++;
         }
     }
 

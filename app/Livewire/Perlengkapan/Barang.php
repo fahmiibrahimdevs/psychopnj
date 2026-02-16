@@ -209,8 +209,11 @@ class Barang extends Component
 
     private function uploadFoto()
     {
-        $filename = 'barang_' . time() . '.' . $this->foto->getClientOriginalExtension();
-        $path = $this->foto->storeAs('perlengkapan/barang', $filename, 'public');
+        $tahunNama = DB::table('tahun_kepengurusan')->where('status', 'aktif')->value('nama_tahun') ?? date('Y');
+        $namaBarang = strtoupper(str_replace(' ', ' ', $this->nama));
+        $randomChar = strtoupper(substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 2));
+        $filename = $namaBarang . '_' . $randomChar . '.' . $this->foto->getClientOriginalExtension();
+        $path = $this->foto->storeAs($tahunNama . '/Dept. Perlengkapan', $filename, 'public');
         
         // Compress image only if larger than target
         $fullPath = Storage::disk('public')->path($path);

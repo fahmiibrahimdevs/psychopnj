@@ -119,11 +119,12 @@ class ProgramKegiatan extends Component
 
             $thumbnailPath = null;
             if ($this->thumbnail) {
-                // Generate nama file dari nama_program (uppercase with space)
-                $programFolder = strtoupper($this->nama_program);
-                $fileName = strtoupper(str_replace(' ', '_', $this->nama_program)) . '_' . rand(10, 99);
+                // Generate nama file dari nama_program
+                $programFolder = $this->nama_program;
+                $randomChar = strtoupper(substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 2));
+                $fileName = 'Thumbnail - ' . $this->nama_program . '_' . $randomChar;
                 $extension = $this->thumbnail->getClientOriginalExtension();
-                $thumbnailPath = $this->thumbnail->storeAs("{$tahunFolder}/{$programFolder}", $fileName . '.' . $extension, 'public');
+                $thumbnailPath = $this->thumbnail->storeAs("{$tahunFolder}/Dept. PRE/{$programFolder}", $fileName . '.' . $extension, 'public');
                 
                 // Compress thumbnail only if larger than target
                 $fullPath = storage_path('app/public/' . $thumbnailPath);
@@ -198,9 +199,7 @@ class ProgramKegiatan extends Component
                 $tahunFolder = $activeTahun ? $activeTahun->nama_tahun : 'default';
 
                 // Get program name
-                // Note: We use $this->nama_program which is the updated name, or maybe we should use old name for consistency if we wanted to change folders but usually folders stay.
-                // But the code uses $this->nama_program for new files.
-                $programFolder = strtoupper($this->nama_program);
+                $programFolder = $this->nama_program;
 
                 $thumbnailPath = $this->oldThumbnail;
                 
@@ -209,10 +208,11 @@ class ProgramKegiatan extends Component
                     if ($this->oldThumbnail && Storage::disk('public')->exists($this->oldThumbnail)) {
                         Storage::disk('public')->delete($this->oldThumbnail);
                     }
-                    // Generate nama file dari nama_program (uppercase with space)
-                    $fileName = strtoupper(str_replace(' ', '_', $this->nama_program)) . '_' . rand(10, 99);
+                    // Generate nama file dari nama_program
+                    $randomChar = strtoupper(substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 2));
+                    $fileName = 'Thumbnail - ' . $this->nama_program . '_' . $randomChar;
                     $extension = $this->thumbnail->getClientOriginalExtension();
-                    $thumbnailPath = $this->thumbnail->storeAs("{$tahunFolder}/{$programFolder}", $fileName . '.' . $extension, 'public');
+                    $thumbnailPath = $this->thumbnail->storeAs("{$tahunFolder}/Dept. PRE/{$programFolder}", $fileName . '.' . $extension, 'public');
                     
                     // Compress thumbnail only if larger than target
                     $fullPath = storage_path('app/public/' . $thumbnailPath);

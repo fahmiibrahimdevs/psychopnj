@@ -153,14 +153,15 @@ class Pertemuan extends Component
 
             // Get program name
             $program = ProgramKegiatan::findOrFail($this->id_program);
-            $programFolder = strtoupper($program->nama_program);
+            $programFolder = $program->nama_program;
 
             $thumbnailPath = null;
             if ($this->thumbnail) {
                 // Generate filename from judul_pertemuan
-                $fileName = 'thumbnail-' . strtolower(str_replace(' ', '-', $this->judul_pertemuan)) . '-' . rand(10, 99);
+                $randomChar = strtoupper(substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 2));
+                $fileName = 'Thumbnail - ' . $this->judul_pertemuan . '_' . $randomChar;
                 $extension = $this->thumbnail->getClientOriginalExtension();
-                $thumbnailPath = $this->thumbnail->storeAs("{$tahunFolder}/{$programFolder}/pertemuan-{$this->pertemuan_ke}/thumbnails", $fileName . '.' . $extension, 'public');
+                $thumbnailPath = $this->thumbnail->storeAs("{$tahunFolder}/Dept. PRE/{$programFolder}/Pertemuan {$this->pertemuan_ke}", $fileName . '.' . $extension, 'public');
                 
                 // Compress thumbnail only if larger than target
                 $fullPath = storage_path('app/public/' . $thumbnailPath);
@@ -279,7 +280,7 @@ class Pertemuan extends Component
 
                 // Get program name
                 $program = ProgramKegiatan::findOrFail($this->id_program);
-                $programFolder = strtoupper($program->nama_program);
+                $programFolder = $program->nama_program;
 
                 $thumbnailPath = $this->oldThumbnail;
                 
@@ -289,9 +290,10 @@ class Pertemuan extends Component
                         Storage::disk('public')->delete($this->oldThumbnail);
                     }
                     // Generate filename from judul_pertemuan
-                    $fileName = 'thumbnail-' . strtolower(str_replace(' ', '-', $this->judul_pertemuan)) . '-' . rand(10, 99);
+                    $randomChar = strtoupper(substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 2));
+                    $fileName = 'Thumbnail - ' . $this->judul_pertemuan . '_' . $randomChar;
                     $extension = $this->thumbnail->getClientOriginalExtension();
-                    $thumbnailPath = $this->thumbnail->storeAs("{$tahunFolder}/{$programFolder}/pertemuan-{$this->pertemuan_ke}/thumbnails", $fileName . '.' . $extension, 'public');
+                    $thumbnailPath = $this->thumbnail->storeAs("{$tahunFolder}/Dept. PRE/{$programFolder}/Pertemuan {$this->pertemuan_ke}", $fileName . '.' . $extension, 'public');
                     
                     // Compress thumbnail only if larger than target
                     $fullPath = storage_path('app/public/' . $thumbnailPath);
@@ -372,23 +374,20 @@ class Pertemuan extends Component
         
         // Get program name
         $program = ProgramKegiatan::findOrFail($pertemuan->id_program);
-        $programFolder = strtoupper($program->nama_program);
+        $programFolder = $program->nama_program;
         
         foreach ($this->files as $file) {
             $extension = $file->getClientOriginalExtension();
             $fileSize = $file->getSize();
             $originalName = $file->getClientOriginalName();
             
-            // Tentukan folder berdasarkan ekstensi
-            $folder = $this->determineFolder($extension);
-            
-            // Generate nama file yang aman
+            // Generate nama file yang aman dengan random 2 char
             $fileName = pathinfo($originalName, PATHINFO_FILENAME);
-            $fileName = preg_replace('/[^a-zA-Z0-9_-]/', '_', $fileName);
-            $finalFileName = $fileName . '.' . $extension;
+            $randomChar = strtoupper(substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 2));
+            $finalFileName = $fileName . '_' . $randomChar . '.' . $extension;
             
             // Path file yang akan disimpan dengan pertemuan_ke
-            $filePath = "{$tahunFolder}/{$programFolder}/pertemuan-{$pertemuanKe}/{$folder}/{$finalFileName}";
+            $filePath = "{$tahunFolder}/Dept. PRE/{$programFolder}/Pertemuan {$pertemuanKe}/FILES/{$finalFileName}";
             
             // Cek apakah file dengan nama sama sudah ada
             $existingFile = PertemuanFile::where('id_pertemuan', $pertemuanId)
@@ -403,7 +402,7 @@ class Pertemuan extends Component
                 
                 // Upload file baru
                 $file->storeAs(
-                    "{$tahunFolder}/{$programFolder}/pertemuan-{$pertemuanKe}/{$folder}",
+                    "{$tahunFolder}/Dept. PRE/{$programFolder}/Pertemuan {$pertemuanKe}/FILES",
                     $finalFileName,
                     'public'
                 );
@@ -415,7 +414,7 @@ class Pertemuan extends Component
             } else {
                 // Upload file baru
                 $file->storeAs(
-                    "{$tahunFolder}/{$programFolder}/pertemuan-{$pertemuanKe}/{$folder}",
+                    "{$tahunFolder}/Dept. PRE/{$programFolder}/Pertemuan {$pertemuanKe}/FILES",
                     $finalFileName,
                     'public'
                 );
@@ -628,15 +627,12 @@ class Pertemuan extends Component
             $pertemuan = ModelsPertemuan::with('program.tahunKepengurusan')
                 ->findOrFail($this->galleryPertemuanId);
             
-            $tahun = $pertemuan->program->tahunKepengurusan->tahun_mulai ?? date('Y');
+            $tahun = $pertemuan->program->tahunKepengurusan->nama_tahun ?? date('Y');
             $namaProgram = $pertemuan->program->nama_program ?? 'unknown';
             $pertemuanKe = $pertemuan->pertemuan_ke ?? 1;
             
-            // Convert to UPPERCASE
-            $namaProgram = strtoupper($namaProgram);
-            
-            // Build path: storage/{tahun}/{NAMA PROGRAM}/pertemuan-{pertemuan ke}/gallery
-            $basePath = "{$tahun}/{$namaProgram}/pertemuan-{$pertemuanKe}/gallery";
+            // Build path: storage/{tahun}/Dept. PRE/{nama program}/Pertemuan {pertemuan ke}/GALLERY
+            $basePath = "{$tahun}/Dept. PRE/{$namaProgram}/Pertemuan {$pertemuanKe}/GALLERY";
             
             // Get current count for naming
             $existingCount = PertemuanGaleri::where('id_pertemuan', $this->galleryPertemuanId)->count();

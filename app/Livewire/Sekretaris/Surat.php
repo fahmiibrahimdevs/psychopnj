@@ -71,7 +71,7 @@ class Surat extends Component
                 'sm_pengirim' => 'required',
                 'sm_ditujukan_kepada' => 'required',
                 'sm_tanggal_masuk' => 'required|date',
-                'sm_files.*' => 'nullable|file|max:51200',
+                'sm_files.*' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
             ];
         } elseif ($this->activeTab === 'surat-keluar') {
             return [
@@ -80,7 +80,7 @@ class Surat extends Component
                 'sk_penerima' => 'required',
                 'sk_tanggal_keluar' => 'required|date',
                 'sk_status' => 'required',
-                'sk_files.*' => 'nullable|file|max:51200', 
+                'sk_files.*' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240', 
             ];
         } else {
             // Rules for Dokumen Organisasi
@@ -89,7 +89,7 @@ class Surat extends Component
                 'do_nomor' => 'nullable', // Optional
                 'do_deskripsi' => 'nullable',
                 'do_tanggal' => 'required|date',
-                'do_files.*' => 'nullable|file|max:51200',
+                'do_files.*' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,jpg,jpeg,png|max:10240',
             ];
         }
     }
@@ -206,13 +206,18 @@ class Surat extends Component
         $tahunFolder = $activeTahun->nama_tahun;
 
         // Common file saving logic
-        $saveFiles = function($model, $files, $folderPath, $prefix, $nameKey) use ($tahunFolder) {
+        $saveFiles = function($model, $files, $folderPath, $prefix, $nameKey, $tanggal) use ($tahunFolder) {
+            // Get month and year from tanggal
+            setlocale(LC_TIME, 'id_ID.UTF-8', 'Indonesian_Indonesia.1252', 'id_ID', 'IND');
+            $bulanTahun = ucfirst(\Carbon\Carbon::parse($tanggal)->locale('id')->isoFormat('MMMM YYYY'));
+            
             foreach ($files as $file) {
                 $baseName = $this->generateFileName($prefix, $nameKey);
                 $randomSuffix = strtoupper(Str::random(2));
                 $finalName = "{$baseName}_{$randomSuffix}." . $file->getClientOriginalExtension();
                 
-                $filePath = $file->storeAs($folderPath, $finalName, 'public');
+                $fullPath = "{$folderPath}/{$bulanTahun}";
+                $filePath = $file->storeAs($fullPath, $finalName, 'public');
 
                 $model->files()->create([
                     'file_path' => $filePath,
@@ -231,7 +236,7 @@ class Surat extends Component
                 'ditujukan_kepada' => $this->sm_ditujukan_kepada,
                 'tanggal_masuk' => $this->sm_tanggal_masuk,
             ]);
-            $saveFiles($surat, $this->sm_files, "{$tahunFolder}/Departemen/Kesekretariatan/Surat Masuk", $this->sm_nomor_surat, $this->sm_perihal);
+            $saveFiles($surat, $this->sm_files, "{$tahunFolder}/Dept. Kesekretariatan/Surat Masuk", $this->sm_nomor_surat, $this->sm_perihal, $this->sm_tanggal_masuk);
             $this->dispatch('alert', ['type' => 'success', 'message' => 'Surat Masuk berhasil ditambahkan!']);
 
         } elseif ($this->activeTab === 'surat-keluar') {
@@ -243,7 +248,7 @@ class Surat extends Component
                 'tanggal_keluar' => $this->sk_tanggal_keluar,
                 'status' => $this->sk_status,
             ]);
-            $saveFiles($surat, $this->sk_files, "{$tahunFolder}/Departemen/Kesekretariatan/Surat Keluar", $this->sk_nomor_surat, $this->sk_perihal);
+            $saveFiles($surat, $this->sk_files, "{$tahunFolder}/Dept. Kesekretariatan/Surat Keluar", $this->sk_nomor_surat, $this->sk_perihal, $this->sk_tanggal_keluar);
             $this->dispatch('alert', ['type' => 'success', 'message' => 'Surat Keluar berhasil ditambahkan!']);
             
         } else {
@@ -258,10 +263,10 @@ class Surat extends Component
                     'deskripsi' => $this->do_deskripsi,
                     'tanggal' => $this->do_tanggal,
                 ]);
-                // Folder: Departemen/Kesekretariatan/{Nama Kategori}
+                // Folder: Dept. Kesekretariatan/{Nama Kategori}
                 // Prefix: Nomor Dokumen (kalau ada) atau 'Dokumen'
                 $prefix = $this->do_nomor ? $this->do_nomor : 'DOC';
-                $saveFiles($dokumen, $this->do_files, "{$tahunFolder}/Departemen/Kesekretariatan/{$kategori->nama_kategori}", $prefix, $this->do_nama);
+                $saveFiles($dokumen, $this->do_files, "{$tahunFolder}/Dept. Kesekretariatan/{$kategori->nama_kategori}", $prefix, $this->do_nama, $this->do_tanggal);
                 
                 $this->dispatch('alert', ['type' => 'success', 'message' => "{$kategori->nama_kategori} berhasil ditambahkan!"]);
             }
@@ -314,13 +319,18 @@ class Surat extends Component
         $activeTahun = TahunKepengurusan::where('status', 'aktif')->first();
         $tahunFolder = $activeTahun ? $activeTahun->nama_tahun : 'Top_Secret_Project';
 
-        $saveFiles = function($model, $files, $folderPath, $prefix, $nameKey) use ($tahunFolder) {
+        $saveFiles = function($model, $files, $folderPath, $prefix, $nameKey, $tanggal) use ($tahunFolder) {
+            // Get month and year from tanggal
+            setlocale(LC_TIME, 'id_ID.UTF-8', 'Indonesian_Indonesia.1252', 'id_ID', 'IND');
+            $bulanTahun = ucfirst(\Carbon\Carbon::parse($tanggal)->locale('id')->isoFormat('MMMM YYYY'));
+            
             foreach ($files as $file) {
                 $baseName = $this->generateFileName($prefix, $nameKey);
                 $randomSuffix = strtoupper(Str::random(2));
                 $finalName = "{$baseName}_{$randomSuffix}." . $file->getClientOriginalExtension();
                 
-                $filePath = $file->storeAs($folderPath, $finalName, 'public');
+                $fullPath = "{$folderPath}/{$bulanTahun}";
+                $filePath = $file->storeAs($fullPath, $finalName, 'public');
 
                 $model->files()->create([
                     'file_path' => $filePath,
@@ -340,7 +350,7 @@ class Surat extends Component
                 'tanggal_masuk' => $this->sm_tanggal_masuk,
             ]);
             if (!empty($this->sm_files)) {
-                $saveFiles($surat, $this->sm_files, "{$tahunFolder}/Departemen/Kesekretariatan/Surat Masuk", $this->sm_nomor_surat, $this->sm_perihal);
+                $saveFiles($surat, $this->sm_files, "{$tahunFolder}/Dept. Kesekretariatan/Surat Masuk", $this->sm_nomor_surat, $this->sm_perihal, $this->sm_tanggal_masuk);
             }
             $this->dispatch('alert', ['type' => 'success', 'message' => 'Surat Masuk berhasil diperbarui!']);
 
@@ -354,7 +364,7 @@ class Surat extends Component
                 'status' => $this->sk_status,
             ]);
             if (!empty($this->sk_files)) {
-                $saveFiles($surat, $this->sk_files, "{$tahunFolder}/Departemen/Kesekretariatan/Surat Keluar", $this->sk_nomor_surat, $this->sk_perihal);
+                $saveFiles($surat, $this->sk_files, "{$tahunFolder}/Dept. Kesekretariatan/Surat Keluar", $this->sk_nomor_surat, $this->sk_perihal, $this->sk_tanggal_keluar);
             }
             $this->dispatch('alert', ['type' => 'success', 'message' => 'Surat Keluar berhasil diperbarui!']);
 
@@ -372,7 +382,7 @@ class Surat extends Component
                 
                 if (!empty($this->do_files)) {
                     $prefix = $this->do_nomor ? $this->do_nomor : 'DOC';
-                    $saveFiles($dokumen, $this->do_files, "{$tahunFolder}/Departemen/Kesekretariatan/{$kategori->nama_kategori}", $prefix, $this->do_nama);
+                    $saveFiles($dokumen, $this->do_files, "{$tahunFolder}/Dept. Kesekretariatan/{$kategori->nama_kategori}", $prefix, $this->do_nama, $this->do_tanggal);
                 }
                 $this->dispatch('alert', ['type' => 'success', 'message' => "{$kategori->nama_kategori} berhasil diperbarui!"]);
             }

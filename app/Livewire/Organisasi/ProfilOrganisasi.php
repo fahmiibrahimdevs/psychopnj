@@ -4,14 +4,16 @@ namespace App\Livewire\Organisasi;
 
 use Livewire\Component;
 use Livewire\WithPagination;
+use Livewire\WithFileUploads;
 use Livewire\Attributes\Title;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use App\Models\ProfilOrganisasi as ModelsProfilOrganisasi;
 use App\Traits\WithPermissionCache;
 
 class ProfilOrganisasi extends Component
 {
-    use WithPagination, WithPermissionCache;
+    use WithPagination, WithFileUploads, WithPermissionCache;
     #[Title('Profil Organisasi')]
 
     protected $listeners = [
@@ -24,7 +26,7 @@ class ProfilOrganisasi extends Component
         'deskripsi'           => '',
         'visi'                => '',
         'misi'                => '',
-        'foto'                => '',
+        'foto'                => 'nullable|file|image|mimes:jpeg,jpg,png|max:5120',
         'tagline'             => '',
     ];
 
@@ -102,13 +104,24 @@ class ProfilOrganisasi extends Component
 
         DB::beginTransaction();
         try {
+            $fotoPath = null;
+            
+            // Handle foto upload
+            if ($this->foto) {
+                $extension = $this->foto->getClientOriginalExtension();
+                $tahunNama = DB::table('tahun_kepengurusan')->where('id', $this->id_tahun)->value('nama_tahun') ?? date('Y');
+                $randomChar = strtoupper(substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 2));
+                $filename = 'PROFIL_ORGANISASI_' . $randomChar . '.' . $extension;
+                $fotoPath = $this->foto->storeAs($tahunNama . '/Umum', $filename, 'public');
+            }
+            
             DB::table('profil_organisasi')->insert([
                 'id_tahun'            => $this->id_tahun,
                 'headline'            => $this->headline,
                 'deskripsi'           => $this->deskripsi,
                 'visi'                => $this->visi,
                 'misi'                => $this->misi,
-                'foto'                => $this->foto,
+                'foto'                => $fotoPath,
                 'tagline'             => $this->tagline,
                 'created_at'          => now(),
                 'updated_at'          => now(),
@@ -154,18 +167,39 @@ class ProfilOrganisasi extends Component
         {
             DB::beginTransaction();
             try {
+                $updateData = [
+                    'id_tahun'            => $this->id_tahun,
+                    'headline'            => $this->headline,
+                    'deskripsi'           => $this->deskripsi,
+                    'visi'                => $this->visi,
+                    'misi'                => $this->misi,
+                    'tagline'             => $this->tagline,
+                    'updated_at'          => now(),
+                ];
+                
+                // Handle foto upload if new file is uploaded
+                if ($this->foto && is_object($this->foto)) {
+                    // Get old foto path
+                    $oldFoto = DB::table('profil_organisasi')->where('id', $this->dataId)->value('foto');
+                    
+                    // Delete old foto if exists
+                    if ($oldFoto && Storage::disk('public')->exists($oldFoto)) {
+                        Storage::disk('public')->delete($oldFoto);
+                    }
+                    
+                    // Upload new foto
+                    $extension = $this->foto->getClientOriginalExtension();
+                    $tahunNama = DB::table('tahun_kepengurusan')->where('id', $this->id_tahun)->value('nama_tahun') ?? date('Y');
+                    $randomChar = strtoupper(substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 2));
+                    $filename = 'PROFIL_ORGANISASI_' . $randomChar . '.' . $extension;
+                    $fotoPath = $this->foto->storeAs($tahunNama . '/Umum', $filename, 'public');
+                    
+                    $updateData['foto'] = $fotoPath;
+                }
+                
                 DB::table('profil_organisasi')
                     ->where('id', $this->dataId)
-                    ->update([
-                        'id_tahun'            => $this->id_tahun,
-                        'headline'            => $this->headline,
-                        'deskripsi'           => $this->deskripsi,
-                        'visi'                => $this->visi,
-                        'misi'                => $this->misi,
-                        'foto'                => $this->foto,
-                        'tagline'             => $this->tagline,
-                        'updated_at'          => now(),
-                    ]);
+                    ->update($updateData);
 
                 DB::commit();
                 $this->dispatchAlert('success', 'Success!', 'Data updated successfully.');
