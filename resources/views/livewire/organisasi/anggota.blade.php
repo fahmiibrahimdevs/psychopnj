@@ -126,7 +126,7 @@
                                                     <td>{{ $counter++ }}</td>
                                                     <td class="text-left">
                                                         <div class="tw-flex tw-items-center">
-                                                            <img src="{{ asset($row->foto == "" ? "assets/stisla/img/avatar/avatar-1.png" : $row->foto) }}" alt="{{ $row->nama_lengkap }}" class="tw-w-10 tw-h-10 tw-rounded-full tw-object-cover" />
+                                                            <img src="{{ $row->foto ? storageUrl($row->foto) : asset('assets/stisla/img/avatar/avatar-1.png') }}" alt="{{ $row->nama_lengkap }}" class="tw-w-10 tw-h-10 tw-rounded-full tw-object-cover" />
                                                             <div class="tw-ml-2">
                                                                 <span>
                                                                     {{ $row->nama_lengkap }}
@@ -231,7 +231,7 @@
                                                     <td>{{ $counter++ }}</td>
                                                     <td class="text-left">
                                                         <div class="tw-flex tw-items-center">
-                                                            <img src="{{ asset($row->foto == "" ? "assets/stisla/img/avatar/avatar-1.png" : $row->foto) }}" alt="{{ $row->nama_lengkap }}" class="tw-w-10 tw-h-10 tw-rounded-full tw-object-cover" />
+                                                            <img src="{{ $row->foto ? storageUrl($row->foto) : asset('assets/stisla/img/avatar/avatar-1.png') }}" alt="{{ $row->nama_lengkap }}" class="tw-w-10 tw-h-10 tw-rounded-full tw-object-cover" />
                                                             <div class="tw-ml-2">
                                                                 <span>
                                                                     {{ $row->nama_lengkap }}
@@ -532,7 +532,7 @@
                         <!-- Photo & Name -->
                         <div class="tw-text-center">
                             <div class="tw-inline-block tw-relative tw-mb-5">
-                                <img src="{{ asset($viewData->foto == "" ? "assets/stisla/img/avatar/avatar-1.png" : $viewData->foto) }}" 
+                                <img src="{{ $viewData->foto ? storageUrl($viewData->foto) : asset('assets/stisla/img/avatar/avatar-1.png') }}" 
                                      alt="{{ $viewData->nama_lengkap }}" 
                                      class="tw-w-32 tw-h-32 tw-rounded-full tw-object-cover tw-border-4 tw-border-white tw-shadow-xl" />
                                 @if ($viewData->status_aktif == "aktif")
