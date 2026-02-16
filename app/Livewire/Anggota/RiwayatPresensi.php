@@ -41,6 +41,11 @@ class RiwayatPresensi extends Component
 
     public function loadPresensi()
     {
+        // Tentukan jenis presensi berdasarkan status anggota
+        // Jika status_anggota = 'pengurus' maka cari pertemuan dengan jenis_presensi yang mengandung 'pengurus'
+        // Jika status_anggota = 'anggota' maka cari pertemuan dengan jenis_presensi yang mengandung 'anggota'
+        $jenisPresensi = $this->anggota->status_anggota === 'pengurus' ? 'pengurus' : 'anggota';
+        
         $query = DB::table('pertemuan')
             ->select(
                 'presensi_pertemuan.status',
@@ -55,7 +60,12 @@ class RiwayatPresensi extends Component
                 $join->on('pertemuan.id', '=', 'presensi_pertemuan.id_pertemuan')
                      ->where('presensi_pertemuan.id_anggota', '=', $this->anggota->id);
             })
-            ->where('program_pembelajaran.id_tahun', $this->anggota->id_tahun);
+            ->where('program_pembelajaran.id_tahun', $this->anggota->id_tahun)
+            ->where(function($q) use ($jenisPresensi) {
+                // Filter berdasarkan jenis_presensi
+                $q->where('pertemuan.jenis_presensi', 'LIKE', "%{$jenisPresensi}%")
+                  ->orWhereNull('pertemuan.jenis_presensi'); // Include yang null untuk backward compatibility
+            });
 
         if ($this->filterProgram) {
             $query->where('pertemuan.id_program', $this->filterProgram);
