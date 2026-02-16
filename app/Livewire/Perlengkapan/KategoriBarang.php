@@ -171,6 +171,15 @@ class KategoriBarang extends Component
             $kategori = ModelsKategoriBarang::findOrFail($this->dataId);
             $kategoriId = $kategori->id;
             
+            // Hapus foto dari semua barang yang ada di kategori ini
+            $barangs = \App\Models\Barang::where('kategori_barang_id', $kategoriId)->get();
+            foreach ($barangs as $barang) {
+                if ($barang->foto && \Illuminate\Support\Facades\Storage::disk('public')->exists($barang->foto)) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($barang->foto);
+                }
+            }
+            
+            // Hapus kategori (cascade akan hapus barang-barang)
             $kategori->delete();
 
             // Delete from Google Sheets - DISABLED

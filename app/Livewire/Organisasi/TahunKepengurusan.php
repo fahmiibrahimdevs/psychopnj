@@ -182,9 +182,86 @@ class TahunKepengurusan extends Component
     {
         DB::beginTransaction();
         try {
-            DB::table('tahun_kepengurusan')
-                ->where('id', $this->dataId)
-                ->delete();
+            $tahun = \App\Models\TahunKepengurusan::findOrFail($this->dataId);
+            
+            // Hapus foto dari anggota
+            $anggotas = \App\Models\Anggota::where('id_tahun', $this->dataId)->get();
+            foreach ($anggotas as $anggota) {
+                if ($anggota->foto && \Illuminate\Support\Facades\Storage::disk('public')->exists($anggota->foto)) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($anggota->foto);
+                }
+            }
+            
+            // Hapus thumbnail dari projects
+            $projects = \App\Models\Project::where('id_tahun', $this->dataId)->get();
+            foreach ($projects as $project) {
+                if ($project->thumbnail && \Illuminate\Support\Facades\Storage::disk('public')->exists($project->thumbnail)) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($project->thumbnail);
+                }
+            }
+            
+            // Hapus foto dari profil organisasi
+            $profils = \App\Models\ProfilOrganisasi::where('id_tahun', $this->dataId)->get();
+            foreach ($profils as $profil) {
+                if ($profil->foto && \Illuminate\Support\Facades\Storage::disk('public')->exists($profil->foto)) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($profil->foto);
+                }
+            }
+            
+            // Hapus foto dari open recruitment
+            $oprecs = \App\Models\OpenRecruitment::where('id_tahun', $this->dataId)->get();
+            foreach ($oprecs as $oprec) {
+                if ($oprec->foto && \Illuminate\Support\Facades\Storage::disk('public')->exists($oprec->foto)) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($oprec->foto);
+                }
+            }
+            
+            // Hapus thumbnail dan files dari program pembelajaran
+            $programs = \App\Models\ProgramPembelajaran::where('id_tahun', $this->dataId)->get();
+            foreach ($programs as $program) {
+                if ($program->thumbnail && \Illuminate\Support\Facades\Storage::disk('public')->exists($program->thumbnail)) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($program->thumbnail);
+                }
+                
+                // Hapus files dari pertemuan yang ada di program ini
+                $pertemuans = \App\Models\Pertemuan::where('id_program', $program->id)->get();
+                foreach ($pertemuans as $pertemuan) {
+                    // Hapus thumbnail pertemuan
+                    if ($pertemuan->thumbnail && \Illuminate\Support\Facades\Storage::disk('public')->exists($pertemuan->thumbnail)) {
+                        \Illuminate\Support\Facades\Storage::disk('public')->delete($pertemuan->thumbnail);
+                    }
+                    
+                    // Hapus files pertemuan
+                    $files = \App\Models\PertemuanFile::where('id_pertemuan', $pertemuan->id)->get();
+                    foreach ($files as $file) {
+                        if (\Illuminate\Support\Facades\Storage::disk('public')->exists($file->file_path)) {
+                            \Illuminate\Support\Facades\Storage::disk('public')->delete($file->file_path);
+                        }
+                    }
+                    
+                    // Hapus galeri pertemuan
+                    $galeris = \App\Models\PertemuanGaleri::where('id_pertemuan', $pertemuan->id)->get();
+                    foreach ($galeris as $galeri) {
+                        if ($galeri->file_path && \Illuminate\Support\Facades\Storage::disk('public')->exists($galeri->file_path)) {
+                            \Illuminate\Support\Facades\Storage::disk('public')->delete($galeri->file_path);
+                        }
+                    }
+                }
+            }
+            
+            // Hapus files dari transaksi keuangan
+            $keuangans = \App\Models\Keuangan::where('id_tahun', $this->dataId)->get();
+            foreach ($keuangans as $keuangan) {
+                $files = \App\Models\TransaksiFile::where('id_transaksi', $keuangan->id)->get();
+                foreach ($files as $file) {
+                    if (\Illuminate\Support\Facades\Storage::disk('public')->exists($file->file_path)) {
+                        \Illuminate\Support\Facades\Storage::disk('public')->delete($file->file_path);
+                    }
+                }
+            }
+            
+            // Hapus tahun kepengurusan (cascade akan hapus semua record di database)
+            $tahun->delete();
                 
             DB::commit();
             $this->dispatchAlert('success', 'Success!', 'Data deleted successfully.');

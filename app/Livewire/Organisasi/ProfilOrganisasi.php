@@ -191,9 +191,14 @@ class ProfilOrganisasi extends Component
     {
         DB::beginTransaction();
         try {
-            DB::table('profil_organisasi')
-                ->where('id', $this->dataId)
-                ->delete();
+            $profil = \App\Models\ProfilOrganisasi::findOrFail($this->dataId);
+            
+            // Hapus foto jika ada
+            if ($profil->foto && \Illuminate\Support\Facades\Storage::disk('public')->exists($profil->foto)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($profil->foto);
+            }
+            
+            $profil->delete();
                 
             DB::commit();
             $this->dispatchAlert('success', 'Success!', 'Data deleted successfully.');

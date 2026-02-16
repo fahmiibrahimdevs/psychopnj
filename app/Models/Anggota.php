@@ -15,4 +15,9 @@ class Anggota extends Model
     {
         return $this->belongsTo(Department::class, 'id_department');
     }
+    
+    public function tahunKepengurusan()
+    {
+        return $this->belongsTo(TahunKepengurusan::class, 'id_tahun');
+    }
 }

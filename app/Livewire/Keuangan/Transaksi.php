@@ -295,7 +295,19 @@ class Transaksi extends Component
     {
         \Illuminate\Support\Facades\DB::beginTransaction();
         try {
-            ModelsKeuangan::findOrFail($this->dataId)->delete();
+            $transaksi = ModelsKeuangan::findOrFail($this->dataId);
+            
+            // Hapus semua file fisik yang terkait sebelum record terhapus
+            $files = \App\Models\TransaksiFile::where('id_transaksi', $this->dataId)->get();
+            foreach ($files as $file) {
+                if (\Illuminate\Support\Facades\Storage::disk('public')->exists($file->file_path)) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($file->file_path);
+                }
+            }
+            
+            // Hapus transaksi (cascade akan hapus record di transaksi_files)
+            $transaksi->delete();
+            
             \Illuminate\Support\Facades\DB::commit();
             $this->dispatchAlert('success', 'Success!', 'Transaksi berhasil dihapus.');
         } catch (\Exception $e) {

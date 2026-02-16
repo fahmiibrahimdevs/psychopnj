@@ -359,6 +359,11 @@ class OpenRecruitment extends Component
         try {
             $openRecruitment = ModelsOpenRecruitment::findOrFail($this->dataId);
             
+            // Hapus foto jika ada
+            if ($openRecruitment->foto && \Illuminate\Support\Facades\Storage::disk('public')->exists($openRecruitment->foto)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($openRecruitment->foto);
+            }
+            
             // Delete cascade: user, role, anggota jika status_seleksi = lulus
             if ($openRecruitment->status_seleksi === 'lulus') {
                 if ($openRecruitment->id_user) {

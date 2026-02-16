@@ -205,9 +205,18 @@ class Department extends Component
     {
         DB::beginTransaction();
         try {
-            DB::table('departments')
-                ->where('id', $this->dataId)
-                ->delete();
+            $department = \App\Models\Department::findOrFail($this->dataId);
+            
+            // Hapus foto dari anggota yang ada di department ini
+            $anggotas = \App\Models\Anggota::where('id_department', $this->dataId)->get();
+            foreach ($anggotas as $anggota) {
+                if ($anggota->foto && \Illuminate\Support\Facades\Storage::disk('public')->exists($anggota->foto)) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($anggota->foto);
+                }
+            }
+            
+            // Hapus department (cascade akan hapus anggota)
+            $department->delete();
                 
             DB::commit();
             $this->dispatchAlert('success', 'Success!', 'Data deleted successfully.');

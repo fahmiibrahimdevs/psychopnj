@@ -335,7 +335,14 @@ class Project extends Component
     {
         \Illuminate\Support\Facades\DB::beginTransaction();
         try {
-            ModelsProject::findOrFail($this->dataId)->delete();
+            $project = ModelsProject::findOrFail($this->dataId);
+            
+            // Hapus thumbnail jika ada
+            if ($project->thumbnail && \Illuminate\Support\Facades\Storage::disk('public')->exists($project->thumbnail)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($project->thumbnail);
+            }
+            
+            $project->delete();
             \Illuminate\Support\Facades\DB::commit();
             $this->dispatchAlert('success', 'Success!', 'Project deleted successfully.');
         } catch (\Exception $e) {

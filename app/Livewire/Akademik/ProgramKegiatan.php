@@ -267,15 +267,41 @@ class ProgramKegiatan extends Component
         \Illuminate\Support\Facades\DB::beginTransaction();
         try {
             $data = DB::table('program_pembelajaran')
-                ->select('thumbnail')
+                ->select('id', 'thumbnail')
                 ->where('id', $this->dataId)
                 ->first();
             
-            // Hapus thumbnail jika ada
+            // Hapus thumbnail program jika ada
             if ($data && $data->thumbnail && Storage::disk('public')->exists($data->thumbnail)) {
                 Storage::disk('public')->delete($data->thumbnail);
             }
             
+            // Hapus files dari pertemuan yang ada di program ini
+            $pertemuans = \App\Models\Pertemuan::where('id_program', $this->dataId)->get();
+            foreach ($pertemuans as $pertemuan) {
+                // Hapus thumbnail pertemuan
+                if ($pertemuan->thumbnail && Storage::disk('public')->exists($pertemuan->thumbnail)) {
+                    Storage::disk('public')->delete($pertemuan->thumbnail);
+                }
+                
+                // Hapus files pertemuan
+                $files = \App\Models\PertemuanFile::where('id_pertemuan', $pertemuan->id)->get();
+                foreach ($files as $file) {
+                    if (Storage::disk('public')->exists($file->file_path)) {
+                        Storage::disk('public')->delete($file->file_path);
+                    }
+                }
+                
+                // Hapus galeri pertemuan
+                $galeris = \App\Models\PertemuanGaleri::where('id_pertemuan', $pertemuan->id)->get();
+                foreach ($galeris as $galeri) {
+                    if ($galeri->file_path && Storage::disk('public')->exists($galeri->file_path)) {
+                        Storage::disk('public')->delete($galeri->file_path);
+                    }
+                }
+            }
+            
+            // Hapus program pembelajaran (cascade akan hapus pertemuan)
             DB::table('program_pembelajaran')->where('id', $this->dataId)->delete();
             \Illuminate\Support\Facades\DB::commit();
             $this->dispatchAlert('success', 'Success!', 'Data deleted successfully.');

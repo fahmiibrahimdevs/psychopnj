@@ -559,6 +559,11 @@ class Anggota extends Component
         try {
             $anggota = ModelsAnggota::findOrFail($this->dataId);
             
+            // Hapus foto jika ada
+            if ($anggota->foto && \Illuminate\Support\Facades\Storage::disk('public')->exists($anggota->foto)) {
+                \Illuminate\Support\Facades\Storage::disk('public')->delete($anggota->foto);
+            }
+            
             // Hapus user jika ada
             if ($anggota->id_user) {
                 $user = \App\Models\User::find($anggota->id_user);

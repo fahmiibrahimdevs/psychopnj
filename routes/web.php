@@ -30,6 +30,7 @@ Route::get('/galeri', Galeri::class);
 
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', Dashboard::class)->name('dashboard');
+    Route::get('/profile', \App\Livewire\Profile::class)->name('profile');
 
     Route::post('/summernote/file/upload', [UploadController::class, 'uploadImageSummernote']);
     Route::post('/summernote/file/delete', [UploadController::class, 'deleteImageSummernote']);
