@@ -76,6 +76,7 @@ class Mengerjakan extends Component
             ->where([
                 ['nilai_soal_anggota.id_part', $this->partId],
                 ['nilai_soal_anggota.id_anggota', $this->anggota->id],
+                ['nilai_soal_anggota.status', '0'],
             ])
             ->orderBy('soal_anggota.no_soal_alias', 'ASC')
             ->paginate(50);

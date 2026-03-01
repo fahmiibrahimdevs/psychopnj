@@ -150,7 +150,14 @@ class DaftarPertemuan extends Component
                 ->leftJoin('bank_soal_pertemuan', 'bank_soal_pertemuan.id_part', '=', 'part_pertemuan.id')
                 ->leftJoin('nilai_soal_anggota', function ($join) {
                     $join->on('nilai_soal_anggota.id_part', '=', 'part_pertemuan.id')
-                        ->where('nilai_soal_anggota.id_anggota', '=', $this->anggota->id);
+                        ->where('nilai_soal_anggota.id_anggota', '=', $this->anggota->id)
+                        ->whereIn('nilai_soal_anggota.id', function ($sub) {
+                            $sub->selectRaw('MAX(id)')
+                                ->from('nilai_soal_anggota as nsa_sub')
+                                ->whereColumn('nsa_sub.id_part', 'part_pertemuan.id')
+                                ->where('nsa_sub.id_anggota', '=', $this->anggota->id)
+                                ->groupBy('nsa_sub.id_part');
+                        });
                 })
                 ->whereIn('part_pertemuan.id_pertemuan', $pertemuanIds)
                 ->orderBy('part_pertemuan.urutan', 'ASC')
