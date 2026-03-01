@@ -19,10 +19,13 @@ class Konfirmasi extends Component
     #[Title('Konfirmasi Soal')]
 
     public $partId;
+    public $bankSoalId;
+    public $totalSoal = 0;
+
+    // Non-persistent view data (loaded in render)
     public $part;
     public $bankSoal;
     public $anggota;
-    public $totalSoal = 0;
 
     public function mount($partId = '')
     {
@@ -32,16 +35,16 @@ class Konfirmasi extends Component
             return redirect('/anggota/daftar-pertemuan');
         }
 
-        $this->anggota = Anggota::where('id_user', Auth::user()->id)->first();
+        $anggota = Anggota::where('id_user', Auth::user()->id)->first();
 
-        if (!$this->anggota) {
+        if (!$anggota) {
             return redirect('/anggota/daftar-pertemuan');
         }
 
         // Check if already completed
         $checkStatus = NilaiSoalAnggota::where([
             ['id_part', $this->partId],
-            ['id_anggota', $this->anggota->id],
+            ['id_anggota', $anggota->id],
             ['status', '1']
         ])->exists();
 
@@ -49,43 +52,67 @@ class Konfirmasi extends Component
             return redirect('/anggota/daftar-pertemuan');
         }
 
-        $this->part = PartPertemuan::with('pertemuan.program')
-            ->findOrFail($this->partId);
+        $bankSoal = BankSoalPertemuan::where('id_part', $this->partId)->first();
 
-        $this->bankSoal = BankSoalPertemuan::where('id_part', $this->partId)->first();
-
-        if (!$this->bankSoal) {
+        if (!$bankSoal) {
             return redirect('/anggota/daftar-pertemuan');
         }
 
-        $this->totalSoal = $this->bankSoal->jml_pg + $this->bankSoal->jml_kompleks + $this->bankSoal->jml_jodohkan + $this->bankSoal->jml_isian + $this->bankSoal->jml_esai;
+        // Simpan hanya scalar ID agar bisa di-serialize Livewire
+        $this->bankSoalId = $bankSoal->id;
+        $this->totalSoal = $bankSoal->jml_pg + $bankSoal->jml_kompleks + $bankSoal->jml_jodohkan + $bankSoal->jml_isian + $bankSoal->jml_esai;
     }
 
     public function mulaiKerjakan()
     {
-        $checkAda = NilaiSoalAnggota::where([
-            ['id_bank_soal', $this->bankSoal->id],
-            ['id_part', $this->partId],
-            ['id_anggota', $this->anggota->id],
-        ])->exists();
+        $anggota = Anggota::where('id_user', Auth::user()->id)->first();
+        $bankSoal = BankSoalPertemuan::find($this->bankSoalId);
+        $part = PartPertemuan::find($this->partId);
 
-        if (!$checkAda) {
+        if (!$anggota || !$bankSoal || !$part) {
+            return redirect('/anggota/daftar-pertemuan');
+        }
+
+        $existingNilai = NilaiSoalAnggota::where([
+            ['id_bank_soal', $bankSoal->id],
+            ['id_part', $this->partId],
+            ['id_anggota', $anggota->id],
+            ['status', '0'],
+        ])->latest('id')->first();
+
+        // Jika ada record tapi soalnya kosong (kemungkinan gagal saat dibuat), hapus dan buat ulang
+        if ($existingNilai) {
+            $soalCount = DB::table('soal_anggota')->where('id_nilai_soal', $existingNilai->id)->count();
+            if ($soalCount === 0) {
+                $existingNilai->delete();
+                $existingNilai = null;
+            }
+        }
+
+        if (!$existingNilai) {
             // Load soal
             $soals = SoalPertemuan::where([
-                ['id_bank_soal', $this->bankSoal->id],
+                ['id_bank_soal', $bankSoal->id],
                 ['tampilkan', '1']
             ])
             ->orderBy('jenis', 'ASC')
             ->orderBy('nomor_soal', 'ASC')
             ->get();
 
-            DB::transaction(function () use ($soals) {
+            if ($soals->isEmpty()) {
+                $this->dispatchAlert('error', 'Soal Belum Tersedia', 'Soal untuk part ini belum dipublikasikan. Silakan hubungi pemateri.');
+                return;
+            }
+
+            $totalSoal = $this->totalSoal;
+
+            DB::transaction(function () use ($soals, $bankSoal, $part, $anggota, $totalSoal) {
                 $nilaiSoal = NilaiSoalAnggota::create([
                     'tanggal'       => date('Y-m-d'),
-                    'id_bank_soal'  => $this->bankSoal->id,
+                    'id_bank_soal'  => $bankSoal->id,
                     'id_part'       => $this->partId,
-                    'id_pertemuan'  => $this->part->id_pertemuan,
-                    'id_anggota'    => $this->anggota->id,
+                    'id_pertemuan'  => $part->id_pertemuan,
+                    'id_anggota'    => $anggota->id,
                     'mulai'         => now(),
                 ]);
 
@@ -108,17 +135,17 @@ class Konfirmasi extends Component
                     $pointEssai = 0;
 
                     // Check if all bobot are zero (not configured)
-                    $totalBobot = (float)$this->bankSoal->bobot_pg + (float)$this->bankSoal->bobot_kompleks 
-                        + (float)$this->bankSoal->bobot_jodohkan + (float)$this->bankSoal->bobot_isian 
-                        + (float)$this->bankSoal->bobot_esai;
+                    $totalBobot = (float)$bankSoal->bobot_pg + (float)$bankSoal->bobot_kompleks 
+                        + (float)$bankSoal->bobot_jodohkan + (float)$bankSoal->bobot_isian 
+                        + (float)$bankSoal->bobot_esai;
                     $bobotNotSet = $totalBobot <= 0;
 
                     if ($soal->jenis == '5') {
                         if ($bobotNotSet) {
-                            $pointEssai = $this->totalSoal > 0 ? 100 / $this->totalSoal : 0;
+                            $pointEssai = $totalSoal > 0 ? 100 / $totalSoal : 0;
                         } else {
-                            $pointEssai = (float)$this->bankSoal->jml_esai > 0 
-                                ? (float)$this->bankSoal->bobot_esai / (float)$this->bankSoal->jml_esai 
+                            $pointEssai = (float)$bankSoal->jml_esai > 0 
+                                ? (float)$bankSoal->bobot_esai / (float)$bankSoal->jml_esai 
                                 : 0;
                         }
                     } else {
@@ -137,11 +164,10 @@ class Konfirmasi extends Component
                             default => 'bobot_pg',
                         };
                         if ($bobotNotSet) {
-                            // Fallback: distribute 100 equally across all questions
-                            $pointSoal = $this->totalSoal > 0 ? 100 / $this->totalSoal : 0;
+                            $pointSoal = $totalSoal > 0 ? 100 / $totalSoal : 0;
                         } else {
-                            $pointSoal = (float)$this->bankSoal->{$jmlField} > 0 
-                                ? (float)$this->bankSoal->{$bobotField} / (float)$this->bankSoal->{$jmlField} 
+                            $pointSoal = (float)$bankSoal->{$jmlField} > 0 
+                                ? (float)$bankSoal->{$bobotField} / (float)$bankSoal->{$jmlField} 
                                 : 0;
                         }
                     }
@@ -177,6 +203,10 @@ class Konfirmasi extends Component
 
     public function render()
     {
+        $this->anggota = Anggota::where('id_user', Auth::user()->id)->first();
+        $this->bankSoal = BankSoalPertemuan::find($this->bankSoalId);
+        $this->part = PartPertemuan::with('pertemuan.program')->find($this->partId);
+
         return view('livewire.anggota.kerjakan-soal.konfirmasi');
     }
 

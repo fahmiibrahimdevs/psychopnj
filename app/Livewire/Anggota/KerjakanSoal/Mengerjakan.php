@@ -34,6 +34,26 @@ class Mengerjakan extends Component
                 return redirect('/anggota/daftar-pertemuan');
             }
 
+            // Jika ada record nilai_soal_anggota status=0 tapi soalnya kosong,
+            // arahkan ke konfirmasi untuk generate ulang soal
+            $nilaiSoal = NilaiSoalAnggota::where([
+                ['id_part', $this->partId],
+                ['id_anggota', $this->anggota->id],
+                ['status', '0'],
+            ])->latest('id')->first();
+
+            if ($nilaiSoal) {
+                $soalCount = DB::table('soal_anggota')
+                    ->where('id_nilai_soal', $nilaiSoal->id)
+                    ->count();
+
+                if ($soalCount === 0) {
+                    // Hapus record nilai_soal yang kosong agar bisa dibuat ulang via Konfirmasi
+                    $nilaiSoal->delete();
+                    return redirect('/anggota/konfirmasi/' . Crypt::encryptString($this->partId));
+                }
+            }
+
             $this->currentQuestionIndex = session('anggota_question_index_' . $this->partId, 0);
         } catch (\Throwable $th) {
             return redirect('/anggota/daftar-pertemuan');
