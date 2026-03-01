@@ -34,7 +34,7 @@ class Mengerjakan extends Component
                 return redirect('/anggota/daftar-pertemuan');
             }
 
-            $this->currentQuestionIndex = session('anggota_question_index', 0);
+            $this->currentQuestionIndex = session('anggota_question_index_' . $this->partId, 0);
         } catch (\Throwable $th) {
             return redirect('/anggota/daftar-pertemuan');
         }
@@ -84,6 +84,13 @@ class Mengerjakan extends Component
 
         if (empty($this->soals['data'])) {
             return redirect('/anggota/daftar-pertemuan');
+        }
+
+        // Pastikan currentQuestionIndex tidak melebihi jumlah soal yang ada (bisa terjadi saat pindah part)
+        $totalSoals = count($this->soals['data']);
+        if ($this->currentQuestionIndex >= $totalSoals) {
+            $this->currentQuestionIndex = 0;
+            session(['anggota_question_index_' . $this->partId => 0]);
         }
 
         // Redirect if already completed
@@ -203,7 +210,7 @@ class Mengerjakan extends Component
     {
         if ($this->currentQuestionIndex < count($this->soals['data']) - 1) {
             $this->currentQuestionIndex++;
-            session(['anggota_question_index' => $this->currentQuestionIndex]);
+            session(['anggota_question_index_' . $this->partId => $this->currentQuestionIndex]);
             $this->loadCurrentQuestionData();
         }
     }
@@ -212,7 +219,7 @@ class Mengerjakan extends Component
     {
         if ($this->currentQuestionIndex > 0) {
             $this->currentQuestionIndex--;
-            session(['anggota_question_index' => $this->currentQuestionIndex]);
+            session(['anggota_question_index_' . $this->partId => $this->currentQuestionIndex]);
             $this->loadCurrentQuestionData();
         }
     }
@@ -220,7 +227,7 @@ class Mengerjakan extends Component
     public function goToQuestion($index)
     {
         $this->currentQuestionIndex = $index;
-        session(['anggota_question_index' => $this->currentQuestionIndex]);
+        session(['anggota_question_index_' . $this->partId => $this->currentQuestionIndex]);
         $this->loadCurrentQuestionData();
     }
 
@@ -412,7 +419,7 @@ class Mengerjakan extends Component
                         'lama_ujian' => $lamaUjian,
                     ]);
 
-                session()->forget('anggota_question_index');
+                session()->forget('anggota_question_index_' . $this->partId);
 
                 $this->dispatch('swal:finish', [
                     'type'    => 'success',
