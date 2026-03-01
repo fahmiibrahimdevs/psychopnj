@@ -33,6 +33,7 @@ class Anggota extends Component
         'alamat'              => '',
         'email'               => 'required|email',
         'no_hp'               => '',
+        'rfid_card'           => 'nullable|unique:anggota,rfid_card',
         'status_anggota'      => 'required',
         'status_aktif'        => 'required',
         'foto'                => '',
@@ -52,7 +53,7 @@ class Anggota extends Component
     public $perPagePengurus = 25;
     public $perPageAnggota = 25;
 
-    public $id_user, $id_tahun, $id_department, $nama_lengkap, $nama_jabatan, $jurusan_prodi_kelas, $nim, $ttl, $alamat, $email, $no_hp, $status_anggota, $status_aktif, $foto;
+    public $id_user, $id_tahun, $id_department, $nama_lengkap, $nama_jabatan, $jurusan_prodi_kelas, $nim, $ttl, $alamat, $email, $no_hp, $rfid_card, $status_anggota, $status_aktif, $foto;
     public $password, $password_confirmation;
     public $tahuns, $departments;
     public $role;
@@ -76,6 +77,7 @@ class Anggota extends Component
         $this->alamat              = '';
         $this->email               = '';
         $this->no_hp               = '08';
+        $this->rfid_card           = '';
         $this->status_anggota      = '';
         $this->status_aktif        = '';
         $this->foto                = '';
@@ -342,6 +344,7 @@ class Anggota extends Component
                 'alamat'              => $this->alamat,
                 'email'               => $this->email,
                 'no_hp'               => $this->no_hp,
+                'rfid_card'           => $this->rfid_card,
                 'status_anggota'      => $this->status_anggota,
                 'status_aktif'        => $this->status_aktif,
                 'foto'                => $this->foto,
@@ -373,6 +376,7 @@ class Anggota extends Component
                     'alamat',
                     'email',
                     'no_hp',
+                    'rfid_card',
                     'status_anggota',
                     'status_aktif',
                     'foto'
@@ -394,6 +398,7 @@ class Anggota extends Component
             $this->alamat           = $data->alamat;
             $this->email            = $data->email;
             $this->no_hp            = $data->no_hp;
+            $this->rfid_card        = $data->rfid_card;
             $this->status_anggota   = $data->status_anggota;
             $this->status_aktif     = $data->status_aktif;
             $this->foto             = $data->foto;
@@ -469,6 +474,11 @@ class Anggota extends Component
             unset($rules['nama_jabatan']);
         }
 
+        // Ignore rfid_card untuk ID yang sedang diedit
+        if ($this->rfid_card) {
+            $rules['rfid_card'] = 'nullable|unique:anggota,rfid_card,' . $this->dataId;
+        }
+
         $this->validate($rules);
 
         // Validasi password confirmation
@@ -528,6 +538,7 @@ class Anggota extends Component
                     'alamat'              => $this->alamat,
                     'email'               => $this->email,
                     'no_hp'               => $this->no_hp,
+                    'rfid_card'           => $this->rfid_card,
                     'status_anggota'      => $this->status_anggota,
                     'status_aktif'        => $this->status_aktif,
                     'foto'                => $this->foto,
@@ -647,6 +658,7 @@ class Anggota extends Component
         $this->alamat              = '';
         $this->email               = '';
         $this->no_hp               = '08';
+        $this->rfid_card           = '';
         $this->status_anggota      = '';
         $this->status_aktif        = '';
         $this->foto                = '';

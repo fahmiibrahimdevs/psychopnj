@@ -495,6 +495,25 @@
                                         </div>
                                     </div>
                                 </div>
+                                
+                                <hr class="my-4">
+                                
+                                <!-- RFID Card Registration -->
+                                <div class="form-group">
+                                    <label for="rfid_card">Kartu RFID</label>
+                                    <div class="input-group">
+                                        <input type="text" wire:model="rfid_card" id="rfid_card" class="form-control" placeholder="Scan kartu RFID..." readonly />
+                                        <div class="input-group-append">
+                                            <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#mqttConfigModal">
+                                                <i class="fas fa-wifi"></i> Connect MQTT
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">Klik tombol "Connect MQTT" untuk mendaftarkan kartu RFID</small>
+                                    @error("rfid_card")
+                                        <span class="text-danger">{{ $message }}</span>
+                                    @enderror
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -503,6 +522,71 @@
                         <button type="submit" wire:click.prevent="{{ $isEditing ? "update()" : "store()" }}" wire:loading.attr="disabled" class="btn btn-primary tw-bg-blue-500">Save Data</button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- MQTT Configuration Modal -->
+    <div class="modal fade" id="mqttConfigModal" tabindex="-1" role="dialog" aria-labelledby="mqttConfigModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="mqttConfigModalLabel">
+                        <i class="fas fa-network-wired"></i> Konfigurasi MQTT untuk Registrasi RFID
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="mqtt-connection-form">
+                        <div class="form-group">
+                            <label for="mqtt_hostname">Hostname / IP Broker</label>
+                            <input type="text" id="mqtt_hostname" class="form-control" placeholder="broker.example.com" value="localhost">
+                        </div>
+                        <div class="form-group">
+                            <label for="mqtt_port">Port</label>
+                            <input type="number" id="mqtt_port" class="form-control" placeholder="9001" value="9001">
+                            <small class="text-muted">Port WebSocket biasanya 9001</small>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="mqtt_username">Username</label>
+                                    <input type="text" id="mqtt_username" class="form-control" placeholder="username">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="mqtt_password">Password</label>
+                                    <input type="password" id="mqtt_password" class="form-control" placeholder="password">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <button type="button" class="btn btn-secondary" id="mqtt_save_credentials">
+                                <i class="fas fa-save"></i> Save Credential
+                            </button>
+                            <button type="button" class="btn btn-success" id="mqtt_connect_btn">
+                                <i class="fas fa-plug"></i> Connect
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="mqtt-connected-status" style="display: none;">
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i> <strong>Connected!</strong> MQTT Broker terhubung
+                        </div>
+                        <div class="form-group">
+                            <label for="rfid_card_input">RFID Card UID</label>
+                            <input type="text" id="rfid_card_input" class="form-control bg-light" readonly placeholder="Menunggu scan kartu...">
+                            <small class="text-muted">Tempelkan kartu RFID pada reader untuk mendaftar</small>
+                        </div>
+                        <button type="button" class="btn btn-danger btn-block" id="mqtt_disconnect_btn">
+                            <i class="fas fa-times"></i> Disconnect
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -656,9 +740,197 @@
     
 @endpush
 
+@push('js-libraries')
+<script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.2/mqttws31.min.js" type="text/javascript"></script>
+@endpush
+
 @push("scripts")
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+    
+    {{-- MQTT Script for RFID Registration --}}
+    <script>
+        let mqttClient = null;
+        const MQTT_TOPIC_REGISTER_REQUEST = 'psychorobotic/rfid/register/request';
+        const MQTT_TOPIC_REGISTER_RESPONSE = 'psychorobotic/rfid/register/response';
+        
+        // Load saved credentials
+        function loadMQTTCredentials() {
+            return {
+                hostname: localStorage.getItem('mqtt_hostname') || 'localhost',
+                port: parseInt(localStorage.getItem('mqtt_port')) || 9001,
+                username: localStorage.getItem('mqtt_username') || '',
+                password: localStorage.getItem('mqtt_password') || ''
+            };
+        }
+        
+        // Save credentials
+        document.getElementById('mqtt_save_credentials')?.addEventListener('click', function() {
+            localStorage.setItem('mqtt_hostname', document.getElementById('mqtt_hostname').value);
+            localStorage.setItem('mqtt_port', document.getElementById('mqtt_port').value);
+            localStorage.setItem('mqtt_username', document.getElementById('mqtt_username').value);
+            localStorage.setItem('mqtt_password', document.getElementById('mqtt_password').value);
+            
+            alert('Kredensial MQTT berhasil disimpan!');
+        });
+        
+        // Auto-load credentials on modal show
+        $('#mqttConfigModal').on('show.bs.modal', function () {
+            const creds = loadMQTTCredentials();
+            document.getElementById('mqtt_hostname').value = creds.hostname;
+            document.getElementById('mqtt_port').value = creds.port;
+            document.getElementById('mqtt_username').value = creds.username;
+            document.getElementById('mqtt_password').value = creds.password;
+            
+            // Check if already connected
+            if (mqttClient && mqttClient.isConnected()) {
+                document.getElementById('mqtt-connection-form').style.display = 'none';
+                document.getElementById('mqtt-connected-status').style.display = 'block';
+                
+                // Send register request lagi untuk activate ESP8266 register mode
+                const message = new Paho.MQTT.Message(JSON.stringify({
+                    action: 'start_register',
+                    timestamp: Date.now()
+                }));
+                message.destinationName = MQTT_TOPIC_REGISTER_REQUEST;
+                mqttClient.send(message);
+                
+                // Clear previous RFID value
+                document.getElementById('rfid_card_input').value = '';
+            } else {
+                document.getElementById('mqtt-connection-form').style.display = 'block';
+                document.getElementById('mqtt-connected-status').style.display = 'none';
+            }
+        });
+        
+        // Connect MQTT
+        document.getElementById('mqtt_connect_btn')?.addEventListener('click', function() {
+            const hostname = document.getElementById('mqtt_hostname').value;
+            const port = parseInt(document.getElementById('mqtt_port').value);
+            const username = document.getElementById('mqtt_username').value;
+            const password = document.getElementById('mqtt_password').value;
+            
+            if (!hostname || !port) {
+                alert('Hostname dan Port harus diisi!');
+                return;
+            }
+            
+            // Clean hostname - remove http:// or https:// if exists
+            let cleanHostname = hostname.replace(/^https?:\/\//, '').replace(/\/$/, '');
+            
+            const clientId = 'web_rfid_register_' + Math.random().toString(16).substr(2, 8);
+            mqttClient = new Paho.MQTT.Client(cleanHostname, port, '/mqtt', clientId);
+            
+            mqttClient.onConnectionLost = function(responseObject) {
+                if (responseObject.errorCode !== 0) {
+                    document.getElementById('mqtt-connection-form').style.display = 'block';
+                    document.getElementById('mqtt-connected-status').style.display = 'none';
+                }
+            };
+            
+            mqttClient.onMessageArrived = function(message) {
+                if (message.destinationName === MQTT_TOPIC_REGISTER_RESPONSE) {
+                    try {
+                        const data = JSON.parse(message.payloadString);
+                        if (data.rfid_uid) {
+                            document.getElementById('rfid_card_input').value = data.rfid_uid;
+                            @this.set('rfid_card', data.rfid_uid);
+                            
+                            // Auto close modal after 1 second
+                            setTimeout(() => {
+                                $('#mqttConfigModal').modal('hide');
+                            }, 1000);
+                        }
+                    } catch (e) {
+                        console.error('Error parsing MQTT message:', e);
+                    }
+                }
+            };
+            
+            const connectOptions = {
+                useSSL: false,
+                onSuccess: function() {
+                    mqttClient.subscribe(MQTT_TOPIC_REGISTER_RESPONSE);
+                    
+                    // Send register request
+                    const message = new Paho.MQTT.Message(JSON.stringify({
+                        action: 'start_register',
+                        timestamp: Date.now()
+                    }));
+                    message.destinationName = MQTT_TOPIC_REGISTER_REQUEST;
+                    mqttClient.send(message);
+                    
+                    // Show connected status
+                    document.getElementById('mqtt-connection-form').style.display = 'none';
+                    document.getElementById('mqtt-connected-status').style.display = 'block';
+                },
+                onFailure: function(error) {
+                    console.error('MQTT Connection Failed:', error);
+                    alert('Gagal terhubung ke MQTT Broker: ' + error.errorMessage);
+                }
+            };
+            
+            if (username) {
+                connectOptions.userName = username;
+                connectOptions.password = password;
+            }
+            
+            mqttClient.connect(connectOptions);
+        });
+        
+        // Disconnect MQTT
+        document.getElementById('mqtt_disconnect_btn')?.addEventListener('click', function() {
+            if (mqttClient && mqttClient.isConnected()) {
+                mqttClient.disconnect();
+            }
+            document.getElementById('mqtt-connection-form').style.display = 'block';
+            document.getElementById('mqtt-connected-status').style.display = 'none';
+            document.getElementById('rfid_card_input').value = '';
+        });
+        
+        // Clean up on modal close - JANGAN disconnect MQTT
+        $('#mqttConfigModal').on('hidden.bs.modal', function () {
+            // MQTT tetap connected biar bisa register lagi
+            // Hanya reset tampilan form
+            document.getElementById('rfid_card_input').value = '';
+        });
+        
+        // Disconnect MQTT hanya saat user manual close atau pindah halaman
+        window.addEventListener('beforeunload', function() {
+            if (mqttClient && mqttClient.isConnected()) {
+                mqttClient.disconnect();
+            }
+        });
+        
+        // Keep tab at "Pembuatan Akun" when modal opens if rfid_card being registered
+        $('#formDataModal').on('show.bs.modal', function (e) {
+            // Check if we're in RFID registration flow
+            const activeElement = document.activeElement;
+            if (activeElement && activeElement.closest('#akun')) {
+                // Stay on Pembuatan Akun tab
+                setTimeout(() => {
+                    $('#akun-tab').tab('show');
+                }, 50);
+            }
+        });
+        
+        // Ensure tab stays on Pembuatan Akun when Connect MQTT button is clicked
+        $(document).on('click', '[data-target="#mqttConfigModal"]', function() {
+            // Mark that we're in RFID flow
+            sessionStorage.setItem('rfid_registration_active', 'true');
+        });
+        
+        $('#mqttConfigModal').on('hidden.bs.modal', function () {
+            // After MQTT modal closes, keep Pembuatan Akun tab active if in registration flow
+            if (sessionStorage.getItem('rfid_registration_active') === 'true') {
+                setTimeout(() => {
+                    $('#akun-tab').tab('show');
+                }, 100);
+                sessionStorage.removeItem('rfid_registration_active');
+            }
+        });
+    </script>
+    
     <script>
         let chartPengurusInstance = null;
         let chartAnggotaInstance = null;
@@ -666,12 +938,9 @@
         function initChartsAnggota() {
             // Check if Chart.js is loaded
             if (typeof Chart === 'undefined') {
-                console.log('Chart.js not loaded yet, retrying in 100ms...');
                 setTimeout(initChartsAnggota, 100);
                 return;
             }
-
-            console.log('Chart.js loaded! Initializing charts...');
 
             // Chart colors
             const colors = [
@@ -683,7 +952,6 @@
             // Register plugin
             if (typeof ChartDataLabels !== 'undefined') {
                 Chart.register(ChartDataLabels);
-                console.log('ChartDataLabels registered');
             }
 
             // Destroy existing charts
@@ -701,7 +969,6 @@
             if (ctxPengurus && ctxPengurus.dataset.chart) {
                 try {
                     const dataPengurus = JSON.parse(ctxPengurus.dataset.chart);
-                    console.log('Creating Pengurus chart with data:', dataPengurus);
                     
                     chartPengurusInstance = new Chart(ctxPengurus, {
                         type: 'pie',
@@ -751,12 +1018,9 @@
                             }
                         }
                     });
-                    console.log('Pengurus chart created successfully!');
                 } catch (e) {
-                    console.error('Error creating Pengurus chart:', e);
+                    // Error creating Pengurus chart
                 }
-            } else {
-                console.log('Canvas chartPengurus not found or no data!');
             }
 
             // Chart Anggota
@@ -764,7 +1028,6 @@
             if (ctxAnggota && ctxAnggota.dataset.chart) {
                 try {
                     const dataAnggota = JSON.parse(ctxAnggota.dataset.chart);
-                    console.log('Creating Anggota chart with data:', dataAnggota);
                     
                     chartAnggotaInstance = new Chart(ctxAnggota, {
                         type: 'pie',
@@ -814,12 +1077,9 @@
                             }
                         }
                     });
-                    console.log('Anggota chart created successfully!');
                 } catch (e) {
-                    console.error('Error creating Anggota chart:', e);
+                    // Error creating Anggota chart
                 }
-            } else {
-                console.log('Canvas chartAnggota not found or no data!');
             }
         }
 

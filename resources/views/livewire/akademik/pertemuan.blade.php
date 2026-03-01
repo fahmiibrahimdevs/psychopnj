@@ -405,11 +405,17 @@
                                                                 Upload File Baru
                                                             </label>
                                                             <div class="tw-flex tw-flex-col sm:tw-flex-row tw-gap-2">
-                                                                <input type="file" wire:model="partFilesToUpload" class="tw-flex-1 tw-text-sm tw-text-gray-600 file:tw-mr-4 file:tw-py-2 file:tw-px-4 file:tw-rounded-lg file:tw-border-0 file:tw-text-sm file:tw-font-semibold file:tw-bg-blue-50 file:tw-text-blue-700 hover:file:tw-bg-blue-100 file:tw-cursor-pointer tw-cursor-pointer" multiple accept=".ppt,.pptx,.pdf,.zip,.jpg,.jpeg,.png" />
+                                                                <input type="file" wire:model.live="partFilesToUpload" class="tw-flex-1 tw-text-sm tw-text-gray-600 file:tw-mr-4 file:tw-py-2 file:tw-px-4 file:tw-rounded-lg file:tw-border-0 file:tw-text-sm file:tw-font-semibold file:tw-bg-blue-50 file:tw-text-blue-700 hover:file:tw-bg-blue-100 file:tw-cursor-pointer tw-cursor-pointer" multiple accept=".ppt,.pptx,.pdf,.zip,.jpg,.jpeg,.png" />
                                                                 @if (! empty($partFilesToUpload))
-                                                                    <button type="button" wire:click="uploadPartFiles({{ $part["id"] }})" class="tw-flex-shrink-0 tw-px-4 tw-py-2 tw-bg-blue-500 hover:tw-bg-blue-600 tw-text-white tw-text-sm tw-font-medium tw-rounded-lg tw-transition-colors tw-duration-200 tw-flex tw-items-center tw-justify-center tw-gap-2 tw-whitespace-nowrap">
-                                                                        <i class="fas fa-cloud-upload-alt"></i>
-                                                                        Upload ({{ count($partFilesToUpload) }})
+                                                                    <button type="button" wire:click="uploadPartFiles({{ $part["id"] }})" wire:loading.attr="disabled" class="tw-flex-shrink-0 tw-px-4 tw-py-2 tw-bg-blue-500 hover:tw-bg-blue-600 tw-text-white tw-text-sm tw-font-medium tw-rounded-lg tw-transition-colors tw-duration-200 tw-flex tw-items-center tw-justify-center tw-gap-2 tw-whitespace-nowrap disabled:tw-opacity-50">
+                                                                        <span wire:loading.remove wire:target="uploadPartFiles">
+                                                                            <i class="fas fa-cloud-upload-alt"></i>
+                                                                            Upload ({{ count($partFilesToUpload) }})
+                                                                        </span>
+                                                                        <span wire:loading wire:target="uploadPartFiles">
+                                                                            <i class="fas fa-spinner fa-spin"></i>
+                                                                            Uploading...
+                                                                        </span>
                                                                     </button>
                                                                 @endif
                                                             </div>
@@ -628,7 +634,7 @@
                                 @this.upload('galleryFiles', files);
                             }
                         }" @dragover.prevent="isDragging = true" @dragleave.prevent="isDragging = false" @drop.prevent="handleDrop" :class="{ 'tw-border-blue-500 tw-bg-blue-50': isDragging }" class="tw-border-2 tw-border-dashed tw-border-gray-300 tw-rounded-lg tw-p-8 tw-text-center tw-transition-all">
-                            <input type="file" wire:model="galleryFiles" id="galleryFiles" multiple accept="image/*,video/*" class="tw-hidden" />
+                            <input type="file" wire:model.live="galleryFiles" id="galleryFiles" multiple accept="image/*,video/*" class="tw-hidden" />
 
                             <div class="tw-flex tw-flex-col tw-items-center tw-justify-center">
                                 <i class="fas fa-cloud-upload-alt tw-text-5xl tw-text-gray-400 tw-mb-3"></i>

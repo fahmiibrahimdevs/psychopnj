@@ -1,0 +1,29 @@
+{
+    "name": "psychorobotic-mqtt-bridge",
+    "version": "1.0.0",
+    "description": "MQTT Bridge for ESP8266 Door Lock to Laravel API",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server-doorlock-absensi.js",
+        "doorlock-absensi": "node server-doorlock-absensi.js",
+        "doorlock-only": "node server-doorlock-only.js",
+        "absensi-only": "node server-absensi-only.js",
+        "dev": "nodemon server-doorlock-absensi.js"
+    },
+    "keywords": [
+        "mqtt",
+        "iot",
+        "door-lock",
+        "laravel"
+    ],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "mqtt": "^5.3.5",
+        "axios": "^1.6.5",
+        "dotenv": "^16.4.1"
+    },
+    "devDependencies": {
+        "nodemon": "^3.0.3"
+    }
+}
