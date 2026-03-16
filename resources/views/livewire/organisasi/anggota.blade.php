@@ -542,12 +542,26 @@
                     <div id="mqtt-connection-form">
                         <div class="form-group">
                             <label for="mqtt_hostname">Hostname / IP Broker</label>
-                            <input type="text" id="mqtt_hostname" class="form-control" placeholder="broker.example.com" value="localhost">
+                            <input type="text" id="mqtt_hostname" class="form-control" placeholder="psychoroboticpnj.tech" value="psychoroboticpnj.tech">
                         </div>
-                        <div class="form-group">
-                            <label for="mqtt_port">Port</label>
-                            <input type="number" id="mqtt_port" class="form-control" placeholder="9001" value="9001">
-                            <small class="text-muted">Port WebSocket biasanya 9001</small>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="mqtt_protocol">Protokol</label>
+                                    <select id="mqtt_protocol" class="form-control">
+                                        <option value="wss">WSS (SSL/TLS)</option>
+                                        <option value="ws">WS (Non-SSL)</option>
+                                    </select>
+                                    <small class="text-muted">Gunakan WSS jika website HTTPS</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="mqtt_port">Port</label>
+                                    <input type="number" id="mqtt_port" class="form-control" placeholder="443" value="443">
+                                    <small class="text-muted">WSS: 443 | WS: 80</small>
+                                </div>
+                            </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6">
@@ -754,11 +768,24 @@
         const MQTT_TOPIC_REGISTER_REQUEST = 'psychorobotic/rfid/register/request';
         const MQTT_TOPIC_REGISTER_RESPONSE = 'psychorobotic/rfid/register/response';
         
+        // Migrate old credentials to new nginx proxy settings
+        (function() {
+            const oldPort = localStorage.getItem('mqtt_port');
+            const oldHost = localStorage.getItem('mqtt_hostname');
+            if (oldPort === '9443' || oldPort === '9001' || (oldHost && oldHost.match(/^\d+\.\d+\.\d+\.\d+$/))) {
+                localStorage.setItem('mqtt_hostname', 'psychoroboticpnj.tech');
+                localStorage.setItem('mqtt_port', '443');
+                localStorage.setItem('mqtt_protocol', 'wss');
+                console.log('MQTT credentials migrated to use nginx proxy (psychoroboticpnj.tech:443)');
+            }
+        })();
+        
         // Load saved credentials
         function loadMQTTCredentials() {
             return {
-                hostname: localStorage.getItem('mqtt_hostname') || 'localhost',
-                port: parseInt(localStorage.getItem('mqtt_port')) || 9001,
+                hostname: localStorage.getItem('mqtt_hostname') || 'psychoroboticpnj.tech',
+                port: parseInt(localStorage.getItem('mqtt_port')) || 443,
+                protocol: localStorage.getItem('mqtt_protocol') || 'wss',
                 username: localStorage.getItem('mqtt_username') || '',
                 password: localStorage.getItem('mqtt_password') || ''
             };
@@ -768,10 +795,21 @@
         document.getElementById('mqtt_save_credentials')?.addEventListener('click', function() {
             localStorage.setItem('mqtt_hostname', document.getElementById('mqtt_hostname').value);
             localStorage.setItem('mqtt_port', document.getElementById('mqtt_port').value);
+            localStorage.setItem('mqtt_protocol', document.getElementById('mqtt_protocol').value);
             localStorage.setItem('mqtt_username', document.getElementById('mqtt_username').value);
             localStorage.setItem('mqtt_password', document.getElementById('mqtt_password').value);
             
             alert('Kredensial MQTT berhasil disimpan!');
+        });
+        
+        // Auto-switch port when protocol changes
+        document.getElementById('mqtt_protocol')?.addEventListener('change', function() {
+            const portInput = document.getElementById('mqtt_port');
+            if (this.value === 'wss' && portInput.value === '80') {
+                portInput.value = '443';
+            } else if (this.value === 'ws' && portInput.value === '443') {
+                portInput.value = '80';
+            }
         });
         
         // Auto-load credentials on modal show
@@ -779,6 +817,7 @@
             const creds = loadMQTTCredentials();
             document.getElementById('mqtt_hostname').value = creds.hostname;
             document.getElementById('mqtt_port').value = creds.port;
+            document.getElementById('mqtt_protocol').value = creds.protocol;
             document.getElementById('mqtt_username').value = creds.username;
             document.getElementById('mqtt_password').value = creds.password;
             
@@ -807,6 +846,7 @@
         document.getElementById('mqtt_connect_btn')?.addEventListener('click', function() {
             const hostname = document.getElementById('mqtt_hostname').value;
             const port = parseInt(document.getElementById('mqtt_port').value);
+            const protocol = document.getElementById('mqtt_protocol').value;
             const username = document.getElementById('mqtt_username').value;
             const password = document.getElementById('mqtt_password').value;
             
@@ -815,16 +855,21 @@
                 return;
             }
             
-            // Clean hostname - remove http:// or https:// if exists
-            let cleanHostname = hostname.replace(/^https?:\/\//, '').replace(/\/$/, '');
+            // Clean hostname - remove http:// or https:// or ws:// or wss:// if exists
+            let cleanHostname = hostname.replace(/^(https?|wss?):\/\//, '').replace(/\/$/, '');
             
             const clientId = 'web_rfid_register_' + Math.random().toString(16).substr(2, 8);
             mqttClient = new Paho.MQTT.Client(cleanHostname, port, '/mqtt', clientId);
             
             mqttClient.onConnectionLost = function(responseObject) {
+                console.warn('MQTT Connection Lost:', responseObject.errorMessage);
                 if (responseObject.errorCode !== 0) {
                     document.getElementById('mqtt-connection-form').style.display = 'block';
                     document.getElementById('mqtt-connected-status').style.display = 'none';
+                    // Show notification to user
+                    if (responseObject.errorCode !== 0) {
+                        console.error('MQTT disconnected unexpectedly:', responseObject.errorMessage);
+                    }
                 }
             };
             
@@ -848,7 +893,9 @@
             };
             
             const connectOptions = {
-                useSSL: false,
+                useSSL: protocol === 'wss',
+                timeout: 10,
+                keepAliveInterval: 30,
                 onSuccess: function() {
                     mqttClient.subscribe(MQTT_TOPIC_REGISTER_RESPONSE);
                     
@@ -866,7 +913,16 @@
                 },
                 onFailure: function(error) {
                     console.error('MQTT Connection Failed:', error);
-                    alert('Gagal terhubung ke MQTT Broker: ' + error.errorMessage);
+                    let errorMsg = 'Gagal terhubung ke MQTT Broker.\n\n';
+                    if (error.errorCode === 7) {
+                        errorMsg += 'Socket Error - Kemungkinan penyebab:\n';
+                        errorMsg += '• Pastikan hostname: psychoroboticpnj.tech\n';
+                        errorMsg += '• Pastikan port: 443 (untuk WSS)\n';
+                        errorMsg += '• Pastikan protokol: WSS (SSL/TLS)\n';
+                    } else {
+                        errorMsg += error.errorMessage;
+                    }
+                    alert(errorMsg);
                 }
             };
             
