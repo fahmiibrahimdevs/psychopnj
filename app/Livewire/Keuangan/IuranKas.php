@@ -23,9 +23,11 @@ class IuranKas extends Component
 
     public $activeTahunId;
     public $periodeList = [];
+    public $periodeNominals = [];
+    public $newlyChecked = [];
     
     public $newPeriode = '';
-    public $nominalDefault = 5000;
+    public $newNominal = 5000;
     
     // Modal properties
     public $showGenerateModal = false;
@@ -36,6 +38,7 @@ class IuranKas extends Component
     // Rename state
     public $oldPeriodeName = '';
     public $renamePeriodeValue = '';
+    public $renameNominalValue = 0;
     
     // Delete Payment State
     public $paymentToDeleteId = null;
@@ -166,22 +169,27 @@ class IuranKas extends Component
             'summary' => $data['summary']
         ])->setPaper('a4', 'landscape');
 
-        return response()->streamDownload(function () use ($pdf) {
-            echo $pdf->output();
-        }, 'Laporan_Iuran_Kas.pdf');
+        $pdfContent = $pdf->output();
+
+        return response()->streamDownload(
+            fn () => print($pdfContent),
+            'Laporan_Iuran_Kas.pdf'
+        );
     }
 
     public function loadPeriodeList()
     {
         // Now fetch from IuranKasPeriode table
-        $this->periodeList = DB::table('iuran_kas_periode')
+        $periods = DB::table('iuran_kas_periode')
             ->where('id_tahun', $this->activeTahunId)
-            ->orderBy('id', 'ASC') // Or by name if preferred
-            ->pluck('nama_periode')
-            ->toArray();
+            ->orderBy('id', 'ASC')
+            ->get();
+            
+        $this->periodeList = $periods->pluck('nama_periode')->toArray();
+        $this->periodeNominals = $periods->pluck('nominal', 'nama_periode')->toArray();
     }
 
-    public function toggleStatus($anggotaId, $periode)
+    public function toggleStatus($anggotaId, $periode, $namaAnggota = '')
     {
         DB::beginTransaction();
         try {
@@ -191,18 +199,28 @@ class IuranKas extends Component
                 ->first();
 
             if ($iuran) {
-                 $iuran->delete(); // Remove payment record
+                DB::rollBack();
+                $this->paymentToDeleteId = $iuran->id;
+                $this->dispatch('swal:confirmPayment', [
+                    'type' => 'warning',
+                    'message' => 'Batalkan Pembayaran?',
+                    'text' => 'Apakah Anda yakin ingin membatalkan pembayaran iuran untuk ' . $namaAnggota . ' di pertemuan ke-' . $periode . '?'
+                ]);
+                return;
             } else {
+                $nominal = isset($this->periodeNominals[$periode]) ? $this->periodeNominals[$periode] : 5000;
+                
                 // Create payment record
                 ModelsIuranKas::create([
                     'id_tahun' => $this->activeTahunId,
                     'id_anggota' => $anggotaId,
                     'periode' => $periode,
-                    'nominal' => $this->nominalDefault,
+                    'nominal' => $nominal,
                     'status' => 'lunas',
                     'tanggal_bayar' => now()->toDateString(),
                     'id_user' => Auth::id(),
                 ]);
+                $this->newlyChecked[] = $anggotaId . '-' . $periode;
             }
             DB::commit();
         } catch (\Exception $e) {
@@ -218,6 +236,7 @@ class IuranKas extends Component
     public function openGenerateModal()
     {
         $this->newPeriode = '';
+        $this->newNominal = 5000;
         $this->dispatch('open-modal', ['id' => 'generateModal']);
     }
 
@@ -230,6 +249,7 @@ class IuranKas extends Component
     {
         $this->oldPeriodeName = $periode;
         $this->renamePeriodeValue = $periode;
+        $this->renameNominalValue = isset($this->periodeNominals[$periode]) ? $this->periodeNominals[$periode] : 5000;
         $this->dispatch('open-modal', ['id' => 'renameModal']);
     }
     
@@ -242,6 +262,7 @@ class IuranKas extends Component
     {
         $this->validate([
             'newPeriode' => 'required|string|max:100',
+            'newNominal' => 'required|numeric|min:0',
         ]);
 
         $exists = IuranKasPeriode::where('id_tahun', $this->activeTahunId)
@@ -262,12 +283,14 @@ class IuranKas extends Component
             // Create the Period
             IuranKasPeriode::create([
                 'id_tahun' => $this->activeTahunId,
-                'nama_periode' => $this->newPeriode
+                'nama_periode' => $this->newPeriode,
+                'nominal' => $this->newNominal
             ]);
 
             DB::commit();
 
             $this->newPeriode = '';
+            $this->newNominal = 5000;
 
             $this->dispatch('close-modal', ['id' => 'generateModal']);
             $this->dispatch('swal:modal', [
@@ -289,15 +312,12 @@ class IuranKas extends Component
     {
         $this->validate([
             'renamePeriodeValue' => 'required|string|max:100',
+            'renameNominalValue' => 'required|numeric|min:0',
         ]);
         
-        if ($this->renamePeriodeValue === $this->oldPeriodeName) {
-            $this->dispatch('close-modal', ['id' => 'renameModal']);
-            return;
-        }
-
         $exists = IuranKasPeriode::where('id_tahun', $this->activeTahunId)
             ->where('nama_periode', $this->renamePeriodeValue)
+            ->where('nama_periode', '!=', $this->oldPeriodeName)
             ->exists();
 
         if ($exists) {
@@ -314,12 +334,18 @@ class IuranKas extends Component
             // Update Definition Table
             IuranKasPeriode::where('id_tahun', $this->activeTahunId)
                 ->where('nama_periode', $this->oldPeriodeName)
-                ->update(['nama_periode' => $this->renamePeriodeValue]);
+                ->update([
+                    'nama_periode' => $this->renamePeriodeValue,
+                    'nominal' => $this->renameNominalValue
+                ]);
                 
-            // Update Payments Table
+            // Update Payments Table (Pukul Rata Mutlak)
             ModelsIuranKas::where('id_tahun', $this->activeTahunId)
                 ->where('periode', $this->oldPeriodeName)
-                ->update(['periode' => $this->renamePeriodeValue]);
+                ->update([
+                    'periode' => $this->renamePeriodeValue,
+                    'nominal' => $this->renameNominalValue
+                ]);
 
             DB::commit();
 
@@ -327,7 +353,7 @@ class IuranKas extends Component
             $this->dispatch('swal:modal', [
                 'type' => 'success',
                 'message' => 'Success!',
-                'text' => 'Periode berhasil diubah.'
+                'text' => 'Periode & nominal berhasil diubah.'
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -349,6 +375,39 @@ class IuranKas extends Component
         ]);
     }
     
+    public function destroyPayment()
+    {
+        if (!$this->paymentToDeleteId) return;
+
+        DB::beginTransaction();
+        try {
+            $payment = ModelsIuranKas::find($this->paymentToDeleteId);
+            if ($payment) {
+                // Hapus dari state newlyChecked jika ada
+                $key = $payment->id_anggota . '-' . $payment->periode;
+                $this->newlyChecked = array_diff($this->newlyChecked, [$key]);
+                
+                $payment->delete();
+            }
+            DB::commit();
+
+            $this->paymentToDeleteId = null;
+
+            $this->dispatch('swal:modal', [
+                'type' => 'success',
+                'message' => 'Dibatalkan!',
+                'text' => 'Pembayaran iuran kas berhasil dibatalkan.'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->dispatch('swal:modal', [
+                'type' => 'error',
+                'message' => 'Error!',
+                'text' => 'Terjadi kesalahan. ' . $e->getMessage()
+            ]);
+        }
+    }
+
     public function destroyPeriode()
     {
         if(!$this->periodeToDelete) return;

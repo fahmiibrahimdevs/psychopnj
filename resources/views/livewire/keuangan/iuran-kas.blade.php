@@ -6,13 +6,25 @@
                 <div class="d-flex align-items-center">
                     @if ($this->can("iuran_kas.export"))
                         <div>
-                            <button wire:click="downloadPdf" class="btn btn-danger btn-icon icon-left">
-                                <i class="fas fa-file-pdf"></i>
-                                Export PDF
+                            <button wire:click="downloadPdf" class="btn btn-danger btn-icon icon-left" wire:loading.attr="disabled" wire:target="downloadPdf">
+                                <span wire:loading.remove wire:target="downloadPdf">
+                                    <i class="fas fa-file-pdf"></i>
+                                    Export PDF
+                                </span>
+                                <span wire:loading wire:target="downloadPdf">
+                                    <i class="fas fa-circle-notch fa-spin"></i>
+                                    Mengekspor...
+                                </span>
                             </button>
-                            <button wire:click="downloadExcel" class="btn btn-success btn-icon icon-left">
-                                <i class="fas fa-file-excel"></i>
-                                Export Excel
+                            <button wire:click="downloadExcel" class="btn btn-success btn-icon icon-left" wire:loading.attr="disabled" wire:target="downloadExcel">
+                                <span wire:loading.remove wire:target="downloadExcel">
+                                    <i class="fas fa-file-excel"></i>
+                                    Export Excel
+                                </span>
+                                <span wire:loading wire:target="downloadExcel">
+                                    <i class="fas fa-circle-notch fa-spin"></i>
+                                    Mengekspor...
+                                </span>
                             </button>
                         </div>
                     @endif
@@ -50,6 +62,8 @@
                                                 <a class="tw-font-bold tw-text-gray-700 tw-no-underline hover:tw-text-blue-500 tw-cursor-pointer dropdown-toggle" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                                     {{ $periode }}
                                                 </a>
+                                                <br />
+                                                <span class="tw-text-xs tw-text-gray-500 tw-font-normal">Rp {{ number_format($periodeNominals[$periode] ?? 5000, 0, ",", ".") }}</span>
                                                 <div class="dropdown-menu shadow" style="z-index: 99999">
                                                     @if ($this->can("iuran_kas.edit"))
                                                         <a class="dropdown-item has-icon" href="#" wire:click.prevent="openRenameModal('{{ $periode }}')">
@@ -87,21 +101,27 @@
                                                 $payment = $row["payments"][$periode] ?? null;
                                             @endphp
 
-                                            <td class="p-1">
+                                            <td class="p-1 {{ in_array($row["id"] . "-" . $periode, $newlyChecked) ? "tw-bg-green-100 dark:tw-bg-green-100" : "" }}" style="{{ in_array($row["id"] . "-" . $periode, $newlyChecked) ? "background-color: #d4edda !important;" : "" }}">
                                                 @if ($this->can("iuran_kas.approve"))
                                                     <div class="d-flex flex-column align-items-center">
-                                                        <div class="custom-control custom-checkbox mb-1" style="min-height: 1.5rem">
-                                                            <input type="checkbox" class="custom-control-input" id="cb-{{ $row["id"] }}-{{ $loop->index }}" wire:click="toggleStatus({{ $row["id"] }}, '{{ $periode }}')" {{ $payment && $payment["status"] === "lunas" ? "checked" : "" }} />
+                                                        <div class="custom-control custom-checkbox mb-1" style="min-height: 1.5rem" wire:key="checkbox-pengurus-{{ $row["id"] }}-{{ $periode }}-{{ $payment ? "lunas" : "kosong" }}">
+                                                            <input type="checkbox" class="custom-control-input" id="cb-{{ $row["id"] }}-{{ $loop->index }}" wire:click.prevent="toggleStatus({{ $row["id"] }}, '{{ $periode }}', '{{ $row["nama"] }}')" {{ $payment && $payment["status"] === "lunas" ? "checked" : "" }} />
                                                             <label class="custom-control-label" for="cb-{{ $row["id"] }}-{{ $loop->index }}"></label>
                                                         </div>
 
-                                                        @if ($payment && $payment["status"] === "lunas")
-                                                            <small class="text-success font-weight-bold cursor-pointer hover:text-primary tw-text-xs tw-cursor-pointer" wire:click="openEditDateModal({{ $payment["id"] }})" title="Klik untuk ubah tanggal">
-                                                                {{ \Carbon\Carbon::parse($payment["tanggal_bayar"])->locale("id")->translatedFormat("d M") }}
-                                                            </small>
-                                                        @else
-                                                            <div style="height: 15px"></div>
-                                                        @endif
+                                                        <div wire:loading wire:target="toggleStatus({{ $row["id"] }}, '{{ $periode }}', '{{ $row["nama"] }}')" class="spinner-border spinner-border-sm text-primary spinner-sm" style="width: 14px; height: 14px; border-width: 0.15em" role="status">
+                                                            <span class="sr-only">Loading...</span>
+                                                        </div>
+
+                                                        <div wire:loading.remove wire:target="toggleStatus({{ $row["id"] }}, '{{ $periode }}', '{{ $row["nama"] }}')">
+                                                            @if ($payment && $payment["status"] === "lunas")
+                                                                <small class="text-success font-weight-bold cursor-pointer hover:text-primary tw-text-xs tw-cursor-pointer" wire:click="openEditDateModal({{ $payment["id"] }})" title="Klik untuk ubah tanggal">
+                                                                    {{ \Carbon\Carbon::parse($payment["tanggal_bayar"])->locale("id")->translatedFormat("d M") }}
+                                                                </small>
+                                                            @else
+                                                                <div style="height: 15px"></div>
+                                                            @endif
+                                                        </div>
                                                     </div>
                                                 @endif
                                             </td>
@@ -134,21 +154,27 @@
                                                 $payment = $row["payments"][$periode] ?? null;
                                             @endphp
 
-                                            <td class="p-1">
+                                            <td class="p-1 {{ in_array($row["id"] . "-" . $periode, $newlyChecked) ? "tw-bg-green-100 dark:tw-bg-green-100" : "" }}" style="{{ in_array($row["id"] . "-" . $periode, $newlyChecked) ? "background-color: #d4edda !important;" : "" }}">
                                                 @if ($this->can("iuran_kas.approve"))
                                                     <div class="d-flex flex-column align-items-center">
-                                                        <div class="custom-control custom-checkbox mb-1" style="min-height: 1.5rem">
-                                                            <input type="checkbox" class="custom-control-input" id="cb-ang-{{ $row["id"] }}-{{ $loop->index }}" wire:click="toggleStatus({{ $row["id"] }}, '{{ $periode }}')" {{ $payment && $payment["status"] === "lunas" ? "checked" : "" }} />
+                                                        <div class="custom-control custom-checkbox mb-1" style="min-height: 1.5rem" wire:key="checkbox-anggota-{{ $row["id"] }}-{{ $periode }}-{{ $payment ? "lunas" : "kosong" }}">
+                                                            <input type="checkbox" class="custom-control-input" id="cb-ang-{{ $row["id"] }}-{{ $loop->index }}" wire:click.prevent="toggleStatus({{ $row["id"] }}, '{{ $periode }}', '{{ $row["nama"] }}')" {{ $payment && $payment["status"] === "lunas" ? "checked" : "" }} />
                                                             <label class="custom-control-label" for="cb-ang-{{ $row["id"] }}-{{ $loop->index }}"></label>
                                                         </div>
 
-                                                        @if ($payment && $payment["status"] === "lunas")
-                                                            <small class="text-success font-weight-bold hover:text-primary tw-text-xs tw-cursor-pointer" wire:click="openEditDateModal({{ $payment["id"] }})" title="Klik untuk ubah tanggal">
-                                                                {{ \Carbon\Carbon::parse($payment["tanggal_bayar"])->locale("id")->translatedFormat("d M") }}
-                                                            </small>
-                                                        @else
-                                                            <div style="height: 15px"></div>
-                                                        @endif
+                                                        <div wire:loading wire:target="toggleStatus({{ $row["id"] }}, '{{ $periode }}', '{{ $row["nama"] }}')" class="spinner-border spinner-border-sm text-primary spinner-sm" style="width: 14px; height: 14px; border-width: 0.15em" role="status">
+                                                            <span class="sr-only">Loading...</span>
+                                                        </div>
+
+                                                        <div wire:loading.remove wire:target="toggleStatus({{ $row["id"] }}, '{{ $periode }}', '{{ $row["nama"] }}')">
+                                                            @if ($payment && $payment["status"] === "lunas")
+                                                                <small class="text-success font-weight-bold hover:text-primary tw-text-xs tw-cursor-pointer" wire:click="openEditDateModal({{ $payment["id"] }})" title="Klik untuk ubah tanggal">
+                                                                    {{ \Carbon\Carbon::parse($payment["tanggal_bayar"])->locale("id")->translatedFormat("d M") }}
+                                                                </small>
+                                                            @else
+                                                                <div style="height: 15px"></div>
+                                                            @endif
+                                                        </div>
                                                     </div>
                                                 @endif
                                             </td>
@@ -212,8 +238,11 @@
                         @enderror
                     </div>
                     <div class="form-group">
-                        <label for="nominalDefault">Nominal per Orang (Rp)</label>
-                        <input type="number" wire:model="nominalDefault" id="nominalDefault" class="form-control" min="0" />
+                        <label for="newNominal">Nominal per Orang (Rp)</label>
+                        <input type="number" wire:model="newNominal" id="newNominal" class="form-control" min="0" />
+                        @error("newNominal")
+                            <span class="text-danger d-block">{{ $message }}</span>
+                        @enderror
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -238,6 +267,14 @@
                         <label for="renamePeriodeValue">Nama Periode</label>
                         <input type="text" wire:model="renamePeriodeValue" id="renamePeriodeValue" class="form-control" />
                         @error("renamePeriodeValue")
+                            <span class="text-danger d-block">{{ $message }}</span>
+                        @enderror
+                    </div>
+                    <div class="form-group">
+                        <label for="renameNominalValue">Nominal per Orang (Rp)</label>
+                        <input type="number" wire:model="renameNominalValue" id="renameNominalValue" class="form-control" min="0" />
+                        <small class="text-muted">Perhatian: Mengubah nominal ini akan memperbarui tagihan seluruh anggota yang sudah membayar di periode ini.</small>
+                        @error("renameNominalValue")
                             <span class="text-danger d-block">{{ $message }}</span>
                         @enderror
                     </div>
@@ -381,6 +418,23 @@
             });
             window.addEventListener('close-modal', (event) => {
                 $('#' + event.detail[0].id).modal('hide');
+            });
+            window.addEventListener('swal:confirmPayment', (event) => {
+                Swal.fire({
+                    title: event.detail[0].message,
+                    text: event.detail[0].text,
+                    icon: event.detail[0].type,
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, batalkan!',
+                    cancelButtonText: 'Batal',
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Livewire.dispatch('destroyPayment');
+                    } else {
+                        // Re-render livewire component to reset the checkbox UI logically
+                        Livewire.dispatch('$refresh');
+                    }
+                });
             });
         </script>
     @endpush

@@ -13,6 +13,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('id_tahun')->constrained('tahun_kepengurusan')->onDelete('cascade');
             $table->string('nama_periode');
+            $table->integer('nominal')->default(5000);
             
             $table->index('id_tahun');
             $table->unique(['id_tahun', 'nama_periode']);
