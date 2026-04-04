@@ -161,6 +161,9 @@ class IuranKas extends Component
 
     public function downloadPdf()
     {
+        ini_set('memory_limit', '512M');
+        ini_set('max_execution_time', 300);
+
         $this->loadPeriodeList();
         $data = $this->prepareData();
         
