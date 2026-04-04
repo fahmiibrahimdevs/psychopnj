@@ -25,6 +25,7 @@ class IuranKas extends Component
     public $periodeList = [];
     public $periodeNominals = [];
     public $newlyChecked = [];
+    public $newlyUnchecked = [];
     
     public $newPeriode = '';
     public $newNominal = 5000;
@@ -220,7 +221,11 @@ class IuranKas extends Component
                     'tanggal_bayar' => now()->toDateString(),
                     'id_user' => Auth::id(),
                 ]);
-                $this->newlyChecked[] = $anggotaId . '-' . $periode;
+                $key = $anggotaId . '-' . $periode;
+                $this->newlyUnchecked = array_diff($this->newlyUnchecked, [$key]); // Remove from red list if exists
+                if (!in_array($key, $this->newlyChecked)) {
+                    $this->newlyChecked[] = $key;
+                }
             }
             DB::commit();
         } catch (\Exception $e) {
@@ -386,6 +391,11 @@ class IuranKas extends Component
                 // Hapus dari state newlyChecked jika ada
                 $key = $payment->id_anggota . '-' . $payment->periode;
                 $this->newlyChecked = array_diff($this->newlyChecked, [$key]);
+                
+                // Tambahkan ke list newlyUnchecked (merah)
+                if (!in_array($key, $this->newlyUnchecked)) {
+                    $this->newlyUnchecked[] = $key;
+                }
                 
                 $payment->delete();
             }

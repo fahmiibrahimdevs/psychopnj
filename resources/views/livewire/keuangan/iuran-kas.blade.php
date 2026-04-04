@@ -99,9 +99,15 @@
                                         @foreach ($periodeList as $periode)
                                             @php
                                                 $payment = $row["payments"][$periode] ?? null;
+                                                $cellKey = $row["id"] . "-" . $periode;
+                                                $isNewlyChecked = in_array($cellKey, $newlyChecked);
+                                                $isNewlyUnchecked = in_array($cellKey, $newlyUnchecked);
+                                                
+                                                $bgClass = $isNewlyChecked ? "tw-bg-green-100 dark:tw-bg-green-100" : ($isNewlyUnchecked ? "tw-bg-red-100 dark:tw-bg-red-100" : "");
+                                                $bgStyle = $isNewlyChecked ? "background-color: #d4edda !important;" : ($isNewlyUnchecked ? "background-color: #f8d7da !important;" : "");
                                             @endphp
 
-                                            <td class="p-1 {{ in_array($row["id"] . "-" . $periode, $newlyChecked) ? "tw-bg-green-100 dark:tw-bg-green-100" : "" }}" style="{{ in_array($row["id"] . "-" . $periode, $newlyChecked) ? "background-color: #d4edda !important;" : "" }}">
+                                            <td class="p-1 {{ $bgClass }}" style="{{ $bgStyle }}">
                                                 @if ($this->can("iuran_kas.approve"))
                                                     <div class="d-flex flex-column align-items-center">
                                                         <div class="custom-control custom-checkbox mb-1" style="min-height: 1.5rem" wire:key="checkbox-pengurus-{{ $row["id"] }}-{{ $periode }}-{{ $payment ? "lunas" : "kosong" }}">
@@ -152,9 +158,15 @@
                                         @foreach ($periodeList as $periode)
                                             @php
                                                 $payment = $row["payments"][$periode] ?? null;
+                                                $cellKey = $row["id"] . "-" . $periode;
+                                                $isNewlyChecked = in_array($cellKey, $newlyChecked);
+                                                $isNewlyUnchecked = in_array($cellKey, $newlyUnchecked);
+                                                
+                                                $bgClass = $isNewlyChecked ? "tw-bg-green-100 dark:tw-bg-green-100" : ($isNewlyUnchecked ? "tw-bg-red-100 dark:tw-bg-red-100" : "");
+                                                $bgStyle = $isNewlyChecked ? "background-color: #d4edda !important;" : ($isNewlyUnchecked ? "background-color: #f8d7da !important;" : "");
                                             @endphp
 
-                                            <td class="p-1 {{ in_array($row["id"] . "-" . $periode, $newlyChecked) ? "tw-bg-green-100 dark:tw-bg-green-100" : "" }}" style="{{ in_array($row["id"] . "-" . $periode, $newlyChecked) ? "background-color: #d4edda !important;" : "" }}">
+                                            <td class="p-1 {{ $bgClass }}" style="{{ $bgStyle }}">
                                                 @if ($this->can("iuran_kas.approve"))
                                                     <div class="d-flex flex-column align-items-center">
                                                         <div class="custom-control custom-checkbox mb-1" style="min-height: 1.5rem" wire:key="checkbox-anggota-{{ $row["id"] }}-{{ $periode }}-{{ $payment ? "lunas" : "kosong" }}">
@@ -375,7 +387,7 @@
                     <div class="table-responsive tw-table-auto">
                         <table class="table">
                             <thead>
-                                <tr>
+                                <tr></tr>
                                     <th width="10%" class="text-center tw-whitespace-nowrap">No</th>
                                     <th class="tw-whitespace-nowrap">Nama Anggota</th>
                                     <th class="tw-whitespace-nowrap">Pertemuan</th>
