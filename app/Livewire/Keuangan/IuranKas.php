@@ -8,8 +8,6 @@ use Livewire\Attributes\Title;
 use App\Models\TahunKepengurusan;
 use App\Models\IuranKas as ModelsIuranKas;
 use App\Models\IuranKasPeriode;
-use App\Models\Keuangan;
-use App\Models\Anggota;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Exports\IuranKasExport;
@@ -24,6 +22,7 @@ class IuranKas extends Component
     public $activeTahunId;
     public $periodeList = [];
     public $periodeNominals = [];
+    public $periodeLoadedForTahunId = null;
     public $newlyChecked = [];
     public $newlyUnchecked = [];
     
@@ -67,6 +66,7 @@ class IuranKas extends Component
         $this->cacheUserPermissions();
         $activeTahun = TahunKepengurusan::where('status', 'aktif')->first();
         $this->activeTahunId = $activeTahun ? $activeTahun->id : null;
+        $this->loadPeriodeList();
     }
 
     public function render()
@@ -98,25 +98,32 @@ class IuranKas extends Component
                 ->orderBy('nama_lengkap', 'ASC')
                 ->get();
 
-            $memberIds = $members->pluck('id');
+            $memberIds = $members->pluck('id')->all();
             
-            // Fetch payments
-            $iuranRecords = DB::table('iuran_kas')
-                ->select('id', 'id_anggota', 'periode', 'status', 'tanggal_bayar', 'nominal')
-                ->where('id_tahun', $this->activeTahunId)
-                ->whereIn('id_anggota', $memberIds)
-                ->get()
-                ->groupBy('id_anggota');
+            $iuranRecordsByMember = collect();
+
+            if (!empty($memberIds)) {
+                // Build nested map for O(1) lookup by member and periode.
+                $iuranRecordsByMember = DB::table('iuran_kas')
+                    ->select('id', 'id_anggota', 'periode', 'status', 'tanggal_bayar', 'nominal')
+                    ->where('id_tahun', $this->activeTahunId)
+                    ->whereIn('id_anggota', $memberIds)
+                    ->orderBy('id', 'desc')
+                    ->get()
+                    ->groupBy('id_anggota')
+                    ->map(function ($memberRows) {
+                        return $memberRows->keyBy('periode');
+                    });
+            }
 
             foreach ($members as $member) {
-                $memberIuran = $iuranRecords->get($member->id, collect());
+                $memberIuran = $iuranRecordsByMember->get($member->id, collect());
                 
                 $payments = [];
                 $totalBayar = 0;
 
                 foreach ($this->periodeList as $periode) {
-                    // Match by name
-                    $record = $memberIuran->firstWhere('periode', $periode);
+                    $record = $memberIuran->get($periode);
                     if ($record) {
                         $payments[$periode] = [
                             'id' => $record->id,
@@ -183,7 +190,17 @@ class IuranKas extends Component
 
     public function loadPeriodeList()
     {
-        // Now fetch from IuranKasPeriode table
+        if (!$this->activeTahunId) {
+            $this->periodeList = [];
+            $this->periodeNominals = [];
+            $this->periodeLoadedForTahunId = null;
+            return;
+        }
+
+        if ($this->periodeLoadedForTahunId === $this->activeTahunId && !empty($this->periodeList)) {
+            return;
+        }
+
         $periods = DB::table('iuran_kas_periode')
             ->where('id_tahun', $this->activeTahunId)
             ->orderBy('id', 'ASC')
@@ -191,6 +208,13 @@ class IuranKas extends Component
             
         $this->periodeList = $periods->pluck('nama_periode')->toArray();
         $this->periodeNominals = $periods->pluck('nominal', 'nama_periode')->toArray();
+        $this->periodeLoadedForTahunId = $this->activeTahunId;
+    }
+
+    private function reloadPeriodeList(): void
+    {
+        $this->periodeLoadedForTahunId = null;
+        $this->loadPeriodeList();
     }
 
     public function toggleStatus($anggotaId, $periode, $namaAnggota = '')
@@ -301,6 +325,7 @@ class IuranKas extends Component
             $this->newNominal = 5000;
 
             $this->dispatch('close-modal', ['id' => 'generateModal']);
+            $this->reloadPeriodeList();
             $this->dispatch('swal:modal', [
                 'type' => 'success',
                 'message' => 'Success!',
@@ -358,6 +383,7 @@ class IuranKas extends Component
             DB::commit();
 
             $this->dispatch('close-modal', ['id' => 'renameModal']);
+            $this->reloadPeriodeList();
             $this->dispatch('swal:modal', [
                 'type' => 'success',
                 'message' => 'Success!',
@@ -440,6 +466,7 @@ class IuranKas extends Component
             DB::commit();
             
             $this->periodeToDelete = '';
+            $this->reloadPeriodeList();
             
             $this->dispatch('swal:modal', [
                 'type' => 'success',
