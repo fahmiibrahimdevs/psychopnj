@@ -481,31 +481,49 @@ class Transaksi extends Component
 
     private function prepareExportData()
     {
-        $transactions = ModelsKeuangan::with(['department', 'project'])
+        $runningSource = DB::table('keuangan')
             ->where('id_tahun', $this->activeTahunId)
+            ->select('id', 'jenis', 'nominal')
             ->orderBy('tanggal', 'ASC')
             ->orderBy('id', 'ASC')
             ->get();
 
         $runningTotal = 0;
-        $data = [];
+        $runningTotals = [];
 
-        foreach ($transactions as $tx) {
+        foreach ($runningSource as $tx) {
             if ($tx->jenis === 'pemasukan') {
                 $runningTotal += $tx->nominal;
             } else {
                 $runningTotal -= $tx->nominal;
             }
 
+            $runningTotals[$tx->id] = $runningTotal;
+        }
+
+        $transactions = ModelsKeuangan::with(['department', 'project'])
+            ->where('id_tahun', $this->activeTahunId)
+            ->orderBy('tanggal', 'DESC')
+            ->orderBy('id', 'DESC')
+            ->get();
+
+        $data = [];
+
+        foreach ($transactions as $index => $tx) {
+            $kategoriRaw = strtolower((string) $tx->kategori);
+
             $data[] = [
+                'no' => $index + 1,
+                'id' => $tx->id,
                 'tanggal' => $tx->tanggal,
                 'deskripsi' => $tx->deskripsi,
                 'kategori' => $this->getKategoriLabel($tx->kategori),
+                'kategori_raw' => $kategoriRaw,
                 'department' => $tx->department ? $tx->department->nama_department : '-',
                 'project' => $tx->project ? $tx->project->nama_project : '-',
                 'pemasukan' => $tx->jenis === 'pemasukan' ? $tx->nominal : 0,
                 'pengeluaran' => $tx->jenis === 'pengeluaran' ? $tx->nominal : 0,
-                'saldo' => $runningTotal
+                'saldo' => $runningTotals[$tx->id] ?? 0,
             ];
         }
 

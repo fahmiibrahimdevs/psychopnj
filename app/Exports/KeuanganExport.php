@@ -2,11 +2,13 @@
 
 namespace App\Exports;
 
-use Maatwebsite\Excel\Concerns\FromArray;
-use Maatwebsite\Excel\Concerns\WithHeadings;
+use Illuminate\Contracts\View\View;
+use Maatwebsite\Excel\Concerns\FromView;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Maatwebsite\Excel\Concerns\WithStyles;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class KeuanganExport implements FromArray, WithHeadings, ShouldAutoSize
+class KeuanganExport implements FromView, ShouldAutoSize, WithStyles
 {
     protected $data;
 
@@ -15,22 +17,19 @@ class KeuanganExport implements FromArray, WithHeadings, ShouldAutoSize
         $this->data = $data;
     }
 
-    public function array(): array
+    public function view(): View
     {
-        return $this->data;
+        return view('exports.keuangan-excel', [
+            'data' => $this->data,
+        ]);
     }
 
-    public function headings(): array
+    public function styles(Worksheet $sheet): array
     {
         return [
-            'Tanggal',
-            'Deskripsi',
-            'Kategori',
-            'Departemen',
-            'Project',
-            'Pemasukan',
-            'Pengeluaran',
-            'Saldo'
+            1 => ['font' => ['bold' => true, 'size' => 14]],
+            2 => ['font' => ['bold' => true]],
+            3 => ['font' => ['bold' => true]],
         ];
     }
 }
