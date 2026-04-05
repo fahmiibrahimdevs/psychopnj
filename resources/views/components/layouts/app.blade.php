@@ -131,8 +131,8 @@
                                 @endif
 
                                 {{-- PRE (Akademik) Module --}}
-                                @if ($isSuperAdmin || array_intersect(["program_kegiatan.view", "pertemuan.view", "project.view", "presensi.view", "statistik_kehadiran.view", "ujian.view_status", "ujian.view_hasil"], $userPermissions))
-                                    <li class="nav-item dropdown {{ request()->is("program-kegiatan") || request()->is("pertemuan") || request()->is("projects") || request()->is("presensi-kehadiran") || request()->is("statistik-kehadiran") || request()->is("status-anggota-ujian") || request()->is("hasil-ujian-pertemuan") ? "active" : "" }}">
+                                @if ($isSuperAdmin || array_intersect(["program_kegiatan.view", "pertemuan.view", "project.view", "ujian.view_status", "ujian.view_hasil"], $userPermissions))
+                                    <li class="nav-item dropdown {{ request()->is("program-kegiatan") || request()->is("pertemuan") || request()->is("projects") || request()->is("status-anggota-ujian") || request()->is("hasil-ujian-pertemuan") ? "active" : "" }}">
                                         <a href="#" data-toggle="dropdown" class="nav-link has-dropdown">
                                             <i class="far fa-users-class"></i>
                                             <span>PRE</span>
@@ -153,18 +153,6 @@
                                             @if ($isSuperAdmin || in_array("project.view", $userPermissions))
                                                 <li class="nav-item {{ request()->is("projects") ? "active" : "" }}">
                                                     <a href="/projects" class="nav-link">Project/Kegiatan</a>
-                                                </li>
-                                            @endif
-
-                                            @if ($isSuperAdmin || in_array("presensi.view", $userPermissions))
-                                                <li class="nav-item {{ request()->is("presensi-kehadiran") ? "active" : "" }}">
-                                                    <a href="/presensi-kehadiran" class="nav-link">Presensi Kehadiran</a>
-                                                </li>
-                                            @endif
-
-                                            @if ($isSuperAdmin || in_array("statistik_kehadiran.view", $userPermissions))
-                                                <li class="nav-item {{ request()->is("statistik-kehadiran") ? "active" : "" }}">
-                                                    <a href="/statistik-kehadiran" class="nav-link">Statistik Kehadiran</a>
                                                 </li>
                                             @endif
 
@@ -260,8 +248,8 @@
                                 @endif
 
                                 {{-- Sekretaris Module --}}
-                                @if ($isSuperAdmin || in_array("surat.view", $userPermissions))
-                                    <li class="nav-item dropdown {{ request()->is("surat-administrasi") ? "active" : "" }}">
+                                @if ($isSuperAdmin || array_intersect(["surat.view", "presensi.view", "statistik_kehadiran.view"], $userPermissions))
+                                    <li class="nav-item dropdown {{ request()->is("surat-administrasi") || request()->is("presensi-kehadiran") || request()->is("statistik-kehadiran") ? "active" : "" }}">
                                         <a href="#" data-toggle="dropdown" class="nav-link has-dropdown">
                                             <i class="far fa-envelope"></i>
                                             <span>Sekretaris</span>
@@ -270,6 +258,18 @@
                                             @if ($isSuperAdmin || in_array("surat.view", $userPermissions))
                                                 <li class="nav-item {{ request()->is("surat-administrasi") ? "active" : "" }}">
                                                     <a href="/surat-administrasi" class="nav-link">Administrasi Surat</a>
+                                                </li>
+                                            @endif
+
+                                            @if ($isSuperAdmin || in_array("presensi.view", $userPermissions))
+                                                <li class="nav-item {{ request()->is("presensi-kehadiran") ? "active" : "" }}">
+                                                    <a href="/presensi-kehadiran" class="nav-link">Presensi Kehadiran</a>
+                                                </li>
+                                            @endif
+
+                                            @if ($isSuperAdmin || in_array("statistik_kehadiran.view", $userPermissions))
+                                                <li class="nav-item {{ request()->is("statistik-kehadiran") ? "active" : "" }}">
+                                                    <a href="/statistik-kehadiran" class="nav-link">Statistik Kehadiran</a>
                                                 </li>
                                             @endif
                                         </ul>

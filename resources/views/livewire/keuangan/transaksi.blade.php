@@ -214,6 +214,10 @@
                                             <span class="tw-text-gray-600">{{ $row->user_name ?? "-" }}</span>
                                         </td>
                                         <td class="tw-whitespace-nowrap">
+                                            <button type="button" class="btn btn-info btn-icon" data-toggle="modal" data-target="#transactionFilesModal" data-files-b64="{{ base64_encode(json_encode($transactionFilesByTransaction[$row->id] ?? ["nota" => [], "reimburse" => [], "foto" => []], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) }}" onclick="openTransactionFilesModalFromData(this)">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+
                                             @if ($this->can("transaksi.edit"))
                                                 <button wire:click="edit({{ $row->id }})" class="btn btn-warning btn-icon" data-toggle="modal" data-target="#formDataModal">
                                                     <i class="fas fa-pen"></i>
@@ -573,6 +577,51 @@
             </div>
         </div>
     </div>
+
+    {{-- Transaction Files View Modal --}}
+    <div class="modal fade" id="transactionFilesModal" tabindex="-1" aria-labelledby="transactionFilesModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl tw-w-full tw-m-0 sm:tw-w-auto sm:tw-m-[1.75rem_auto]">
+            <div class="modal-content tw-rounded-none lg:tw-rounded-md">
+                <div class="modal-header tw-px-4 lg:tw-px-6">
+                    <h5 class="modal-title" id="transactionFilesModalLabel">
+                        <i class="fas fa-folder-open tw-mr-2"></i>
+                        Lampiran Transaksi
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body tw-px-4 lg:tw-px-6 tw-pb-5">
+                    <ul class="nav nav-pills tw-mb-4" id="transactionFileTabs" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="view-nota-tab" data-toggle="tab" href="#view-nota-pane" role="tab" aria-controls="view-nota-pane" aria-selected="true">
+                                <i class="fas fa-file-invoice tw-mr-1"></i>
+                                Nota
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="view-reimburse-tab" data-toggle="tab" href="#view-reimburse-pane" role="tab" aria-controls="view-reimburse-pane" aria-selected="false">
+                                <i class="fas fa-receipt tw-mr-1"></i>
+                                Reimburse
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="view-foto-tab" data-toggle="tab" href="#view-foto-pane" role="tab" aria-controls="view-foto-pane" aria-selected="false">
+                                <i class="fas fa-images tw-mr-1"></i>
+                                Foto
+                            </a>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="transactionFileTabContent">
+                        <div class="tab-pane fade show active" id="view-nota-pane" role="tabpanel" aria-labelledby="view-nota-tab"></div>
+                        <div class="tab-pane fade" id="view-reimburse-pane" role="tabpanel" aria-labelledby="view-reimburse-tab"></div>
+                        <div class="tab-pane fade" id="view-foto-pane" role="tabpanel" aria-labelledby="view-foto-tab"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 @push("general-css")
@@ -613,6 +662,144 @@
         })
     </script>
     <script>
+        function escapeHtml(value) {
+            if (value === null || value === undefined) {
+                return '';
+            }
+
+            return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+        }
+
+        function formatFileSize(bytes) {
+            if (!bytes || Number.isNaN(Number(bytes))) {
+                return '-';
+            }
+
+            const kb = Number(bytes) / 1024;
+            if (kb >= 1024) {
+                return `${(kb / 1024).toFixed(2)} MB`;
+            }
+
+            return `${Math.round(kb)} KB`;
+        }
+
+        function renderTransactionFileCard(file) {
+            const mimeType = file.mime_type || '';
+            const fileUrl = file.url || '#';
+            const safeFileUrl = fileUrl === '#' ? '#' : encodeURI(fileUrl);
+            const fileName = escapeHtml(file.original_name || 'File');
+            const fileSize = formatFileSize(file.file_size);
+
+            let previewHtml = `
+                <div class="tw-text-center tw-p-6 tw-border tw-border-gray-200 tw-rounded-md tw-bg-gray-50">
+                    <i class="fas fa-file fa-2x tw-text-gray-500"></i>
+                    <p class="tw-mt-2 tw-text-gray-600">Preview tidak tersedia untuk tipe file ini.</p>
+                    <a href="${safeFileUrl}" target="_blank" class="btn btn-primary btn-sm tw-mt-2">Buka File</a>
+                </div>
+            `;
+
+            if (mimeType.includes('image')) {
+                previewHtml = `
+                    <div class="tw-border tw-border-gray-200 tw-rounded-md tw-overflow-hidden tw-bg-gray-50">
+                        <img src="${safeFileUrl}" alt="${fileName}" class="tw-w-full tw-h-auto" style="max-height: 60vh; object-fit: contain;" />
+                    </div>
+                `;
+            } else if (mimeType.includes('pdf')) {
+                previewHtml = `
+                    <div class="tw-border tw-border-gray-200 tw-rounded-md tw-overflow-hidden">
+                        <iframe src="${safeFileUrl}" class="tw-w-full" style="height: 60vh; border: none;"></iframe>
+                    </div>
+                `;
+            } else if (mimeType.includes('video')) {
+                previewHtml = `
+                    <div class="tw-border tw-border-gray-200 tw-rounded-md tw-overflow-hidden tw-bg-black">
+                        <video controls class="tw-w-full" style="max-height: 60vh;">
+                            <source src="${safeFileUrl}" type="${mimeType}">
+                            Browser Anda tidak mendukung pemutaran video.
+                        </video>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="tw-border tw-border-gray-200 tw-rounded-lg tw-p-4 tw-mb-4">
+                    <div class="tw-flex tw-flex-wrap tw-items-center tw-justify-between tw-gap-2 tw-mb-3">
+                        <div class="tw-font-semibold tw-text-gray-700">${fileName}</div>
+                        <div class="tw-text-sm tw-text-gray-500">${fileSize}</div>
+                    </div>
+                    ${previewHtml}
+                </div>
+            `;
+        }
+
+        function renderTransactionFileTabContent(files) {
+            if (!Array.isArray(files) || files.length === 0) {
+                return `
+                    <div class="tw-text-center tw-py-5 tw-text-gray-500 tw-border tw-border-dashed tw-border-gray-300 tw-rounded-md">
+                        <i class="fas fa-folder-open fa-2x tw-mb-2"></i>
+                        <p class="tw-mb-0">File belum tersedia.</p>
+                    </div>
+                `;
+            }
+
+            return files.map(renderTransactionFileCard).join('');
+        }
+
+        function activateTransactionFileTab(tabName) {
+            const tabs = ['nota', 'reimburse', 'foto'];
+
+            tabs.forEach((item) => {
+                const tabLink = document.getElementById(`view-${item}-tab`);
+                const tabPane = document.getElementById(`view-${item}-pane`);
+                const isActive = item === tabName;
+
+                if (!tabLink || !tabPane) {
+                    return;
+                }
+
+                tabLink.classList.toggle('active', isActive);
+                tabLink.setAttribute('aria-selected', isActive ? 'true' : 'false');
+                tabPane.classList.toggle('show', isActive);
+                tabPane.classList.toggle('active', isActive);
+            });
+        }
+
+        function openTransactionFilesModal(fileGroups) {
+            const files = fileGroups || {};
+
+            const notaFiles = Array.isArray(files.nota) ? files.nota : [];
+            const reimburseFiles = Array.isArray(files.reimburse) ? files.reimburse : [];
+            const fotoFiles = Array.isArray(files.foto) ? files.foto : [];
+
+            const notaPane = document.getElementById('view-nota-pane');
+            const reimbursePane = document.getElementById('view-reimburse-pane');
+            const fotoPane = document.getElementById('view-foto-pane');
+
+            if (notaPane) {
+                notaPane.innerHTML = renderTransactionFileTabContent(notaFiles);
+            }
+            if (reimbursePane) {
+                reimbursePane.innerHTML = renderTransactionFileTabContent(reimburseFiles);
+            }
+            if (fotoPane) {
+                fotoPane.innerHTML = renderTransactionFileTabContent(fotoFiles);
+            }
+
+            const firstAvailableTab = notaFiles.length > 0 ? 'nota' : reimburseFiles.length > 0 ? 'reimburse' : fotoFiles.length > 0 ? 'foto' : 'nota';
+
+            activateTransactionFileTab(firstAvailableTab);
+        }
+
+        function openTransactionFilesModalFromData(button) {
+            try {
+                const payload = button && button.dataset ? button.dataset.filesB64 : '';
+                const files = payload ? JSON.parse(atob(payload)) : {};
+                openTransactionFilesModal(files);
+            } catch (error) {
+                openTransactionFilesModal({ nota: [], reimburse: [], foto: [] });
+            }
+        }
+
         function previewFile(filePath, mimeType) {
             const content = document.getElementById('filePreviewContent');
 

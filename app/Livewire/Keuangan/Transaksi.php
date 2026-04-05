@@ -120,6 +120,84 @@ class Transaksi extends Component
             ->orderBy('keuangan.id', 'DESC')
             ->paginate($this->lengthData);
 
+        $transaksiIds = $data->pluck('id')->all();
+        $transactionFilesByTransaction = [];
+
+        if (!empty($transaksiIds)) {
+            $files = TransaksiFile::whereIn('id_transaksi', $transaksiIds)
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            foreach ($files as $file) {
+                $transaksiId = (int) $file->id_transaksi;
+                $tipe = strtolower($file->tipe ?? $file->jenis_file ?? '');
+
+                if (!in_array($tipe, ['nota', 'reimburse', 'foto'])) {
+                    continue;
+                }
+
+                if (!isset($transactionFilesByTransaction[$transaksiId])) {
+                    $transactionFilesByTransaction[$transaksiId] = [
+                        'nota' => [],
+                        'reimburse' => [],
+                        'foto' => [],
+                    ];
+                }
+
+                $transactionFilesByTransaction[$transaksiId][$tipe][] = [
+                    'id' => $file->id,
+                    'original_name' => $file->original_name,
+                    'mime_type' => $file->mime_type,
+                    'file_size' => (int) $file->file_size,
+                    'url' => Storage::url($file->file_path),
+                ];
+            }
+        }
+
+        foreach ($data as $row) {
+            $rowId = (int) $row->id;
+
+            if (!isset($transactionFilesByTransaction[$rowId])) {
+                $transactionFilesByTransaction[$rowId] = [
+                    'nota' => [],
+                    'reimburse' => [],
+                    'foto' => [],
+                ];
+            }
+
+            $hasUploadedFiles = !empty($transactionFilesByTransaction[$rowId]['nota'])
+                || !empty($transactionFilesByTransaction[$rowId]['reimburse'])
+                || !empty($transactionFilesByTransaction[$rowId]['foto']);
+
+            if ($hasUploadedFiles || empty($row->bukti)) {
+                continue;
+            }
+
+            $path = parse_url($row->bukti, PHP_URL_PATH) ?? '';
+            $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+            $mimeType = 'application/octet-stream';
+
+            if ($extension === 'pdf') {
+                $mimeType = 'application/pdf';
+            } elseif (in_array($extension, ['jpg', 'jpeg'])) {
+                $mimeType = 'image/jpeg';
+            } elseif ($extension === 'png') {
+                $mimeType = 'image/png';
+            } elseif ($extension === 'webp') {
+                $mimeType = 'image/webp';
+            } elseif ($extension === 'gif') {
+                $mimeType = 'image/gif';
+            }
+
+            $transactionFilesByTransaction[$rowId]['nota'][] = [
+                'id' => 'bukti-link-' . $rowId,
+                'original_name' => 'Bukti Transaksi',
+                'mime_type' => $mimeType,
+                'file_size' => 0,
+                'url' => $row->bukti,
+            ];
+        }
+
         // Calculate running totals (Optimized)
         // Fetch only necessary columns for calculation
         $allTransactions = DB::table('keuangan')
@@ -171,7 +249,8 @@ class Transaksi extends Component
             'totalPengeluaran', 
             'saldoAkhir',
             'jenisAnggaranPemasukan',
-            'jenisAnggaranPengeluaran'
+            'jenisAnggaranPengeluaran',
+            'transactionFilesByTransaction'
         ));
     }
 
@@ -562,7 +641,7 @@ class Transaksi extends Component
             // Save to database
             TransaksiFile::create([
                 'id_transaksi' => $transaksiId,
-                'jenis_file' => $tipe,
+                'tipe' => $tipe,
                 'file_path' => $filePath,
                 'original_name' => $originalName,
                 'file_size' => $fileSize,
