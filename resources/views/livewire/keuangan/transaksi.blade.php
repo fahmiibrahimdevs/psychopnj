@@ -414,17 +414,83 @@
                                         <div x-data="{ 
                                             isDragging: false,
                                             uploadType: '',
+                                            uploadingNota: false,
+                                            uploadingReimburse: false,
+                                            uploadingFoto: false,
+                                            progressNota: 0,
+                                            progressReimburse: 0,
+                                            progressFoto: 0,
                                             handleDrop(e, type) {
                                                 this.isDragging = false;
                                                 const files = Array.from(e.dataTransfer.files);
-                                                if (type === 'nota') @this.upload('filesNota', files, () => {});
-                                                else if (type === 'reimburse') @this.upload('filesReimburse', files, () => {});
-                                                else if (type === 'foto') @this.upload('filesFoto', files, () => {});
+
+                                                if (!files.length) {
+                                                    return;
+                                                }
+
+                                                const getProgressValue = (event) => {
+                                                    return event && event.detail && typeof event.detail.progress !== 'undefined'
+                                                        ? event.detail.progress
+                                                        : 0;
+                                                };
+
+                                                if (type === 'nota') {
+                                                    this.uploadingNota = true;
+                                                    this.progressNota = 0;
+                                                    @this.uploadMultiple(
+                                                        'filesNota',
+                                                        files,
+                                                        () => {
+                                                            this.progressNota = 100;
+                                                            this.uploadingNota = false;
+                                                        },
+                                                        () => {
+                                                            this.uploadingNota = false;
+                                                        },
+                                                        (event) => {
+                                                            this.progressNota = getProgressValue(event);
+                                                        }
+                                                    );
+                                                } else if (type === 'reimburse') {
+                                                    this.uploadingReimburse = true;
+                                                    this.progressReimburse = 0;
+                                                    @this.uploadMultiple(
+                                                        'filesReimburse',
+                                                        files,
+                                                        () => {
+                                                            this.progressReimburse = 100;
+                                                            this.uploadingReimburse = false;
+                                                        },
+                                                        () => {
+                                                            this.uploadingReimburse = false;
+                                                        },
+                                                        (event) => {
+                                                            this.progressReimburse = getProgressValue(event);
+                                                        }
+                                                    );
+                                                } else if (type === 'foto') {
+                                                    this.uploadingFoto = true;
+                                                    this.progressFoto = 0;
+                                                    @this.uploadMultiple(
+                                                        'filesFoto',
+                                                        files,
+                                                        () => {
+                                                            this.progressFoto = 100;
+                                                            this.uploadingFoto = false;
+                                                        },
+                                                        () => {
+                                                            this.uploadingFoto = false;
+                                                        },
+                                                        (event) => {
+                                                            this.progressFoto = getProgressValue(event);
+                                                        }
+                                                    );
+                                                }
                                             }
                                         }" class="tw-space-y-4">
                                             {{-- Nota Upload --}}
                                             <div @dragover.prevent="isDragging = true; uploadType = 'nota'" @dragleave.prevent="isDragging = false" @drop.prevent="handleDrop($event, 'nota')" :class="{ 'tw-border-blue-500 tw-bg-blue-50': isDragging && uploadType === 'nota' }" class="tw-border-2 tw-border-dashed tw-border-gray-300 tw-rounded-lg tw-p-6 tw-text-center tw-transition-all">
-                                                <input type="file" wire:model="filesNota" id="filesNota" multiple accept=".pdf,.jpg,.jpeg,.png" class="tw-hidden" />
+                                                <input type="file" wire:model="filesNota" id="filesNota" multiple accept=".pdf,.jpg,.jpeg,.png" class="tw-hidden" x-on:livewire-upload-start="uploadingNota = true; progressNota = 0" x-on:livewire-upload-progress="progressNota = $event.detail.progress" x-on:livewire-upload-finish="uploadingNota = false" x-on:livewire-upload-error="uploadingNota = false" />
                                                 <div class="tw-flex tw-flex-col tw-items-center">
                                                     <i class="fas fa-file-invoice tw-text-3xl tw-text-blue-500 tw-mb-2"></i>
                                                     <p class="tw-text-gray-600 tw-mb-1">
@@ -447,11 +513,22 @@
                                                     <i class="fas fa-spinner fa-spin"></i>
                                                     Uploading...
                                                 </div>
+
+                                                <div x-show="uploadingNota" class="tw-mt-3" x-cloak>
+                                                    <div class="progress" style="height: 10px">
+                                                        <div class="progress-bar bg-info" role="progressbar" :style="`width: ${progressNota}%`" :aria-valuenow="progressNota" aria-valuemin="0" aria-valuemax="100"></div>
+                                                    </div>
+                                                    <div class="tw-text-xs tw-text-gray-600 tw-mt-1">
+                                                        Upload progress:
+                                                        <span x-text="progressNota"></span>
+                                                        %
+                                                    </div>
+                                                </div>
                                             </div>
 
                                             {{-- Reimburse Upload --}}
                                             <div @dragover.prevent="isDragging = true; uploadType = 'reimburse'" @dragleave.prevent="isDragging = false" @drop.prevent="handleDrop($event, 'reimburse')" :class="{ 'tw-border-green-500 tw-bg-green-50': isDragging && uploadType === 'reimburse' }" class="tw-border-2 tw-border-dashed tw-border-gray-300 tw-rounded-lg tw-p-6 tw-text-center tw-transition-all">
-                                                <input type="file" wire:model="filesReimburse" id="filesReimburse" multiple accept=".pdf,.jpg,.jpeg,.png" class="tw-hidden" />
+                                                <input type="file" wire:model="filesReimburse" id="filesReimburse" multiple accept=".pdf,.jpg,.jpeg,.png" class="tw-hidden" x-on:livewire-upload-start="uploadingReimburse = true; progressReimburse = 0" x-on:livewire-upload-progress="progressReimburse = $event.detail.progress" x-on:livewire-upload-finish="uploadingReimburse = false" x-on:livewire-upload-error="uploadingReimburse = false" />
                                                 <div class="tw-flex tw-flex-col tw-items-center">
                                                     <i class="fas fa-receipt tw-text-3xl tw-text-green-500 tw-mb-2"></i>
                                                     <p class="tw-text-gray-600 tw-mb-1">
@@ -474,11 +551,22 @@
                                                     <i class="fas fa-spinner fa-spin"></i>
                                                     Uploading...
                                                 </div>
+
+                                                <div x-show="uploadingReimburse" class="tw-mt-3" x-cloak>
+                                                    <div class="progress" style="height: 10px">
+                                                        <div class="progress-bar bg-success" role="progressbar" :style="`width: ${progressReimburse}%`" :aria-valuenow="progressReimburse" aria-valuemin="0" aria-valuemax="100"></div>
+                                                    </div>
+                                                    <div class="tw-text-xs tw-text-gray-600 tw-mt-1">
+                                                        Upload progress:
+                                                        <span x-text="progressReimburse"></span>
+                                                        %
+                                                    </div>
+                                                </div>
                                             </div>
 
                                             {{-- Foto Upload --}}
                                             <div @dragover.prevent="isDragging = true; uploadType = 'foto'" @dragleave.prevent="isDragging = false" @drop.prevent="handleDrop($event, 'foto')" :class="{ 'tw-border-purple-500 tw-bg-purple-50': isDragging && uploadType === 'foto' }" class="tw-border-2 tw-border-dashed tw-border-gray-300 tw-rounded-lg tw-p-6 tw-text-center tw-transition-all">
-                                                <input type="file" wire:model="filesFoto" id="filesFoto" multiple accept=".jpg,.jpeg,.png,.mp4,.mov,.avi,.mkv" class="tw-hidden" />
+                                                <input type="file" wire:model="filesFoto" id="filesFoto" multiple accept=".jpg,.jpeg,.png,.mp4,.mov,.avi,.mkv" class="tw-hidden" x-on:livewire-upload-start="uploadingFoto = true; progressFoto = 0" x-on:livewire-upload-progress="progressFoto = $event.detail.progress" x-on:livewire-upload-finish="uploadingFoto = false" x-on:livewire-upload-error="uploadingFoto = false" />
                                                 <div class="tw-flex tw-flex-col tw-items-center">
                                                     <i class="fas fa-images tw-text-3xl tw-text-purple-500 tw-mb-2"></i>
                                                     <p class="tw-text-gray-600 tw-mb-1">
@@ -500,6 +588,17 @@
                                                 <div wire:loading wire:target="filesFoto" class="tw-text-sm tw-text-purple-600 tw-mt-2">
                                                     <i class="fas fa-spinner fa-spin"></i>
                                                     Uploading...
+                                                </div>
+
+                                                <div x-show="uploadingFoto" class="tw-mt-3" x-cloak>
+                                                    <div class="progress" style="height: 10px">
+                                                        <div class="progress-bar bg-primary" role="progressbar" :style="`width: ${progressFoto}%`" :aria-valuenow="progressFoto" aria-valuemin="0" aria-valuemax="100"></div>
+                                                    </div>
+                                                    <div class="tw-text-xs tw-text-gray-600 tw-mt-1">
+                                                        Upload progress:
+                                                        <span x-text="progressFoto"></span>
+                                                        %
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>

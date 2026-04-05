@@ -289,12 +289,23 @@
                             <!-- Tab 2: Thumbnail -->
                             <div class="tab-pane fade" id="files" role="tabpanel" aria-labelledby="files-tab" wire:ignore.self>
                                 <div class="pt-3">
-                                    <div class="form-group">
+                                    <div class="form-group" x-data="{ uploading: false, progress: 0 }">
                                         <label for="thumbnail">Thumbnail</label>
-                                        <input type="file" wire:model="thumbnail" id="thumbnail" class="form-control" accept="image/*" />
+                                        <input type="file" wire:model="thumbnail" id="thumbnail" class="form-control" accept="image/*" x-on:livewire-upload-start="uploading = true; progress = 0" x-on:livewire-upload-progress="progress = $event.detail.progress" x-on:livewire-upload-finish="uploading = false" x-on:livewire-upload-error="uploading = false" />
                                         @error("thumbnail")
                                             <span class="text-danger">{{ $message }}</span>
                                         @enderror
+
+                                        <div x-show="uploading" class="tw-mt-3" x-cloak>
+                                            <div class="progress" style="height: 10px">
+                                                <div class="progress-bar bg-info" role="progressbar" :style="`width: ${progress}%`" :aria-valuenow="progress" aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                            <div class="tw-text-xs tw-text-gray-600 tw-mt-1">
+                                                Upload progress:
+                                                <span x-text="progress"></span>
+                                                %
+                                            </div>
+                                        </div>
 
                                         @if ($thumbnail)
                                             <div class="mt-2">
@@ -374,7 +385,7 @@
                                                             <div class="tw-space-y-2 tw-mb-3">
                                                                 @foreach ($part["files"] as $file)
                                                                     <div class="tw-flex tw-items-center tw-justify-between tw-p-2.5 tw-bg-gray-50 hover:tw-bg-gray-100 tw-rounded-lg tw-border tw-border-gray-200 tw-transition-colors tw-duration-150">
-                                                                        <div class="tw-flex tw-items-center tw-gap-2 tw-flex-1 tw-min-w-0">
+                                                                        <a href="{{ Storage::url($file["file_path"]) }}" download="{{ $file["original_name"] }}" title="Download file" class="tw-flex tw-items-center tw-gap-2 tw-flex-1 tw-min-w-0 hover:tw-no-underline tw-no-underline">
                                                                             <div class="tw-flex-shrink-0 tw-w-8 tw-h-8 tw-bg-blue-100 tw-rounded-lg tw-flex tw-items-center tw-justify-center">
                                                                                 <i class="fas fa-file tw-text-blue-600 tw-text-sm"></i>
                                                                             </div>
@@ -384,7 +395,7 @@
                                                                                 </p>
                                                                                 <p class="tw-text-xs tw-text-gray-500">{{ number_format($file["ukuran_file"] / 1024, 1) }} KB</p>
                                                                             </div>
-                                                                        </div>
+                                                                        </a>
                                                                         <button type="button" wire:click="deletePartFileConfirm({{ $file["id"] }})" class="tw-flex-shrink-0 tw-w-8 tw-h-8 tw-flex tw-items-center tw-justify-center tw-rounded-lg tw-bg-red-500 hover:tw-bg-red-600 tw-text-white tw-transition-colors tw-duration-200">
                                                                             <i class="fas fa-trash tw-text-xs"></i>
                                                                         </button>
@@ -399,13 +410,13 @@
                                                         @endif
 
                                                         <!-- Upload Files -->
-                                                        <div class="tw-border-t tw-border-gray-200 tw-pt-3">
+                                                        <div class="tw-border-t tw-border-gray-200 tw-pt-3" x-data="{ uploading: false, progress: 0 }">
                                                             <label class="tw-block tw-text-sm tw-font-medium tw-text-gray-700 tw-mb-2">
                                                                 <i class="fas fa-upload tw-mr-1"></i>
                                                                 Upload File Baru
                                                             </label>
                                                             <div class="tw-flex tw-flex-col sm:tw-flex-row tw-gap-2">
-                                                                <input type="file" wire:model.live="partFilesToUpload" class="tw-flex-1 tw-text-sm tw-text-gray-600 file:tw-mr-4 file:tw-py-2 file:tw-px-4 file:tw-rounded-lg file:tw-border-0 file:tw-text-sm file:tw-font-semibold file:tw-bg-blue-50 file:tw-text-blue-700 hover:file:tw-bg-blue-100 file:tw-cursor-pointer tw-cursor-pointer" multiple accept=".ppt,.pptx,.pdf,.zip,.jpg,.jpeg,.png" />
+                                                                <input type="file" wire:model.live="partFilesToUpload" class="tw-flex-1 tw-text-sm tw-text-gray-600 file:tw-mr-4 file:tw-py-2 file:tw-px-4 file:tw-rounded-lg file:tw-border-0 file:tw-text-sm file:tw-font-semibold file:tw-bg-blue-50 file:tw-text-blue-700 hover:file:tw-bg-blue-100 file:tw-cursor-pointer tw-cursor-pointer" multiple accept=".ppt,.pptx,.pdf,.zip,.jpg,.jpeg,.png" x-on:livewire-upload-start="uploading = true; progress = 0" x-on:livewire-upload-progress="progress = $event.detail.progress" x-on:livewire-upload-finish="uploading = false" x-on:livewire-upload-error="uploading = false" />
                                                                 @if (! empty($partFilesToUpload))
                                                                     <button type="button" wire:click="uploadPartFiles({{ $part["id"] }})" wire:loading.attr="disabled" class="tw-flex-shrink-0 tw-px-4 tw-py-2 tw-bg-blue-500 hover:tw-bg-blue-600 tw-text-white tw-text-sm tw-font-medium tw-rounded-lg tw-transition-colors tw-duration-200 tw-flex tw-items-center tw-justify-center tw-gap-2 tw-whitespace-nowrap disabled:tw-opacity-50">
                                                                         <span wire:loading.remove wire:target="uploadPartFiles">
@@ -418,6 +429,17 @@
                                                                         </span>
                                                                     </button>
                                                                 @endif
+                                                            </div>
+
+                                                            <div x-show="uploading" class="tw-mt-3" x-cloak>
+                                                                <div class="progress" style="height: 10px">
+                                                                    <div class="progress-bar bg-primary" role="progressbar" :style="`width: ${progress}%`" :aria-valuenow="progress" aria-valuemin="0" aria-valuemax="100"></div>
+                                                                </div>
+                                                                <div class="tw-text-xs tw-text-gray-600 tw-mt-1">
+                                                                    Upload progress:
+                                                                    <span x-text="progress"></span>
+                                                                    %
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -628,13 +650,37 @@
                         <label class="tw-block tw-text-sm tw-font-semibold tw-mb-2">Upload Images / Videos</label>
                         <div x-data="{ 
                             isDragging: false,
+                            uploading: false,
+                            progress: 0,
                             handleDrop(e) {
                                 this.isDragging = false;
                                 const files = Array.from(e.dataTransfer.files);
-                                @this.upload('galleryFiles', files);
+                                if (!files.length) {
+                                    return;
+                                }
+
+                                this.uploading = true;
+                                this.progress = 0;
+
+                                @this.uploadMultiple(
+                                    'galleryFiles',
+                                    files,
+                                    () => {
+                                        this.progress = 100;
+                                        this.uploading = false;
+                                    },
+                                    () => {
+                                        this.uploading = false;
+                                    },
+                                    (event) => {
+                                        this.progress = event && event.detail && typeof event.detail.progress !== 'undefined'
+                                            ? event.detail.progress
+                                            : 0;
+                                    }
+                                );
                             }
                         }" @dragover.prevent="isDragging = true" @dragleave.prevent="isDragging = false" @drop.prevent="handleDrop" :class="{ 'tw-border-blue-500 tw-bg-blue-50': isDragging }" class="tw-border-2 tw-border-dashed tw-border-gray-300 tw-rounded-lg tw-p-8 tw-text-center tw-transition-all">
-                            <input type="file" wire:model.live="galleryFiles" id="galleryFiles" multiple accept="image/*,video/*" class="tw-hidden" />
+                            <input type="file" wire:model.live="galleryFiles" id="galleryFiles" multiple accept="image/*,video/*" class="tw-hidden" x-on:livewire-upload-start="uploading = true; progress = 0" x-on:livewire-upload-progress="progress = $event.detail.progress" x-on:livewire-upload-finish="uploading = false" x-on:livewire-upload-error="uploading = false" />
 
                             <div class="tw-flex tw-flex-col tw-items-center tw-justify-center">
                                 <i class="fas fa-cloud-upload-alt tw-text-5xl tw-text-gray-400 tw-mb-3"></i>
@@ -660,6 +706,17 @@
                                     </button>
                                 </div>
                             @endif
+
+                            <div x-show="uploading" class="tw-mt-3" x-cloak>
+                                <div class="progress" style="height: 10px">
+                                    <div class="progress-bar bg-info" role="progressbar" :style="`width: ${progress}%`" :aria-valuenow="progress" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                                <div class="tw-text-xs tw-text-gray-600 tw-mt-1">
+                                    Upload progress:
+                                    <span x-text="progress"></span>
+                                    %
+                                </div>
+                            </div>
                         </div>
                     </div>
 
