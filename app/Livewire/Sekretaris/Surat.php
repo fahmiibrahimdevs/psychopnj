@@ -12,6 +12,7 @@ use App\Traits\WithPermissionCache;
 use App\Models\Sekretaris\SuratFile;
 use App\Models\Sekretaris\SuratMasuk;
 use App\Models\Sekretaris\SuratKeluar;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use App\Models\Sekretaris\KategoriDokumen;
 use App\Models\Sekretaris\DokumenOrganisasi;
@@ -53,7 +54,7 @@ class Surat extends Component
     {
         $this->cacheUserPermissions();
         // Load Categories
-        $this->kategoriList = KategoriDokumen::all();
+        $this->kategoriList = $this->getKategoriList();
 
         // Set default dates
         $this->sm_tanggal_masuk = date('Y-m-d');
@@ -105,57 +106,74 @@ class Surat extends Component
     public function render()
     {
         \Carbon\Carbon::setLocale('id');
-        $activeTahun = TahunKepengurusan::where('status', 'aktif')->first();
+        $activeTahun = $this->getActiveTahun();
         $idTahun = $activeTahun ? $activeTahun->id : null;
         $activeTab = $this->activeTab;
+        $searchTerm = trim((string) $this->searchTerm);
+        $page = (int) request()->query('page', 1);
+        $version = (int) Cache::get('surat:list:version', 1);
 
-        if ($activeTab === 'surat-masuk') {
-            $data = SuratMasuk::with('files')
-                ->where('id_tahun_kepengurusan', $idTahun)
-                ->where(function($q) {
-                    $q->where('nomor_surat', 'like', '%'.$this->searchTerm.'%')
-                      ->orWhere('perihal', 'like', '%'.$this->searchTerm.'%')
-                      ->orWhere('pengirim', 'like', '%'.$this->searchTerm.'%');
-                })
-                ->orderBy('tanggal_masuk', 'desc')
-                ->paginate($this->lengthData);
-                
-        } elseif ($activeTab === 'surat-keluar') {
-            $data = SuratKeluar::with('files')
-                ->where('id_tahun_kepengurusan', $idTahun)
-                ->where(function($q) {
-                    $q->where('nomor_surat', 'like', '%'.$this->searchTerm.'%')
-                      ->orWhere('perihal', 'like', '%'.$this->searchTerm.'%')
-                      ->orWhere('penerima', 'like', '%'.$this->searchTerm.'%');
-                })
-                ->orderBy('tanggal_keluar', 'desc')
-                ->paginate($this->lengthData);
+        $cacheKey = sprintf(
+            'surat:list:v%s:tahun:%s:tab:%s:q:%s:len:%s:page:%s',
+            $version,
+            $idTahun ?? 'none',
+            $activeTab,
+            md5(mb_strtolower($searchTerm)),
+            $this->lengthData,
+            $page
+        );
 
-        } else {
-            // Dynamic Documents based on Category Slug
+        $kategori = null;
+        $data = Cache::remember($cacheKey, now()->addSeconds(45), function () use ($activeTab, $idTahun, $searchTerm, &$kategori) {
+            if ($activeTab === 'surat-masuk') {
+                return SuratMasuk::with('files')
+                    ->where('id_tahun_kepengurusan', $idTahun)
+                    ->where(function($q) use ($searchTerm) {
+                        $q->where('nomor_surat', 'like', '%'.$searchTerm.'%')
+                          ->orWhere('perihal', 'like', '%'.$searchTerm.'%')
+                          ->orWhere('pengirim', 'like', '%'.$searchTerm.'%');
+                    })
+                    ->orderBy('tanggal_masuk', 'desc')
+                    ->paginate($this->lengthData);
+            }
+
+            if ($activeTab === 'surat-keluar') {
+                return SuratKeluar::with('files')
+                    ->where('id_tahun_kepengurusan', $idTahun)
+                    ->where(function($q) use ($searchTerm) {
+                        $q->where('nomor_surat', 'like', '%'.$searchTerm.'%')
+                          ->orWhere('perihal', 'like', '%'.$searchTerm.'%')
+                          ->orWhere('penerima', 'like', '%'.$searchTerm.'%');
+                    })
+                    ->orderBy('tanggal_keluar', 'desc')
+                    ->paginate($this->lengthData);
+            }
+
             $kategori = $this->kategoriList->where('slug', $activeTab)->first();
-            
             if ($kategori) {
-                $data = DokumenOrganisasi::with('files')
+                return DokumenOrganisasi::with('files')
                     ->where('id_tahun_kepengurusan', $idTahun)
                     ->where('id_kategori_dokumen', $kategori->id)
-                    ->where(function($q) {
-                        $q->where('nama_dokumen', 'like', '%'.$this->searchTerm.'%')
-                          ->orWhere('nomor_dokumen', 'like', '%'.$this->searchTerm.'%')
-                          ->orWhere('deskripsi', 'like', '%'.$this->searchTerm.'%');
+                    ->where(function($q) use ($searchTerm) {
+                        $q->where('nama_dokumen', 'like', '%'.$searchTerm.'%')
+                          ->orWhere('nomor_dokumen', 'like', '%'.$searchTerm.'%')
+                          ->orWhere('deskripsi', 'like', '%'.$searchTerm.'%');
                     })
                     ->orderBy('tanggal', 'desc')
                     ->paginate($this->lengthData);
-            } else {
-                // Fallback empty pagination if tab mismatch
-                $data = \App\Models\Sekretaris\SuratMasuk::whereRaw('1=0')->paginate($this->lengthData);
             }
+
+            return \App\Models\Sekretaris\SuratMasuk::whereRaw('1=0')->paginate($this->lengthData);
+        });
+
+        if ($activeTab !== 'surat-masuk' && $activeTab !== 'surat-keluar') {
+            $kategori = $this->kategoriList->where('slug', $activeTab)->first();
         }
 
         return view('livewire.sekretaris.surat', [
             'data' => $data,
             'activeTahun' => $activeTahun,
-            'currentKategori' => isset($kategori) ? $kategori : null
+            'currentKategori' => $kategori
         ]);
     }
 
@@ -198,7 +216,7 @@ class Surat extends Component
     {
         $this->validate();
 
-        $activeTahun = TahunKepengurusan::where('status', 'aktif')->first();
+        $activeTahun = $this->getActiveTahun();
         if (!$activeTahun) {
             $this->dispatch('alert', ['type' => 'error', 'message' => 'Tidak ada Tahun Kepengurusan Aktif!']);
             return;
@@ -273,6 +291,7 @@ class Surat extends Component
         }
 
         $this->resetInputFields();
+        $this->bumpListCacheVersion();
         $this->dispatch('closeModal');
     }
 
@@ -316,7 +335,7 @@ class Surat extends Component
     {
         $this->validate();
 
-        $activeTahun = TahunKepengurusan::where('status', 'aktif')->first();
+        $activeTahun = $this->getActiveTahun();
         $tahunFolder = $activeTahun ? $activeTahun->nama_tahun : 'Top_Secret_Project';
 
         $saveFiles = function($model, $files, $folderPath, $prefix, $nameKey, $tanggal) use ($tahunFolder) {
@@ -389,6 +408,7 @@ class Surat extends Component
         }
 
         $this->resetInputFields();
+        $this->bumpListCacheVersion();
         $this->dispatch('closeModal');
     }
 
@@ -417,6 +437,7 @@ class Surat extends Component
         $suratType = $file->suratable_type;
 
         $file->delete();
+        $this->bumpListCacheVersion();
         
         if ($this->isEditing) {
             $surat = $suratType::with('files')->find($suratId);
@@ -456,6 +477,32 @@ class Surat extends Component
         }
 
         $data->delete();
+        $this->bumpListCacheVersion();
         $this->dispatch('alert', ['type' => 'success', 'message' => 'Data dan file berhasil dihapus!']);
+    }
+
+    private function getKategoriList()
+    {
+        return Cache::remember('surat:kategori:list', now()->addMinutes(30), function () {
+            return KategoriDokumen::select('id', 'slug', 'nama_kategori')->orderBy('id')->get();
+        });
+    }
+
+    private function getActiveTahun()
+    {
+        return Cache::remember('surat:tahun:aktif', now()->addMinutes(5), function () {
+            return TahunKepengurusan::select('id', 'nama_tahun')->where('status', 'aktif')->first();
+        });
+    }
+
+    private function bumpListCacheVersion(): void
+    {
+        $key = 'surat:list:version';
+        if (!Cache::has($key)) {
+            Cache::forever($key, 2);
+            return;
+        }
+
+        Cache::increment($key);
     }
 }

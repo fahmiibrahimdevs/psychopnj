@@ -44,7 +44,7 @@
 
                                         <div class="tw-relative">
                                             @if ($member->foto)
-                                                <img src="{{ asset("storage/" . $member->foto) }}" class="tw-w-12 tw-h-12 tw-rounded-full tw-object-cover" alt="Avatar" />
+                                                <img src="{{ storageUrl($member->foto) }}" class="tw-w-12 tw-h-12 tw-rounded-full tw-object-cover" alt="Avatar" />
                                             @else
                                                 <div class="tw-w-12 tw-h-12 tw-rounded-full tw-bg-gray-200 tw-flex tw-items-center tw-justify-center">
                                                     <i class="fas fa-user tw-text-gray-400"></i>

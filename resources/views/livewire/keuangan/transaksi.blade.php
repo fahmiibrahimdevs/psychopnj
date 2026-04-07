@@ -627,7 +627,7 @@
                                                             <small class="text-muted">({{ number_format($file["file_size"] / 1024, 0) }} KB - {{ strtoupper($file["tipe"]) }})</small>
                                                         </div>
                                                         <div class="tw-flex tw-gap-1">
-                                                            <button type="button" onclick="previewFile('{{ asset("storage/" . $file["file_path"]) }}', '{{ $file["mime_type"] }}')" class="btn btn-sm btn-info" data-toggle="modal" data-target="#filePreviewModal">
+                                                            <button type="button" onclick="previewFile('{{ storageUrl($file["file_path"]) }}', '{{ $file["mime_type"] }}')" class="btn btn-sm btn-info" data-toggle="modal" data-target="#filePreviewModal">
                                                                 <i class="fas fa-eye"></i>
                                                             </button>
                                                             <button type="button" wire:click="deleteFile({{ $file["id"] }})" wire:confirm="Yakin hapus file ini?" class="btn btn-sm btn-danger">

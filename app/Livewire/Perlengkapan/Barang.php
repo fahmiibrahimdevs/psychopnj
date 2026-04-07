@@ -10,6 +10,7 @@ use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\WithFileUploads;
 use Livewire\Attributes\Title;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
@@ -19,6 +20,7 @@ use App\Exports\BarangExport;
 use App\Imports\BarangImport;
 use App\Traits\WithPermissionCache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class Barang extends Component
 {
@@ -72,27 +74,45 @@ class Barang extends Component
     public function render()
     {
         $this->searchResetPage();
-        $search = '%' . $this->searchTerm . '%';
+        $searchTerm = trim((string) $this->searchTerm);
+        $search = '%' . $searchTerm . '%';
+        $page = (int) request()->query('page', 1);
+        $version = (int) Cache::get('perlengkapan:barang:list:version', 1);
 
-        $data = ModelsBarang::with(['kategori', 'user'])
-            ->where(function ($query) use ($search) {
-                $query->where('nama', 'LIKE', $search)
-                    ->orWhere('kode', 'LIKE', $search)
-                    ->orWhere('lokasi', 'LIKE', $search);
-            })
-            ->when($this->filterKategori, function ($query) {
-                $query->where('kategori_barang_id', $this->filterKategori);
-            })
-            ->when($this->filterJenis, function ($query) {
-                $query->where('jenis', $this->filterJenis);
-            })
-            ->when($this->filterKondisi, function ($query) {
-                $query->where('kondisi', $this->filterKondisi);
-            })
-            ->orderBy('created_at', 'DESC')
-            ->paginate($this->lengthData);
+        $cacheKey = sprintf(
+            'perlengkapan:barang:v%s:q:%s:kategori:%s:jenis:%s:kondisi:%s:len:%s:page:%s',
+            $version,
+            md5(mb_strtolower($searchTerm)),
+            $this->filterKategori ?: 'all',
+            $this->filterJenis ?: 'all',
+            $this->filterKondisi ?: 'all',
+            $this->lengthData,
+            $page
+        );
 
-        $kategoris = KategoriBarang::orderBy('nama_kategori')->get();
+        $data = Cache::remember($cacheKey, now()->addSeconds(45), function () use ($search) {
+            return ModelsBarang::with(['kategori', 'user'])
+                ->where(function ($query) use ($search) {
+                    $query->where('nama', 'LIKE', $search)
+                        ->orWhere('kode', 'LIKE', $search)
+                        ->orWhere('lokasi', 'LIKE', $search);
+                })
+                ->when($this->filterKategori, function ($query) {
+                    $query->where('kategori_barang_id', $this->filterKategori);
+                })
+                ->when($this->filterJenis, function ($query) {
+                    $query->where('jenis', $this->filterJenis);
+                })
+                ->when($this->filterKondisi, function ($query) {
+                    $query->where('kondisi', $this->filterKondisi);
+                })
+                ->orderBy('created_at', 'DESC')
+                ->paginate($this->lengthData);
+        });
+
+        $kategoris = Cache::remember('perlengkapan:kategori:list', now()->addMinutes(30), function () {
+            return KategoriBarang::orderBy('nama_kategori')->get();
+        });
 
         return view('livewire.perlengkapan.barang', compact('data', 'kategoris'));
     }
@@ -133,6 +153,7 @@ class Barang extends Component
             // }
 
             \Illuminate\Support\Facades\DB::commit();
+            $this->bumpListCacheVersion();
             $this->dispatchAlert('success', 'Berhasil!', 'Barang berhasil ditambahkan.');
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\DB::rollBack();
@@ -198,6 +219,7 @@ class Barang extends Component
                 // }
 
                 \Illuminate\Support\Facades\DB::commit();
+                $this->bumpListCacheVersion();
                 $this->dispatchAlert('success', 'Berhasil!', 'Barang berhasil diperbarui.');
                 $this->dataId = null;
             } catch (\Exception $e) {
@@ -212,19 +234,67 @@ class Barang extends Component
         $tahunNama = DB::table('tahun_kepengurusan')->where('status', 'aktif')->value('nama_tahun') ?? date('Y');
         $namaBarang = strtoupper(str_replace(' ', ' ', $this->nama));
         $randomChar = strtoupper(substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 2));
-        $filename = $namaBarang . '_' . $randomChar . '.' . $this->foto->getClientOriginalExtension();
-        $path = $this->foto->storeAs($tahunNama . '/Dept. Perlengkapan', $filename, 'public');
-        
-        // Compress image only if larger than target
-        $fullPath = Storage::disk('public')->path($path);
-        $targetSizeKB = env('IMAGE_COMPRESS_SIZE_KB', 100);
-        $currentSizeKB = filesize($fullPath) / 1024;
-        
-        if ($currentSizeKB > $targetSizeKB) {
-            $this->compressImageToSize($fullPath, $targetSizeKB, 800);
+        $baseFileName = $namaBarang . '_' . $randomChar;
+
+        return $this->uploadOptimizedImageToPublicDisk(
+            $this->foto,
+            $tahunNama . '/Dept. Perlengkapan',
+            $baseFileName,
+            800
+        );
+    }
+
+    private function uploadOptimizedImageToPublicDisk(UploadedFile $file, string $basePath, string $baseFileName, int $maxWidth = 1920): string
+    {
+        $tempDir = storage_path('app/livewire-tmp/processed');
+        if (!is_dir($tempDir)) {
+            mkdir($tempDir, 0755, true);
         }
-        
-        return $path;
+
+        $sourceExt = strtolower($file->getClientOriginalExtension() ?: 'jpg');
+        $tempPath = $tempDir.'/'.uniqid('img_', true).'.'.$sourceExt;
+
+        if (!copy($file->getRealPath(), $tempPath)) {
+            throw new \RuntimeException('Failed to copy uploaded file to temporary path.');
+        }
+
+        $targetSizeKB = env('IMAGE_COMPRESS_SIZE_KB', 100);
+        $currentSizeKB = filesize($tempPath) / 1024;
+        if ($currentSizeKB > $targetSizeKB) {
+            $this->compressImageToSize($tempPath, $targetSizeKB, $maxWidth);
+        }
+
+        $processedPath = $tempPath;
+        if (!file_exists($processedPath)) {
+            $jpgPath = preg_replace('/\.png$/i', '.jpg', $tempPath);
+            if ($jpgPath && file_exists($jpgPath)) {
+                $processedPath = $jpgPath;
+            } else {
+                throw new \RuntimeException('Processed temporary image file not found.');
+            }
+        }
+
+        $finalExt = strtolower(pathinfo($processedPath, PATHINFO_EXTENSION));
+        $finalFileName = $baseFileName.'.'.$finalExt;
+        $relativePath = trim($basePath, '/').'/'.$finalFileName;
+
+        $stream = fopen($processedPath, 'r');
+        if ($stream === false) {
+            throw new \RuntimeException('Failed to open processed file stream.');
+        }
+
+        Storage::disk('public')->writeStream($relativePath, $stream, ['visibility' => 'public']);
+
+        if (is_resource($stream)) {
+            fclose($stream);
+        }
+
+        @unlink($processedPath);
+        if ($processedPath !== $tempPath) {
+            @unlink($tempPath);
+        }
+
+        return $relativePath;
     }
 
     public function deleteConfirm($id)
@@ -260,6 +330,7 @@ class Barang extends Component
             // }
 
             \Illuminate\Support\Facades\DB::commit();
+            $this->bumpListCacheVersion();
             $this->dispatchAlert('success', 'Berhasil!', 'Barang berhasil dihapus.');
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\DB::rollBack();
@@ -274,6 +345,7 @@ class Barang extends Component
             if ($barang->foto) {
                 Storage::disk('public')->delete($barang->foto);
                 $barang->update(['foto' => null]);
+                $this->bumpListCacheVersion();
             }
         }
         $this->foto = null;
@@ -424,6 +496,8 @@ class Barang extends Component
                 'text' => 'Data barang berhasil diimport.'
             ]);
 
+            $this->bumpListCacheVersion();
+
             $this->dispatch('closeModal', 'importModal');
 
             // Sync all imported data to Google Sheets
@@ -494,5 +568,16 @@ class Barang extends Component
                 return $this->data;
             }
         }, 'Template_Import_Barang.xlsx');
+    }
+
+    private function bumpListCacheVersion(): void
+    {
+        $key = 'perlengkapan:barang:list:version';
+        if (!Cache::has($key)) {
+            Cache::forever($key, 2);
+            return;
+        }
+
+        Cache::increment($key);
     }
 }

@@ -174,7 +174,7 @@
                                                             </button>
                                                             <div class="dropdown-menu">
                                                                 @foreach ($row->files as $file)
-                                                                    <a class="dropdown-item" href="javascript:void(0)" onclick="previewFile('{{ asset("storage/" . $file->file_path) }}', '{{ Storage::mimeType("public/" . $file->file_path) }}')">
+                                                                    <a class="dropdown-item" href="javascript:void(0)" onclick="previewFile('{{ storageUrl($file->file_path) }}', '{{ mimeTypeFromFilename($file->file_name) }}')">
                                                                         {{ Str::limit($file->file_name, 20) }}
                                                                     </a>
                                                                 @endforeach
@@ -406,7 +406,7 @@
                                 <ul class="list-group list-group-flush">
                                     @foreach ($existing_files as $file)
                                         <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent px-0 py-2">
-                                            <a href="javascript:void(0)" onclick="previewFile('{{ asset("storage/" . $file->file_path) }}', '{{ Storage::mimeType("public/" . $file->file_path) }}')">
+                                            <a href="javascript:void(0)" onclick="previewFile('{{ storageUrl($file->file_path) }}', '{{ mimeTypeFromFilename($file->file_name) }}')">
                                                 <i class="fas fa-file mr-2"></i>
                                                 {{ $file->file_name }}
                                             </a>

@@ -12,7 +12,7 @@
                         <div class="tw-flex tw-items-center tw-gap-4">
                             <div class="tw-relative">
                                 @if ($anggota->foto)
-                                    <img src="{{ asset("storage/" . $anggota->foto) }}" class="tw-w-20 tw-h-20 tw-rounded-full tw-object-cover" alt="Avatar" />
+                                    <img src="{{ storageUrl($anggota->foto) }}" class="tw-w-20 tw-h-20 tw-rounded-full tw-object-cover" alt="Avatar" />
                                 @else
                                     <div class="tw-w-20 tw-h-20 tw-rounded-full tw-bg-gray-200 tw-flex tw-items-center tw-justify-center">
                                         <i class="fas fa-user tw-text-gray-400 tw-text-2xl"></i>

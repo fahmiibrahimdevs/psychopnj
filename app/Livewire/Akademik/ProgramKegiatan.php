@@ -7,8 +7,7 @@ use Livewire\WithPagination;
 use Livewire\WithFileUploads;
 use Livewire\Attributes\Title;
 use App\Models\TahunKepengurusan;
-use App\Models\ProgramKegiatan as ModelsProgramKegiatan;
-use App\Models\Pertemuan;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use App\Traits\ImageCompressor;
@@ -123,21 +122,12 @@ class ProgramKegiatan extends Component
                 $programFolder = $this->nama_program;
                 $randomChar = strtoupper(substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 2));
                 $fileName = 'Thumbnail - ' . $this->nama_program . '_' . $randomChar;
-                $extension = $this->thumbnail->getClientOriginalExtension();
-                $thumbnailPath = $this->thumbnail->storeAs("{$tahunFolder}/Dept. PRE/{$programFolder}", $fileName . '.' . $extension, 'public');
-                
-                // Compress thumbnail only if larger than target
-                $fullPath = storage_path('app/public/' . $thumbnailPath);
-                $currentSizeKB = filesize($fullPath) / 1024;
-                
-                if ($currentSizeKB > $this->thumbnailTargetSizeKB) {
-                    $this->compressImageToSize($fullPath, $this->thumbnailTargetSizeKB, 800);
-                }
-                
-                // Update path if PNG was converted to JPG
-                if ($extension === 'png' && !file_exists($fullPath)) {
-                    $thumbnailPath = preg_replace('/\.png$/i', '.jpg', $thumbnailPath);
-                }
+                $thumbnailPath = $this->uploadOptimizedImageToPublicDisk(
+                    $this->thumbnail,
+                    "{$tahunFolder}/Dept. PRE/{$programFolder}",
+                    $fileName,
+                    800
+                );
             }
 
             DB::table('program_pembelajaran')->insert([
@@ -211,21 +201,12 @@ class ProgramKegiatan extends Component
                     // Generate nama file dari nama_program
                     $randomChar = strtoupper(substr(str_shuffle('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'), 0, 2));
                     $fileName = 'Thumbnail - ' . $this->nama_program . '_' . $randomChar;
-                    $extension = $this->thumbnail->getClientOriginalExtension();
-                    $thumbnailPath = $this->thumbnail->storeAs("{$tahunFolder}/Dept. PRE/{$programFolder}", $fileName . '.' . $extension, 'public');
-                    
-                    // Compress thumbnail only if larger than target
-                    $fullPath = storage_path('app/public/' . $thumbnailPath);
-                    $currentSizeKB = filesize($fullPath) / 1024;
-                    
-                    if ($currentSizeKB > $this->thumbnailTargetSizeKB) {
-                        $this->compressImageToSize($fullPath, $this->thumbnailTargetSizeKB, 800);
-                    }
-                    
-                    // Update path if PNG was converted to JPG
-                    if ($extension === 'png' && !file_exists($fullPath)) {
-                        $thumbnailPath = preg_replace('/\.png$/i', '.jpg', $thumbnailPath);
-                    }
+                    $thumbnailPath = $this->uploadOptimizedImageToPublicDisk(
+                        $this->thumbnail,
+                        "{$tahunFolder}/Dept. PRE/{$programFolder}",
+                        $fileName,
+                        800
+                    );
                 }
 
                 DB::table('program_pembelajaran')
@@ -377,5 +358,57 @@ class ProgramKegiatan extends Component
     {
         $this->isEditing       = false;
         $this->resetInputFields();
+    }
+
+    private function uploadOptimizedImageToPublicDisk(UploadedFile $file, string $basePath, string $baseFileName, int $maxWidth = 1920): string
+    {
+        $tempDir = storage_path('app/livewire-tmp/processed');
+        if (!is_dir($tempDir)) {
+            mkdir($tempDir, 0755, true);
+        }
+
+        $sourceExt = strtolower($file->getClientOriginalExtension() ?: 'jpg');
+        $tempPath = $tempDir.'/'.uniqid('img_', true).'.'.$sourceExt;
+
+        if (!copy($file->getRealPath(), $tempPath)) {
+            throw new \RuntimeException('Failed to copy uploaded file to temporary path.');
+        }
+
+        $currentSizeKB = filesize($tempPath) / 1024;
+        if ($currentSizeKB > $this->thumbnailTargetSizeKB) {
+            $this->compressImageToSize($tempPath, $this->thumbnailTargetSizeKB, $maxWidth);
+        }
+
+        $processedPath = $tempPath;
+        if (!file_exists($processedPath)) {
+            $jpgPath = preg_replace('/\.png$/i', '.jpg', $tempPath);
+            if ($jpgPath && file_exists($jpgPath)) {
+                $processedPath = $jpgPath;
+            } else {
+                throw new \RuntimeException('Processed temporary image file not found.');
+            }
+        }
+
+        $finalExt = strtolower(pathinfo($processedPath, PATHINFO_EXTENSION));
+        $finalFileName = $baseFileName.'.'.$finalExt;
+        $relativePath = trim($basePath, '/').'/'.$finalFileName;
+
+        $stream = fopen($processedPath, 'r');
+        if ($stream === false) {
+            throw new \RuntimeException('Failed to open processed file stream.');
+        }
+
+        Storage::disk('public')->writeStream($relativePath, $stream, ['visibility' => 'public']);
+
+        if (is_resource($stream)) {
+            fclose($stream);
+        }
+
+        @unlink($processedPath);
+        if ($processedPath !== $tempPath) {
+            @unlink($tempPath);
+        }
+
+        return $relativePath;
     }
 }

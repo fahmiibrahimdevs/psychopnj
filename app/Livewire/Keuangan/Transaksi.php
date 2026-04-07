@@ -8,12 +8,10 @@ use Livewire\WithFileUploads;
 use Livewire\Attributes\Title;
 use App\Models\TahunKepengurusan;
 use App\Models\Keuangan as ModelsKeuangan;
-use App\Models\Anggaran as ModelsAnggaran;
-use App\Models\Department;
-use App\Models\Project;
-use App\Models\JenisAnggaran;
 use App\Models\TransaksiFile;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
@@ -75,18 +73,20 @@ class Transaksi extends Component
         $activeTahun = TahunKepengurusan::where('status', 'aktif')->first();
         $this->activeTahunId = $activeTahun ? $activeTahun->id : null;
 
-        // Filter departments by active tahun
-        // Filter departments by active tahun
-        $this->departments = DB::table('departments')
-            ->where('id_tahun', $this->activeTahunId)
-            ->select('id', 'nama_department')
-            ->orderBy('nama_department')
-            ->get();
-        $this->projects = DB::table('projects')
-            ->where('id_tahun', $this->activeTahunId)
-            ->select('id', 'nama_project')
-            ->orderBy('nama_project')
-            ->get();
+        $this->departments = Cache::remember('keuangan:departments:tahun:'.$this->activeTahunId, now()->addMinutes(10), function () {
+            return DB::table('departments')
+                ->where('id_tahun', $this->activeTahunId)
+                ->select('id', 'nama_department')
+                ->orderBy('nama_department')
+                ->get();
+        });
+        $this->projects = Cache::remember('keuangan:projects:tahun:'.$this->activeTahunId, now()->addMinutes(10), function () {
+            return DB::table('projects')
+                ->where('id_tahun', $this->activeTahunId)
+                ->select('id', 'nama_project')
+                ->orderBy('nama_project')
+                ->get();
+        });
         
         $this->resetInputFields();
     }
@@ -94,153 +94,176 @@ class Transaksi extends Component
     public function render()
     {
         $this->searchResetPage();
-        $search = '%'.$this->searchTerm.'%';
+        $searchTerm = trim((string) $this->searchTerm);
+        $search = '%'.$searchTerm.'%';
+        $page = (int) request()->query('page', 1);
+        $version = (int) Cache::get('keuangan:transaksi:list:version', 1);
 
-        $query = DB::table('keuangan')
-            ->leftJoin('departments', 'keuangan.id_department', '=', 'departments.id')
-            ->leftJoin('projects', 'keuangan.id_project', '=', 'projects.id')
-            ->leftJoin('users', 'keuangan.id_user', '=', 'users.id')
-            ->select(
-                'keuangan.*',
-                'departments.nama_department',
-                'projects.nama_project',
-                'users.name as user_name'
-            )
-            ->where('keuangan.id_tahun', $this->activeTahunId)
-            ->where('keuangan.deskripsi', 'LIKE', $search);
-            
-        if ($this->filterJenis) {
-            $query->where('keuangan.jenis', $this->filterJenis);
-        }
-        if ($this->filterKategori) {
-            $query->where('keuangan.kategori', $this->filterKategori);
-        }
+        $cacheKey = sprintf(
+            'keuangan:transaksi:v%s:tahun:%s:q:%s:jenis:%s:kategori:%s:len:%s:page:%s',
+            $version,
+            $this->activeTahunId ?? 'none',
+            md5(mb_strtolower($searchTerm)),
+            $this->filterJenis ?: 'all',
+            $this->filterKategori ?: 'all',
+            $this->lengthData,
+            $page
+        );
 
-        $data = $query->orderBy('keuangan.tanggal', 'DESC')
-            ->orderBy('keuangan.id', 'DESC')
-            ->paginate($this->lengthData);
+        $payload = Cache::remember($cacheKey, now()->addSeconds(45), function () use ($search) {
+            $query = DB::table('keuangan')
+                ->leftJoin('departments', 'keuangan.id_department', '=', 'departments.id')
+                ->leftJoin('projects', 'keuangan.id_project', '=', 'projects.id')
+                ->leftJoin('users', 'keuangan.id_user', '=', 'users.id')
+                ->select(
+                    'keuangan.*',
+                    'departments.nama_department',
+                    'projects.nama_project',
+                    'users.name as user_name'
+                )
+                ->where('keuangan.id_tahun', $this->activeTahunId)
+                ->where('keuangan.deskripsi', 'LIKE', $search);
 
-        $transaksiIds = $data->pluck('id')->all();
-        $transactionFilesByTransaction = [];
+            if ($this->filterJenis) {
+                $query->where('keuangan.jenis', $this->filterJenis);
+            }
+            if ($this->filterKategori) {
+                $query->where('keuangan.kategori', $this->filterKategori);
+            }
 
-        if (!empty($transaksiIds)) {
-            $files = TransaksiFile::whereIn('id_transaksi', $transaksiIds)
-                ->orderBy('created_at', 'desc')
-                ->get();
+            $data = $query->orderBy('keuangan.tanggal', 'DESC')
+                ->orderBy('keuangan.id', 'DESC')
+                ->paginate($this->lengthData);
 
-            foreach ($files as $file) {
-                $transaksiId = (int) $file->id_transaksi;
-                $tipe = strtolower($file->tipe ?? $file->jenis_file ?? '');
+            $transaksiIds = $data->pluck('id')->all();
+            $transactionFilesByTransaction = [];
 
-                if (!in_array($tipe, ['nota', 'reimburse', 'foto'])) {
-                    continue;
+            if (!empty($transaksiIds)) {
+                $files = TransaksiFile::whereIn('id_transaksi', $transaksiIds)
+                    ->orderBy('created_at', 'desc')
+                    ->get();
+
+                foreach ($files as $file) {
+                    $transaksiId = (int) $file->id_transaksi;
+                    $tipe = strtolower($file->tipe ?? $file->jenis_file ?? '');
+
+                    if (!in_array($tipe, ['nota', 'reimburse', 'foto'])) {
+                        continue;
+                    }
+
+                    if (!isset($transactionFilesByTransaction[$transaksiId])) {
+                        $transactionFilesByTransaction[$transaksiId] = [
+                            'nota' => [],
+                            'reimburse' => [],
+                            'foto' => [],
+                        ];
+                    }
+
+                    $transactionFilesByTransaction[$transaksiId][$tipe][] = [
+                        'id' => $file->id,
+                        'original_name' => $file->original_name,
+                        'mime_type' => $file->mime_type,
+                        'file_size' => (int) $file->file_size,
+                        'url' => Storage::url($file->file_path),
+                    ];
                 }
+            }
 
-                if (!isset($transactionFilesByTransaction[$transaksiId])) {
-                    $transactionFilesByTransaction[$transaksiId] = [
+            foreach ($data as $row) {
+                $rowId = (int) $row->id;
+
+                if (!isset($transactionFilesByTransaction[$rowId])) {
+                    $transactionFilesByTransaction[$rowId] = [
                         'nota' => [],
                         'reimburse' => [],
                         'foto' => [],
                     ];
                 }
 
-                $transactionFilesByTransaction[$transaksiId][$tipe][] = [
-                    'id' => $file->id,
-                    'original_name' => $file->original_name,
-                    'mime_type' => $file->mime_type,
-                    'file_size' => (int) $file->file_size,
-                    'url' => Storage::url($file->file_path),
+                $hasUploadedFiles = !empty($transactionFilesByTransaction[$rowId]['nota'])
+                    || !empty($transactionFilesByTransaction[$rowId]['reimburse'])
+                    || !empty($transactionFilesByTransaction[$rowId]['foto']);
+
+                if ($hasUploadedFiles || empty($row->bukti)) {
+                    continue;
+                }
+
+                $path = parse_url($row->bukti, PHP_URL_PATH) ?? '';
+                $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+                $mimeType = 'application/octet-stream';
+
+                if ($extension === 'pdf') {
+                    $mimeType = 'application/pdf';
+                } elseif (in_array($extension, ['jpg', 'jpeg'])) {
+                    $mimeType = 'image/jpeg';
+                } elseif ($extension === 'png') {
+                    $mimeType = 'image/png';
+                } elseif ($extension === 'webp') {
+                    $mimeType = 'image/webp';
+                } elseif ($extension === 'gif') {
+                    $mimeType = 'image/gif';
+                }
+
+                $transactionFilesByTransaction[$rowId]['nota'][] = [
+                    'id' => 'bukti-link-' . $rowId,
+                    'original_name' => 'Bukti Transaksi',
+                    'mime_type' => $mimeType,
+                    'file_size' => 0,
+                    'url' => $row->bukti,
                 ];
             }
-        }
 
-        foreach ($data as $row) {
-            $rowId = (int) $row->id;
+            $allTransactions = DB::table('keuangan')
+                ->where('id_tahun', $this->activeTahunId)
+                ->select('id', 'jenis', 'nominal')
+                ->orderBy('tanggal', 'ASC')
+                ->orderBy('id', 'ASC')
+                ->get();
 
-            if (!isset($transactionFilesByTransaction[$rowId])) {
-                $transactionFilesByTransaction[$rowId] = [
-                    'nota' => [],
-                    'reimburse' => [],
-                    'foto' => [],
-                ];
+            $runningTotal = 0;
+            $runningTotals = [];
+            foreach ($allTransactions as $tx) {
+                if ($tx->jenis === 'pemasukan') {
+                    $runningTotal += $tx->nominal;
+                } else {
+                    $runningTotal -= $tx->nominal;
+                }
+                $runningTotals[$tx->id] = $runningTotal;
             }
 
-            $hasUploadedFiles = !empty($transactionFilesByTransaction[$rowId]['nota'])
-                || !empty($transactionFilesByTransaction[$rowId]['reimburse'])
-                || !empty($transactionFilesByTransaction[$rowId]['foto']);
+            $stats = DB::table('keuangan')
+                ->where('id_tahun', $this->activeTahunId)
+                ->selectRaw("\n                    SUM(CASE WHEN jenis = 'pemasukan' THEN nominal ELSE 0 END) as total_pemasukan,\n                    SUM(CASE WHEN jenis = 'pengeluaran' THEN nominal ELSE 0 END) as total_pengeluaran\n                ")
+                ->first();
 
-            if ($hasUploadedFiles || empty($row->bukti)) {
-                continue;
-            }
+            $jenisAnggaranPemasukan = DB::table('jenis_anggaran')
+                ->where('nama_kategori', 'pemasukan')
+                ->orderBy('nama_jenis')
+                ->get();
+            $jenisAnggaranPengeluaran = DB::table('jenis_anggaran')
+                ->where('nama_kategori', 'pengeluaran')
+                ->orderBy('nama_jenis')
+                ->get();
 
-            $path = parse_url($row->bukti, PHP_URL_PATH) ?? '';
-            $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-            $mimeType = 'application/octet-stream';
-
-            if ($extension === 'pdf') {
-                $mimeType = 'application/pdf';
-            } elseif (in_array($extension, ['jpg', 'jpeg'])) {
-                $mimeType = 'image/jpeg';
-            } elseif ($extension === 'png') {
-                $mimeType = 'image/png';
-            } elseif ($extension === 'webp') {
-                $mimeType = 'image/webp';
-            } elseif ($extension === 'gif') {
-                $mimeType = 'image/gif';
-            }
-
-            $transactionFilesByTransaction[$rowId]['nota'][] = [
-                'id' => 'bukti-link-' . $rowId,
-                'original_name' => 'Bukti Transaksi',
-                'mime_type' => $mimeType,
-                'file_size' => 0,
-                'url' => $row->bukti,
+            return [
+                'data' => $data,
+                'transactionFilesByTransaction' => $transactionFilesByTransaction,
+                'runningTotals' => $runningTotals,
+                'totalPemasukan' => $stats->total_pemasukan ?? 0,
+                'totalPengeluaran' => $stats->total_pengeluaran ?? 0,
+                'jenisAnggaranPemasukan' => $jenisAnggaranPemasukan,
+                'jenisAnggaranPengeluaran' => $jenisAnggaranPengeluaran,
             ];
-        }
+        });
 
-        // Calculate running totals (Optimized)
-        // Fetch only necessary columns for calculation
-        $allTransactions = DB::table('keuangan')
-            ->where('id_tahun', $this->activeTahunId)
-            ->select('id', 'jenis', 'nominal')
-            ->orderBy('tanggal', 'ASC')
-            ->orderBy('id', 'ASC')
-            ->get();
-
-        $runningTotal = 0;
-        $runningTotals = [];
-        foreach ($allTransactions as $tx) {
-            if ($tx->jenis === 'pemasukan') {
-                $runningTotal += $tx->nominal;
-            } else {
-                $runningTotal -= $tx->nominal;
-            }
-            $runningTotals[$tx->id] = $runningTotal;
-        }
-
-        // Summary Statistics (Optimized)
-        // Use single query for stats if possible, or separate lightweight queries
-        $stats = DB::table('keuangan')
-            ->where('id_tahun', $this->activeTahunId)
-            ->selectRaw("
-                SUM(CASE WHEN jenis = 'pemasukan' THEN nominal ELSE 0 END) as total_pemasukan,
-                SUM(CASE WHEN jenis = 'pengeluaran' THEN nominal ELSE 0 END) as total_pengeluaran
-            ")
-            ->first();
-
-        $totalPemasukan = $stats->total_pemasukan ?? 0;
-        $totalPengeluaran = $stats->total_pengeluaran ?? 0;
+        $data = $payload['data'];
+        $transactionFilesByTransaction = $payload['transactionFilesByTransaction'];
+        $runningTotals = $payload['runningTotals'];
+        $totalPemasukan = $payload['totalPemasukan'];
+        $totalPengeluaran = $payload['totalPengeluaran'];
         $saldoAkhir = $totalPemasukan - $totalPengeluaran;
-
-        // Load kategori (Optimized)
-        $jenisAnggaranPemasukan = DB::table('jenis_anggaran')
-            ->where('nama_kategori', 'pemasukan')
-            ->orderBy('nama_jenis')
-            ->get();
-        $jenisAnggaranPengeluaran = DB::table('jenis_anggaran')
-            ->where('nama_kategori', 'pengeluaran')
-            ->orderBy('nama_jenis')
-            ->get();
+        $jenisAnggaranPemasukan = $payload['jenisAnggaranPemasukan'];
+        $jenisAnggaranPengeluaran = $payload['jenisAnggaranPengeluaran'];
 
         return view('livewire.keuangan.transaksi', compact(
             'data', 
@@ -298,6 +321,7 @@ class Transaksi extends Component
             }
 
             \Illuminate\Support\Facades\DB::commit();
+            $this->bumpListCacheVersion();
             $this->dispatchAlert('success', 'Success!', 'Transaksi berhasil ditambahkan.');
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\DB::rollBack();
@@ -351,6 +375,7 @@ class Transaksi extends Component
                 }
 
                 \Illuminate\Support\Facades\DB::commit();
+                $this->bumpListCacheVersion();
                 $this->dispatchAlert('success', 'Success!', 'Transaksi berhasil diperbarui.');
                 $this->dataId = null;
             } catch (\Exception $e) {
@@ -388,6 +413,7 @@ class Transaksi extends Component
             $transaksi->delete();
             
             \Illuminate\Support\Facades\DB::commit();
+            $this->bumpListCacheVersion();
             $this->dispatchAlert('success', 'Success!', 'Transaksi berhasil dihapus.');
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\DB::rollBack();
@@ -630,30 +656,22 @@ class Transaksi extends Component
             $deskripsi = str_replace('  ', ' ', $deskripsi); // Remove double spaces
             $tipeLabel = ($tipe === 'nota') ? 'Nota' : (($tipe === 'reimburse') ? 'Reimburse' : 'Barang');
             $safeFilename = "{$tanggal}_{$tipeLabel}_{$deskripsi}_" . sprintf('%02d', $counter) . ".{$extension}";
-            
-            // Store file
-            $filePath = $file->storeAs($basePath, $safeFilename, 'public');
-            $fullPath = storage_path('app/public/' . $filePath);
+            $filePath = '';
             $fileSize = $file->getSize();
-            
-            // Compress images (not videos or PDFs)
+            $storedMimeType = $mimeType;
+
             if (in_array($mimeType, ['image/jpeg', 'image/jpg', 'image/png'])) {
-                $currentSizeKB = filesize($fullPath) / 1024;
-                
-                if ($currentSizeKB > $this->imageTargetSizeKB) {
-                    $this->compressImageToSize($fullPath, $this->imageTargetSizeKB);
-                }
-                
-                // Update file size after compression
-                if (file_exists($fullPath)) {
-                    $fileSize = filesize($fullPath);
-                }
-                
-                // Update path if PNG was converted to JPG
-                if ($extension === 'png' && !file_exists($fullPath)) {
-                    $filePath = preg_replace('/\.png$/i', '.jpg', $filePath);
-                    $safeFilename = preg_replace('/\.png$/i', '.jpg', $safeFilename);
-                }
+                $result = $this->uploadOptimizedImageToPublicDisk(
+                    $file,
+                    $basePath,
+                    pathinfo($safeFilename, PATHINFO_FILENAME)
+                );
+
+                $filePath = $result['path'];
+                $fileSize = $result['size'];
+                $storedMimeType = $result['mime_type'];
+            } else {
+                $filePath = $file->storeAs($basePath, $safeFilename, 'public');
             }
             
             // Save to database
@@ -663,11 +681,70 @@ class Transaksi extends Component
                 'file_path' => $filePath,
                 'original_name' => $originalName,
                 'file_size' => $fileSize,
-                'mime_type' => $mimeType,
+                'mime_type' => $storedMimeType,
             ]);
             
             $counter++;
         }
+    }
+
+    private function uploadOptimizedImageToPublicDisk(UploadedFile $file, string $basePath, string $baseFileName, int $maxWidth = 1920): array
+    {
+        $tempDir = storage_path('app/livewire-tmp/processed');
+        if (!is_dir($tempDir)) {
+            mkdir($tempDir, 0755, true);
+        }
+
+        $sourceExt = strtolower($file->getClientOriginalExtension() ?: 'jpg');
+        $tempPath = $tempDir.'/'.uniqid('img_', true).'.'.$sourceExt;
+
+        if (!copy($file->getRealPath(), $tempPath)) {
+            throw new \RuntimeException('Failed to copy uploaded file to temporary path.');
+        }
+
+        $currentSizeKB = filesize($tempPath) / 1024;
+        if ($currentSizeKB > $this->imageTargetSizeKB) {
+            $this->compressImageToSize($tempPath, $this->imageTargetSizeKB, $maxWidth);
+        }
+
+        $processedPath = $tempPath;
+        if (!file_exists($processedPath)) {
+            $jpgPath = preg_replace('/\.png$/i', '.jpg', $tempPath);
+            if ($jpgPath && file_exists($jpgPath)) {
+                $processedPath = $jpgPath;
+            } else {
+                throw new \RuntimeException('Processed temporary image file not found.');
+            }
+        }
+
+        $finalExt = strtolower(pathinfo($processedPath, PATHINFO_EXTENSION));
+        $finalFileName = $baseFileName.'.'.$finalExt;
+        $relativePath = trim($basePath, '/').'/'.$finalFileName;
+        $storedMimeType = in_array($finalExt, ['jpg', 'jpeg']) ? 'image/jpeg' : 'image/png';
+
+        $stream = fopen($processedPath, 'r');
+        if ($stream === false) {
+            throw new \RuntimeException('Failed to open processed file stream.');
+        }
+
+        Storage::disk('public')->writeStream($relativePath, $stream, ['visibility' => 'public']);
+
+        if (is_resource($stream)) {
+            fclose($stream);
+        }
+
+        $finalSize = (int) filesize($processedPath);
+
+        @unlink($processedPath);
+        if ($processedPath !== $tempPath) {
+            @unlink($tempPath);
+        }
+
+        return [
+            'path' => $relativePath,
+            'size' => $finalSize,
+            'mime_type' => $storedMimeType,
+        ];
     }
 
     /**
@@ -685,6 +762,7 @@ class Transaksi extends Component
             
             // Delete from database
             $file->delete();
+            $this->bumpListCacheVersion();
             
             // Refresh existing files
             if ($this->dataId) {
@@ -707,5 +785,16 @@ class Transaksi extends Component
                 'text' => 'Tolong hubungi Fahmi Ibrahim. Wa: 0856-9125-3593. Gagal menghapus file: ' . $e->getMessage()
             ]);
         }
+    }
+
+    private function bumpListCacheVersion(): void
+    {
+        $key = 'keuangan:transaksi:list:version';
+        if (!Cache::has($key)) {
+            Cache::forever($key, 2);
+            return;
+        }
+
+        Cache::increment($key);
     }
 }

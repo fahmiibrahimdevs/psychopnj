@@ -150,7 +150,7 @@
                                                 <td class="text-left">
                                                     <div class="tw-flex tw-items-start tw-gap-3">
                                                         @if ($row->foto)
-                                                            <img src="{{ asset("storage/" . $row->foto) }}" alt="{{ $row->nama }}" class="tw-w-12 tw-h-12 tw-object-cover tw-rounded tw-border tw-border-gray-200" />
+                                                            <img src="{{ storageUrl($row->foto) }}" alt="{{ $row->nama }}" class="tw-w-12 tw-h-12 tw-object-cover tw-rounded tw-border tw-border-gray-200" />
                                                         @else
                                                             <div class="tw-w-12 tw-h-12 tw-bg-gray-100 tw-rounded tw-flex tw-items-center tw-justify-center tw-border tw-border-gray-200">
                                                                 <i class="fas fa-box tw-text-gray-400"></i>
@@ -339,7 +339,7 @@
                             <div class="tw-flex tw-items-start tw-gap-4">
                                 @if ($fotoPreview)
                                     <div class="tw-relative">
-                                        <img src="{{ asset("storage/" . $fotoPreview) }}" alt="Preview" class="tw-w-24 tw-h-24 tw-object-cover tw-rounded tw-border" />
+                                        <img src="{{ storageUrl($fotoPreview) }}" alt="Preview" class="tw-w-24 tw-h-24 tw-object-cover tw-rounded tw-border" />
                                         <button type="button" wire:click="removeFoto" class="tw-absolute tw-top-0 tw-right-0 tw-bg-red-500 tw-text-white tw-rounded-full tw-w-5 tw-h-5 tw-flex tw-items-center tw-justify-center tw-text-xs" style="transform: translate(50%, -50%)">
                                             <i class="fas fa-times"></i>
                                         </button>

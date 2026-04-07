@@ -169,7 +169,7 @@
                                         @foreach ($members as $member)
                                             <div class="tw-flex tw-items-start tw-gap-3 tw-p-2 tw-rounded-lg hover:tw-bg-white/5 tw-transition-colors">
                                                 @if ($member->foto)
-                                                    <img src="{{ asset("storage/" . $member->foto) }}" class="tw-w-10 tw-h-10 tw-rounded-full tw-object-cover tw-border-2 {{ $color["border"] }}" alt="{{ $member->nama_lengkap }}" />
+                                                    <img src="{{ storageUrl($member->foto) }}" class="tw-w-10 tw-h-10 tw-rounded-full tw-object-cover tw-border-2 {{ $color["border"] }}" alt="{{ $member->nama_lengkap }}" />
                                                 @else
                                                     <div class="tw-w-10 tw-h-10 tw-rounded-full tw-bg-gradient-to-br {{ $color["gradient"] }} tw-flex tw-items-center tw-justify-center tw-shrink-0">
                                                         <i class="fas fa-user tw-text-white tw-text-sm"></i>

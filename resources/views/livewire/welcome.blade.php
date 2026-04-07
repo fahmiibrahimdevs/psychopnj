@@ -400,7 +400,7 @@
                     <div wire:key="project-{{ $project->id }}" class="tw-bg-gradient-to-tl tw-from-[#010022] tw-to-slate-900 tw-rounded-xl tw-shadow-md tw-shadow-slate-950 tw-flex tw-flex-col">
                         <div class="tw-p-0 tw-rounded-tr-xl tw-rounded-tl-xl tw-border-2 tw-border-[#00eaff] tw-shadow-[0_0_0px_#00eaff,0_0_4px_#00bfff,0_0_4px_#0066ff]">
                             @if ($project->thumbnail)
-                                <img src="{{ asset("storage/" . $project->thumbnail) }}" class="tw-rounded-tr-xl tw-rounded-tl-xl tw-object-cover tw-h-48 tw-w-full" alt="{{ $project->nama_project }}" />
+                                <img src="{{ storageUrl($project->thumbnail) }}" class="tw-rounded-tr-xl tw-rounded-tl-xl tw-object-cover tw-h-48 tw-w-full" alt="{{ $project->nama_project }}" />
                             @else
                                 <img src="{{ asset("psychorobotic/project-2.jpeg") }}" class="tw-rounded-tr-xl tw-rounded-tl-xl tw-object-cover tw-h-48 tw-w-full" alt="{{ $project->nama_project }}" />
                             @endif
