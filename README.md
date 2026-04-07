@@ -82,19 +82,46 @@ npm run build
 
 ## 📂 Storage Configuration
 
-Proper storage permission and linking are crucial for file uploads (Wait, Images, Documents).
+This project supports cloud object storage with Cloudflare R2 for public uploads.
 
-### 1. Link Storage
+### 1. Configure Cloudflare R2
 
-Create a symbolic link from `public/storage` to `storage/app/public`:
+Set these variables in `.env`:
 
 ```bash
-php artisan storage:link
+FILESYSTEM_DISK=public
+
+R2_ACCESS_KEY_ID=your_access_key
+R2_SECRET_ACCESS_KEY=your_secret_key
+R2_DEFAULT_REGION=auto
+R2_BUCKET=your_bucket_name
+R2_ENDPOINT=https://<accountid>.r2.cloudflarestorage.com
+R2_URL=https://<your-public-domain>.r2.dev
+R2_ROOT=psychorobotic
+R2_USE_PATH_STYLE_ENDPOINT=false
 ```
 
-> **Note:** Ideally, run this command _after_ configuring your web server user permissions.
+### 2. Migrate Existing Local Files to R2
 
-### 2. File Permissions (Linux/Server)
+Preview files first:
+
+```bash
+php artisan storage:migrate-r2 --dry-run
+```
+
+Run the migration:
+
+```bash
+php artisan storage:migrate-r2
+```
+
+Optional: remove local files after successful upload:
+
+```bash
+php artisan storage:migrate-r2 --delete-local
+```
+
+### 3. File Permissions (Linux/Server)
 
 Ensure the web server user (usually `www-data` or `nginx`) has write access to storage directories:
 

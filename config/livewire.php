@@ -64,9 +64,9 @@ return [
     */
 
     'temporary_file_upload' => [
-        'disk' => 'local',        // Example: 'local', 's3'              | Default: 'default'
+        'disk' => env('LIVEWIRE_TMP_DISK', 'livewire_tmp'),        // Force temp upload to local server-side storage
         'rules' => ['file', 'max:102400'],       // Example: ['file', 'mimes:png,jpg']  | Default: ['required', 'file', 'max:12288'] (12MB)
-        'directory' => null,   // Example: 'tmp'                      | Default: 'livewire-tmp'
+        'directory' => '',   // Store directly in livewire_tmp disk root
         'middleware' => null,  // Example: 'throttle:5,1'             | Default: 'throttle:60,1'
         'preview_mimes' => [   // Supported file types for temporary pre-signed file URLs...
             'png', 'gif', 'bmp', 'svg', 'wav', 'mp4',

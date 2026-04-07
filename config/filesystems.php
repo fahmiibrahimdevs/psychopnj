@@ -37,10 +37,31 @@ return [
             'throw' => false,
         ],
 
-        'public' => [
+        'livewire_tmp' => [
+            'driver' => 'local',
+            'root' => storage_path('app/livewire-tmp'),
+            'serve' => true,
+            'throw' => false,
+        ],
+
+        'public_local' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
             'url' => env('APP_URL').'/storage',
+            'visibility' => 'public',
+            'throw' => false,
+        ],
+
+        'public' => [
+            'driver' => 's3',
+            'key' => env('R2_ACCESS_KEY_ID'),
+            'secret' => env('R2_SECRET_ACCESS_KEY'),
+            'region' => env('R2_DEFAULT_REGION', 'auto'),
+            'bucket' => env('R2_BUCKET'),
+            'url' => env('R2_URL'),
+            'endpoint' => env('R2_ENDPOINT'),
+            'root' => env('R2_ROOT', ''),
+            'use_path_style_endpoint' => env('R2_USE_PATH_STYLE_ENDPOINT', false),
             'visibility' => 'public',
             'throw' => false,
         ],
