@@ -5,15 +5,15 @@
         </div>
 
         <div class="section-body">
-            <ul class="nav nav-pills tw-my-3" id="myTab3" role="tablist">
+            <ul class="nav nav-pills tw-mt-7 tw-mb-2 tw-px-6 lg:tw-px-0" id="myTab3" role="tablist" style="display: flex; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; -ms-overflow-style: none; scrollbar-width: none">
                 <li class="nav-item">
-                    <a class="nav-link {{ $activeTab === "pengurus" ? "active" : "" }}" wire:click.prevent="switchTab('pengurus')" id="pengurus-tab3" data-toggle="tab" href="#pengurus" role="tab" aria-controls="pengurus" aria-selected="{{ $activeTab === "pengurus" ? "true" : "false" }}">Pengurus ({{ $countPengurus }})</a>
+                    <a class="nav-link tw-whitespace-nowrap {{ $activeTab === "pengurus" ? "active" : "" }}" wire:click.prevent="switchTab('pengurus')" id="pengurus-tab3" data-toggle="tab" href="#pengurus" role="tab" aria-controls="pengurus" aria-selected="{{ $activeTab === "pengurus" ? "true" : "false" }}">Pengurus ({{ $countPengurus }})</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ $activeTab === "anggota" ? "active" : "" }}" wire:click.prevent="switchTab('anggota')" id="anggota-tab3" data-toggle="tab" href="#anggota" role="tab" aria-controls="anggota" aria-selected="{{ $activeTab === "anggota" ? "true" : "false" }}">Anggota ({{ $countAnggota }})</a>
+                    <a class="nav-link tw-whitespace-nowrap {{ $activeTab === "anggota" ? "active" : "" }}" wire:click.prevent="switchTab('anggota')" id="anggota-tab3" data-toggle="tab" href="#anggota" role="tab" aria-controls="anggota" aria-selected="{{ $activeTab === "anggota" ? "true" : "false" }}">Anggota ({{ $countAnggota }})</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link {{ $activeTab === "statistik" ? "active" : "" }}" wire:click.prevent="switchTab('statistik')" id="statistik-tab3" data-toggle="tab" href="#statistik" role="tab" aria-controls="statistik" aria-selected="{{ $activeTab === "statistik" ? "true" : "false" }}">Statistik Kelas</a>
+                    <a class="nav-link tw-whitespace-nowrap {{ $activeTab === "statistik" ? "active" : "" }}" wire:click.prevent="switchTab('statistik')" id="statistik-tab3" data-toggle="tab" href="#statistik" role="tab" aria-controls="statistik" aria-selected="{{ $activeTab === "statistik" ? "true" : "false" }}">Statistik Kelas</a>
                 </li>
             </ul>
             <div class="tab-content" id="myTabContent2">

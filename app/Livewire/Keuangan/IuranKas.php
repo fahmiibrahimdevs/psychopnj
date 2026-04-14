@@ -4,11 +4,13 @@ namespace App\Livewire\Keuangan;
 
 use App\Traits\WithPermissionCache;
 use Livewire\Component;
+use Livewire\WithPagination;
 use Livewire\Attributes\Title;
 use App\Models\TahunKepengurusan;
 use App\Models\IuranKas as ModelsIuranKas;
 use App\Models\IuranKasPeriode;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use App\Exports\IuranKasExport;
 use Maatwebsite\Excel\Facades\Excel;
@@ -16,7 +18,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class IuranKas extends Component
 {
-    use WithPermissionCache;
+    use WithPermissionCache, WithPagination;
     #[Title('Iuran Kas')]
 
     public $activeTahunId;
@@ -34,6 +36,9 @@ class IuranKas extends Component
     public $showRenameModal = false;
     
     public $searchTerm = '';
+    public $lengthData = 50;
+    public $activeTab = 'pengurus';
+    public $selectedJurusan = '';
     
     // Rename state
     public $oldPeriodeName = '';
@@ -72,32 +77,104 @@ class IuranKas extends Component
     public function render()
     {
         $this->loadPeriodeList();
-        $data = $this->prepareData();
+        $data = $this->prepareData(paginateAnggota: true);
+        $data['dailyHistory'] = $this->getDailyHistory();
         return view('livewire.keuangan.iuran-kas', $data);
     }
 
-    private function prepareData()
+    private function prepareData(bool $paginateAnggota = true): array
     {
         $matrix = [
             'pengurus' => [],
             'anggota' => []
         ];
 
+        $pengurusGrouped = collect();
+        $anggotaGrouped = collect();
+        $jurusanFilterOptions = collect();
+        $countPengurus = 0;
+        $countAnggota = 0;
+
         $summary = [
             'total_keseluruhan' => 0
         ];
 
+        $anggotaPaginator = null;
+        $searchTerm = trim((string) $this->searchTerm);
+
         if ($this->activeTahunId) {
-            $members = DB::table('anggota')
-                ->select('id', 'nama_lengkap', 'status_anggota')
-                ->where('id_tahun', $this->activeTahunId)
-                ->where('status_aktif', 'aktif')
-                ->when($this->searchTerm, function ($query) {
-                    $query->where('nama_lengkap', 'like', '%' . $this->searchTerm . '%');
+            $baseMembersQuery = DB::table('anggota as a')
+                ->leftJoin('departments as d', function ($join) {
+                    $join->on('d.id', '=', 'a.id_department')
+                        ->on('d.id_tahun', '=', 'a.id_tahun');
                 })
-                ->orderBy('nama_lengkap', 'ASC')
+                ->select(
+                    'a.id',
+                    'a.nama_lengkap',
+                    'a.status_anggota',
+                    'a.jurusan_prodi_kelas',
+                    'd.nama_department'
+                )
+                ->where('a.id_tahun', $this->activeTahunId)
+                ->where('a.status_aktif', 'aktif')
+                ->when($searchTerm !== '', function ($query) use ($searchTerm) {
+                    $query->where('a.nama_lengkap', 'like', '%' . $searchTerm . '%');
+                });
+
+            $pengurusMembers = (clone $baseMembersQuery)
+                ->where('a.status_anggota', 'pengurus')
+                ->orderByRaw('COALESCE(d.nama_department, "") ASC')
+                ->orderBy('a.nama_lengkap', 'ASC')
                 ->get();
 
+            $countPengurus = $pengurusMembers->count();
+
+            $jurusanFilterOptions = DB::table('anggota as a')
+                ->selectRaw('a.jurusan_prodi_kelas, COUNT(*) as total')
+                ->where('a.id_tahun', $this->activeTahunId)
+                ->where('a.status_aktif', 'aktif')
+                ->where('a.status_anggota', 'anggota')
+                ->groupBy('a.jurusan_prodi_kelas')
+                ->orderBy('a.jurusan_prodi_kelas', 'ASC')
+                ->get()
+                ->map(function ($row) {
+                    $value = trim((string) ($row->jurusan_prodi_kelas ?? ''));
+
+                    return [
+                        'value' => $value === '' ? '__empty__' : $value,
+                        'label' => $value === '' ? 'Tidak Ada Data' : $value,
+                        'total' => (int) $row->total,
+                    ];
+                })
+                ->values();
+
+            $anggotaQuery = (clone $baseMembersQuery)
+                ->where('a.status_anggota', 'anggota')
+                ->when($this->selectedJurusan !== '', function ($query) {
+                    if ($this->selectedJurusan === '__empty__') {
+                        $query->where(function ($subQuery) {
+                            $subQuery->whereNull('a.jurusan_prodi_kelas')
+                                ->orWhere('a.jurusan_prodi_kelas', '');
+                        });
+
+                        return;
+                    }
+
+                    $query->where('a.jurusan_prodi_kelas', $this->selectedJurusan);
+                })
+                ->orderBy('a.jurusan_prodi_kelas', 'ASC')
+                ->orderBy('a.nama_lengkap', 'ASC');
+
+            if ($paginateAnggota) {
+                $anggotaPaginator = $anggotaQuery->paginate($this->lengthData);
+                $anggotaMembers = collect($anggotaPaginator->items());
+                $countAnggota = $anggotaPaginator->total();
+            } else {
+                $anggotaMembers = $anggotaQuery->get();
+                $countAnggota = $anggotaMembers->count();
+            }
+
+            $members = $pengurusMembers->concat($anggotaMembers)->values();
             $memberIds = $members->pluck('id')->all();
             
             $iuranRecordsByMember = collect();
@@ -108,7 +185,6 @@ class IuranKas extends Component
                     ->select('id', 'id_anggota', 'periode', 'status', 'tanggal_bayar', 'nominal')
                     ->where('id_tahun', $this->activeTahunId)
                     ->whereIn('id_anggota', $memberIds)
-                    ->orderBy('id', 'desc')
                     ->get()
                     ->groupBy('id_anggota')
                     ->map(function ($memberRows) {
@@ -116,9 +192,20 @@ class IuranKas extends Component
                     });
             }
 
-            foreach ($members as $member) {
+            $summary['total_keseluruhan'] = (int) DB::table('iuran_kas as ik')
+                ->join('anggota as a', 'a.id', '=', 'ik.id_anggota')
+                ->where('ik.id_tahun', $this->activeTahunId)
+                ->where('ik.status', 'lunas')
+                ->where('a.id_tahun', $this->activeTahunId)
+                ->where('a.status_aktif', 'aktif')
+                ->when($searchTerm !== '', function ($query) use ($searchTerm) {
+                    $query->where('a.nama_lengkap', 'like', '%' . $searchTerm . '%');
+                })
+                ->sum('ik.nominal');
+
+            $buildMemberData = function ($member) use ($iuranRecordsByMember) {
                 $memberIuran = $iuranRecordsByMember->get($member->id, collect());
-                
+
                 $payments = [];
                 $totalBayar = 0;
 
@@ -139,30 +226,66 @@ class IuranKas extends Component
                     }
                 }
 
-                $data = [
+                return [
                     'id' => $member->id,
                     'nama' => $member->nama_lengkap,
+                    'nama_department' => $member->nama_department,
+                    'jurusan_prodi_kelas' => $member->jurusan_prodi_kelas,
                     'payments' => $payments,
                     'total_bayar' => $totalBayar
                 ];
+            };
 
-                $summary['total_keseluruhan'] += $totalBayar;
+            $matrix['pengurus'] = $pengurusMembers
+                ->map($buildMemberData)
+                ->values()
+                ->all();
 
-                if ($member->status_anggota === 'pengurus') {
-                    $matrix['pengurus'][] = $data;
-                } else {
-                    $matrix['anggota'][] = $data;
-                }
-            }
+            $matrix['anggota'] = $anggotaMembers
+                ->map($buildMemberData)
+                ->values()
+                ->all();
+
+            $pengurusGrouped = collect($matrix['pengurus'])->groupBy(function ($row) {
+                return $row['nama_department'] ?: 'Tidak Ada Department';
+            });
+
+            $anggotaGrouped = collect($matrix['anggota'])->groupBy(function ($row) {
+                return $row['jurusan_prodi_kelas'] ?: 'Tidak Ada Data';
+            });
         }
         
-        return compact('matrix', 'summary');
+        return compact('matrix', 'summary', 'pengurusGrouped', 'anggotaGrouped', 'anggotaPaginator', 'countPengurus', 'countAnggota', 'jurusanFilterOptions');
+    }
+
+    public function updatingSearchTerm(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedLengthData(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedSelectedJurusan(): void
+    {
+        $this->resetPage();
+    }
+
+    public function switchTab(string $tab): void
+    {
+        if (!in_array($tab, ['pengurus', 'anggota'], true)) {
+            return;
+        }
+
+        $this->activeTab = $tab;
     }
 
     public function downloadExcel()
     {
         $this->loadPeriodeList();
-        $data = $this->prepareData();
+        $data = $this->prepareData(paginateAnggota: false);
         return Excel::download(new IuranKasExport($data['matrix'], $this->periodeList, $data['summary']), 'Laporan_Iuran_Kas.xlsx');
     }
 
@@ -172,7 +295,7 @@ class IuranKas extends Component
         ini_set('max_execution_time', 300);
 
         $this->loadPeriodeList();
-        $data = $this->prepareData();
+        $data = $this->prepareData(paginateAnggota: false);
         
         $pdf = Pdf::loadView('exports.iuran-kas-table', [
             'matrix' => $data['matrix'],
@@ -255,6 +378,7 @@ class IuranKas extends Component
                 }
             }
             DB::commit();
+            $this->clearDailyHistoryCache();
         } catch (\Exception $e) {
             DB::rollBack();
             $this->dispatch('swal:modal', [
@@ -381,6 +505,7 @@ class IuranKas extends Component
                 ]);
 
             DB::commit();
+            $this->clearDailyHistoryCache();
 
             $this->dispatch('close-modal', ['id' => 'renameModal']);
             $this->reloadPeriodeList();
@@ -429,6 +554,7 @@ class IuranKas extends Component
                 $payment->delete();
             }
             DB::commit();
+            $this->clearDailyHistoryCache();
 
             $this->paymentToDeleteId = null;
 
@@ -464,6 +590,7 @@ class IuranKas extends Component
                 ->delete();
                 
             DB::commit();
+            $this->clearDailyHistoryCache();
             
             $this->periodeToDelete = '';
             $this->reloadPeriodeList();
@@ -517,6 +644,7 @@ class IuranKas extends Component
                 ]);
             }
             DB::commit();
+            $this->clearDailyHistoryCache();
             
             $this->dispatch('close-modal', ['id' => 'editDateModal']);
             $this->dispatch('swal:modal', [
@@ -534,22 +662,40 @@ class IuranKas extends Component
         }
     }
     
-    public function getDailyHistoryProperty()
+    private function getDailyHistory()
     {
-        return DB::table('iuran_kas')
-            ->where('id_tahun', $this->activeTahunId)
-            ->selectRaw('DATE(tanggal_bayar) as date, SUM(nominal) as total, COUNT(*) as count')
-            ->groupBy('date')
-            ->orderBy('date', 'desc')
-            ->get();
+        if (!$this->activeTahunId) {
+            return collect();
+        }
+
+        $cacheKey = 'iuran-kas:daily-history:tahun:' . $this->activeTahunId;
+
+        return Cache::remember($cacheKey, now()->addMinutes(3), function () {
+            return DB::table('iuran_kas')
+                ->where('id_tahun', $this->activeTahunId)
+                ->selectRaw('tanggal_bayar as date, SUM(nominal) as total, COUNT(*) as count')
+                ->groupBy('tanggal_bayar')
+                ->orderBy('tanggal_bayar', 'desc')
+                ->get();
+        });
+    }
+
+    private function clearDailyHistoryCache(): void
+    {
+        if (!$this->activeTahunId) {
+            return;
+        }
+
+        Cache::forget('iuran-kas:daily-history:tahun:' . $this->activeTahunId);
     }
     
     public function openHistoryDetail($date)
     {
         $this->detailDate = $date;
         $this->detailMembers = ModelsIuranKas::with('anggota')
+            ->select('id', 'id_anggota', 'periode', 'nominal', 'tanggal_bayar')
             ->where('id_tahun', $this->activeTahunId)
-            ->whereDate('tanggal_bayar', $date)
+            ->where('tanggal_bayar', $date)
             ->get();
             
         $this->dispatch('open-modal', ['id' => 'historyDetailModal']);
