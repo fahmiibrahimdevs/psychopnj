@@ -111,6 +111,7 @@ class IuranKas extends Component
                 ->select(
                     'a.id',
                     'a.nama_lengkap',
+                    'a.nim',
                     'a.status_anggota',
                     'a.jurusan_prodi_kelas',
                     'd.nama_department'
@@ -229,6 +230,7 @@ class IuranKas extends Component
                 return [
                     'id' => $member->id,
                     'nama' => $member->nama_lengkap,
+                    'nim' => $member->nim,
                     'nama_department' => $member->nama_department,
                     'jurusan_prodi_kelas' => $member->jurusan_prodi_kelas,
                     'payments' => $payments,

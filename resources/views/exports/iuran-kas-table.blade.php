@@ -77,7 +77,11 @@
                 @forelse ($matrix["pengurus"] as $index => $row)
                     <tr>
                         <td class="text-center">{{ $index + 1 }}</td>
-                        <td class="text-left">{{ $row["nama"] }}</td>
+                        <td class="text-left">
+                            {{ $row["nama"] }}
+                            <br />
+                            <small>NIM: {{ $row["nim"] ?: "-" }}</small>
+                        </td>
                         @foreach ($periodeList as $periode)
                             @php
                                 $payment = $row["payments"][$periode] ?? null;
@@ -105,7 +109,11 @@
                 @forelse ($matrix["anggota"] as $index => $row)
                     <tr>
                         <td class="text-center">{{ $index + 1 }}</td>
-                        <td class="text-left">{{ $row["nama"] }}</td>
+                        <td class="text-left">
+                            {{ $row["nama"] }}
+                            <br />
+                            <small>NIM: {{ $row["nim"] ?: "-" }}</small>
+                        </td>
                         @foreach ($periodeList as $periode)
                             @php
                                 $payment = $row["payments"][$periode] ?? null;
