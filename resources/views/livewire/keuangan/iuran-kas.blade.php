@@ -110,7 +110,10 @@
                                             @foreach ($rows as $row)
                                                 <tr class="text-center">
                                                     <td>{{ $counterPengurus++ }}</td>
-                                                    <td class="text-left">{{ $row["nama"] }}</td>
+                                                    <td class="text-left">
+                                                        <div>{{ $row["nama"] }}</div>
+                                                        <small class="text-muted">NIM: {{ $row["nim"] ?: "-" }}</small>
+                                                    </td>
 
                                                     @foreach ($periodeList as $periode)
                                                         @php
@@ -264,7 +267,10 @@
                                                     @foreach ($rows as $row)
                                                         <tr class="text-center">
                                                             <td>{{ $counterAnggota++ }}</td>
-                                                            <td class="text-left">{{ $row["nama"] }}</td>
+                                                            <td class="text-left">
+                                                                <div>{{ $row["nama"] }}</div>
+                                                                <small class="text-muted">NIM: {{ $row["nim"] ?: "-" }}</small>
+                                                            </td>
 
                                                             @foreach ($periodeList as $periode)
                                                                 @php
